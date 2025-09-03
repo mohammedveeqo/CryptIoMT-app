@@ -25,7 +25,7 @@ export function DashboardOverview() {
   const currentUser = useQuery(api.users.getCurrentUser);
   const equipmentStats = useQuery(api.equipment.getEquipmentStats, {});
   
-  const userRole = currentUser?.user?.role || "customer";
+  const userRole = (currentUser && 'role' in currentUser && currentUser.role) ? currentUser.role : "customer";
   const isAdmin = ["super_admin", "admin", "analyst"].includes(userRole);
   
   // Use custom hook that properly handles conditional queries

@@ -21,14 +21,17 @@ export default defineSchema({
     name: v.string(),
     email: v.string(),
     company: v.string(),
+    role: v.union(v.literal("customer"), v.literal("admin"), v.literal("super_admin")),
     subscriptionTier: v.union(v.literal("basic"), v.literal("pro"), v.literal("enterprise")),
     isActive: v.boolean(),
+    isBlocked: v.optional(v.boolean()),
     createdBy: v.string(), // Admin user ID
     lastUpdated: v.number(),
     clerkUserId: v.optional(v.string()), // For customer portal access
   }).index("by_email", ["email"])
     .index("by_company", ["company"])
-    .index("by_clerk_id", ["clerkUserId"]),
+    .index("by_clerk_id", ["clerkUserId"])
+    .index("by_role", ["role"]),
 
   // Equipment inventory
   equipment: defineTable({

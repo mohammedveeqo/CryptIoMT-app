@@ -29,9 +29,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user } = useUser();
   const pathname = usePathname();
   
-  // Get user role from Convex
+  // Get user role from Convex with better type safety
   const currentUser = useQuery(api.users.getCurrentUser);
-  const userRole = currentUser?.user?.role || "customer";
+  const userRole = (currentUser && 'role' in currentUser && currentUser.role) ? currentUser.role : "customer";
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: Home, roles: ["super_admin", "admin", "analyst", "customer"] },

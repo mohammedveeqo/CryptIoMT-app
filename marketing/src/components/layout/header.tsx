@@ -7,7 +7,7 @@ import {
   NavigationMenuItem,
   NavigationMenuList,
 } from "@/components/ui/navigation-menu";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogIn } from "lucide-react";
 import { useState } from "react";
 
 const scrollToSection = (sectionId: string) => {
@@ -52,7 +52,18 @@ export function Header() {
         </NavigationMenu>
 
         {/* CTA Button */}
-        <div className="hidden md:flex">
+        <div className="hidden md:flex items-center space-x-3">
+          <Button 
+            variant="ghost"
+            size="sm" 
+            className="text-gray-700 hover:text-gray-900"
+            asChild
+          >
+            <a href="https://app.cryptiomt.com/login" target="_blank" rel="noopener noreferrer">
+              <LogIn className="h-4 w-4 mr-2" />
+              Login
+            </a>
+          </Button>
           <Button 
             size="sm" 
             className="bg-blue-600 hover:bg-blue-700 text-white"
@@ -100,6 +111,17 @@ export function Header() {
               }}
             >
               Get Assessment
+            </Button>
+            <Button 
+              variant="ghost"
+              size="sm" 
+              className="w-full mt-1 text-gray-700 hover:text-gray-900"
+              asChild
+            >
+              <a href="https://app.cryptiomt.com/login" target="_blank" rel="noopener noreferrer">
+                <LogIn className="h-4 w-4 mr-2" />
+                Login
+              </a>
             </Button>
           </div>
         </div>

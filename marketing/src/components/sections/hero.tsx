@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowRight, Hospital, User, Wind, AlertTriangle, Activity, Brain, Bed, Heart, Wifi } from "lucide-react";
+import { ArrowRight, Hospital, User, Wind, AlertTriangle, Activity, Brain, Bed, Heart, Wifi, LogIn, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useScrollAnimation } from "@/lib/hooks/useScrollAnimation";
 
@@ -80,6 +80,8 @@ export function Hero() {
             </div>
             
             {/* CTA Buttons */}
+
+            {/* CTA Buttons */}
             <div className={`flex flex-col sm:flex-row gap-4 pt-4 transition-all duration-1000 delay-700 ${
               heroVisible 
                 ? 'opacity-100 translate-y-0' 
@@ -91,9 +93,20 @@ export function Hero() {
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" className="border-2 border-gray-300 text-gray-700 hover:bg-gray-50 px-8 py-4 text-lg transform hover:scale-105 transition-all duration-300" asChild>
-                <Link href="#services">Learn More</Link>
-              </Button>
+              <div className="flex gap-2">
+                <Button size="lg" variant="outline" className="border-2 border-blue-600 text-blue-600 hover:bg-blue-50 px-6 py-4 text-lg transform hover:scale-105 transition-all duration-300" asChild>
+                  <a href="https://app.cryptiomt.com/login" target="_blank" rel="noopener noreferrer">
+                    <LogIn className="mr-2 h-5 w-5" />
+                    Login
+                  </a>
+                </Button>
+                <Button size="lg" variant="outline" className="border-2 border-green-600 text-green-600 hover:bg-green-50 px-6 py-4 text-lg transform hover:scale-105 transition-all duration-300" asChild>
+                  <a href="https://app.cryptiomt.com/signup" target="_blank" rel="noopener noreferrer">
+                    <UserPlus className="mr-2 h-5 w-5" />
+                    Sign Up
+                  </a>
+                </Button>
+              </div>
             </div>
           </div>
           
