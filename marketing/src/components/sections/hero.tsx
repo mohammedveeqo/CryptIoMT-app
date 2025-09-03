@@ -26,7 +26,7 @@ export function Hero() {
                 : 'opacity-0 translate-y-4'
             }`}>
               <Hospital className="h-4 w-4" />
-              <span>Expert-led Clinical Engineering Professionals</span>
+              <span>Expert-led Clinical Engineering Professionalss</span>
             </div>
             
             {/* Main Heading */}
