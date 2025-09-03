@@ -2,7 +2,7 @@
 
 import { useUser } from "@clerk/nextjs";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../../../../backend/convex/_generated/api";
+import { api } from "../../../convex/_generated/api";
 import { DashboardLayout } from "../../components/dashboard/layout";
 import { DashboardOverview } from "../../components/dashboard/overview";
 import { useRouter } from "next/navigation";

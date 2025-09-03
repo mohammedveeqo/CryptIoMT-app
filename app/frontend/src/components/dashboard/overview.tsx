@@ -1,8 +1,7 @@
 "use client";
 
 import { useQuery } from "convex/react";
-// Use the backend's generated API
-import { api } from "../../../../backend/convex/_generated/api";
+import { api } from "../../../convex/_generated/api";
 import {
   Server,
   Users,

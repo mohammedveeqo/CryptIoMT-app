@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useUser, UserButton } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 // Use the backend's generated API
-import { api } from "../../../../backend/convex/_generated/api";
+import { api } from "../../../convex/_generated/api";
 import {
   Shield,
   Users,
