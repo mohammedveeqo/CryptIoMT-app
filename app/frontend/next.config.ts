@@ -1,14 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
   experimental: {
     serverActions: {
-      enabled: true
+      allowedOrigins: ['localhost:3000', 'app.cryptiomt.com']
     }
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  }
+  // Remove or comment out the output: 'standalone' line if it exists
 };
 
 export default nextConfig;
