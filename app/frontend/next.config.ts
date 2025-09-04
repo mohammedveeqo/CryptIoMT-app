@@ -7,12 +7,19 @@ const nextConfig: NextConfig = {
     // your project has ESLint errors.
     ignoreDuringBuilds: true,
   },
-  // Ensure proper static file handling
-  trailingSlash: false,
-  // Optimize for production
-  compress: true,
-  // Handle static assets properly
-  assetPrefix: process.env.NODE_ENV === 'production' ? undefined : undefined,
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'text/html; charset=utf-8',
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;
