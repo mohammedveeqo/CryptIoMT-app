@@ -1,11 +1,26 @@
-import { auth } from "@clerk/nextjs";
-import { redirect } from "next/navigation";
+"use client";
 
-export default async function HomePage() {
-  const { userId } = auth();
+import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
-  if (userId) {
-    redirect("/dashboard");
+export default function HomePage() {
+  const { isSignedIn, isLoaded } = useUser();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isLoaded && isSignedIn) {
+      router.push("/dashboard");
+    }
+  }, [isLoaded, isSignedIn, router]);
+
+  if (!isLoaded) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+        <p className="mt-4">Loading...</p>
+      </main>
+    );
   }
 
   return (
