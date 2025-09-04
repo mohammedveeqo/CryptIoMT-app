@@ -28,8 +28,15 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center">
-      <SignIn />
-    </main>
+    <div className="flex min-h-screen items-center justify-center">
+      <SignIn
+        appearance={{
+          elements: {
+            rootBox: "mx-auto",
+            card: "bg-gray-800 text-white",
+          },
+        }}
+      />
+    </div>
   );
 }
