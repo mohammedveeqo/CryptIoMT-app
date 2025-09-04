@@ -1,26 +1,32 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   output: 'standalone',
-  eslint: {
-    // Warning: This allows production builds to successfully complete even if
-    // your project has ESLint errors.
-    ignoreDuringBuilds: true,
+  experimental: {
+    serverActions: true,
   },
-  async headers() {
+  async redirects() {
     return [
       {
-        // Only apply to HTML pages, not API routes or static assets
-        source: '/((?!api|_next/static|_next/image|favicon.ico).*)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=0, must-revalidate',
-          },
-        ],
+        source: '/sign-in',
+        destination: '/login',
+        permanent: true,
       },
     ];
   },
+  async rewrites() {
+    return {
+      beforeFiles: [
+        {
+          source: '/login',
+          destination: '/login',
+        },
+        {
+          source: '/dashboard',
+          destination: '/dashboard',
+        },
+      ],
+    };
+  },
 };
 
-export default nextConfig;
+module.exports = nextConfig;
