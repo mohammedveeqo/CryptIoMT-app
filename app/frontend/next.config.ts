@@ -10,11 +10,12 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: '/:path*',
+        // Only apply to HTML pages, not API routes or static assets
+        source: '/((?!api|_next/static|_next/image|favicon.ico).*)',
         headers: [
           {
-            key: 'Content-Type',
-            value: 'text/html; charset=utf-8',
+            key: 'Cache-Control',
+            value: 'public, max-age=0, must-revalidate',
           },
         ],
       },
