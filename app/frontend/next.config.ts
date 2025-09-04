@@ -2,10 +2,11 @@
 const nextConfig = {
   experimental: {
     serverActions: {
-      allowedOrigins: ['localhost:3000', 'app.cryptiomt.com']
+      allowedOrigins: ['app.cryptiomt.com', 'localhost:3000']
     }
-  }
-  // Remove or comment out the output: 'standalone' line if it exists
+  },
+  // Remove the output: 'standalone' line for now
+  // output: 'standalone',
 };
 
 export default nextConfig;
