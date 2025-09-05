@@ -5,8 +5,13 @@ const nextConfig = {
       allowedOrigins: ['app.cryptiomt.com', 'localhost:3000']
     }
   },
-  // Remove the output: 'standalone' line for now
-  // output: 'standalone',
+  // Add these settings
+  server: {
+    port: 80,
+    host: '0.0.0.0'
+  },
+  // Uncomment this as it might be needed for production
+  output: 'standalone',
 };
 
 export default nextConfig;
