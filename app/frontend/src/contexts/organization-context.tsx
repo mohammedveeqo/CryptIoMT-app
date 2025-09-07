@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useQuery } from 'convex/react';
+import { useUser } from '@clerk/nextjs';
 import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
 
@@ -20,8 +21,8 @@ type UserOrganization = {
   createdAt?: number;
   updatedAt?: number;
   lastUpdated?: number;
-  status: "active" | "inactive";
-  settings: {
+  status?: "active" | "inactive";
+  settings?: {
     allowUserRegistration?: boolean;
     requireApproval?: boolean;
     allowedDomains?: string[];
@@ -43,10 +44,15 @@ const OrganizationContext = createContext<OrganizationContextType | undefined>(u
 
 export function OrganizationProvider({ children }: { children: React.ReactNode }) {
   const [currentOrganization, setCurrentOrganization] = useState<UserOrganization | null>(null);
+  const { isSignedIn, isLoaded } = useUser();
   
-  // Get user's organizations - TypeScript will now properly infer the type
-  const userOrganizations = useQuery(api.organizations.getUserOrganizations);
-  const isLoading = userOrganizations === undefined;
+  // Only query organizations if user is authenticated
+  const userOrganizations = useQuery(
+    api.organizations.getUserOrganizations,
+    isSignedIn ? {} : "skip"
+  );
+  
+  const isLoading = !isLoaded || (isSignedIn && userOrganizations === undefined);
 
   // Set default organization when data loads
   useEffect(() => {
@@ -57,10 +63,17 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
     }
   }, [userOrganizations, currentOrganization]);
 
+  // Reset organization when user signs out
+  useEffect(() => {
+    if (!isSignedIn) {
+      setCurrentOrganization(null);
+    }
+  }, [isSignedIn]);
+
   return (
     <OrganizationContext.Provider value={{
       currentOrganization,
-      userOrganizations,
+      userOrganizations: isSignedIn ? userOrganizations : undefined,
       setCurrentOrganization,
       isLoading
     }}>

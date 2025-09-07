@@ -80,7 +80,8 @@ export default function LoginPage() {
 
               {/* Login form with forced centering */}
               <div className="flex justify-center">
-                <SignIn
+                <SignIn 
+                  forceRedirectUrl="/onboarding"
                   appearance={{
                     elements: {
                       rootBox: "w-full !mx-auto !flex !justify-center",
@@ -107,7 +108,6 @@ export default function LoginPage() {
                       socialButtonsPlacement: "top"
                     }
                   }}
-                  redirectUrl="/dashboard"
                 />
               </div>
             </div>

@@ -32,7 +32,36 @@ export default defineSchema({
     .index("by_type", ["type"])
     .index("by_subscription", ["subscriptionTier"]),
 
-  // Unified Users collection - All users (admins, org owners, org members)
+  // NEW: Junction table for many-to-many user-organization relationships
+  organizationMembers: defineTable({
+    userId: v.id("users"),                     // Reference to user
+    organizationId: v.id("organizations"),     // Reference to organization
+    memberRole: v.union(
+      v.literal("owner"),                      // Organization owner
+      v.literal("admin"),                     // Organization admin
+      v.literal("member"),                    // Regular member
+      v.literal("viewer")                     // Read-only access
+    ),
+    memberStatus: v.union(
+      v.literal("active"),                    // Active member
+      v.literal("pending"),                  // Pending invitation
+      v.literal("inactive"),                 // Inactive member
+      v.literal("suspended")                 // Suspended member
+    ),
+    joinedAt: v.number(),                      // When user joined organization
+    invitedBy: v.optional(v.id("users")),      // Who invited this user
+    invitedAt: v.optional(v.number()),         // When invitation was sent
+    permissions: v.optional(v.array(v.string())), // Organization-specific permissions
+    createdAt: v.number(),                     // Timestamp of creation
+    updatedAt: v.number(),                     // Timestamp of last update
+  }).index("by_user", ["userId"])
+    .index("by_organization", ["organizationId"])
+    .index("by_user_org", ["userId", "organizationId"]) // Unique constraint
+    .index("by_status", ["memberStatus"])
+    .index("by_role", ["memberRole"])
+    .index("by_invited_by", ["invitedBy"]),
+
+  // UPDATED: Users collection - Removed organizationId, orgRole (now in organizationMembers)
   users: defineTable({
     clerkId: v.string(),                       // External ID from Clerk auth
     email: v.string(),                         // User email
@@ -42,20 +71,17 @@ export default defineSchema({
     role: v.union(
       v.literal("super_admin"),                // Platform super admin
       v.literal("admin"),                     // Platform admin
-      v.literal("orgOwner"),                  // Organization owner
-      v.literal("orgMember"),                 // Organization member
-      v.literal("customer"),                  // Legacy customer role
+      v.literal("customer"),                  // Regular user (can join organizations)
       v.literal("analyst")                    // Security analyst
     ),
-    organizationId: v.optional(v.id("organizations")), // Reference to organization (null for platform admins)
-    orgRole: v.optional(v.string()),           // Role within organization ("owner", "admin", "member")
+    // REMOVED: organizationId - now handled by organizationMembers table
+    // REMOVED: orgRole - now handled by organizationMembers table
     status: v.union(v.literal("active"), v.literal("inactive"), v.literal("pending"), v.literal("suspended")), // User status
     subscriptionTier: v.optional(v.union(v.literal("basic"), v.literal("pro"), v.literal("enterprise"))),
     isActive: v.boolean(),                     // Active status
     isBlocked: v.optional(v.boolean()),        // Blocked status
-    permissions: v.optional(v.array(v.string())), // User permissions
+    permissions: v.optional(v.array(v.string())), // Global user permissions
     lastLogin: v.optional(v.number()),         // Timestamp of last login
-    joinedAt: v.optional(v.number()),          // When user joined organization
     lastActive: v.optional(v.number()),        // Last activity timestamp
     invitedBy: v.optional(v.string()),         // Who invited this user
     createdBy: v.optional(v.string()),         // Who created this user
@@ -66,15 +92,14 @@ export default defineSchema({
       theme: v.optional(v.union(v.literal("light"), v.literal("dark"))), // UI theme preference
       dashboardLayout: v.optional(v.string()),  // Dashboard layout preference
       notifications: v.optional(v.boolean()),   // Notification settings
+      defaultOrganization: v.optional(v.id("organizations")), // User's preferred default organization
     })),
     // Legacy fields for backward compatibility
     company: v.optional(v.string()),           // Legacy company field
   }).index("by_clerk_id", ["clerkId"])
     .index("by_email", ["email"])
-    .index("by_organization", ["organizationId"])
     .index("by_role", ["role"])
     .index("by_status", ["status"])
-    .index("by_org_role", ["orgRole"])
     .index("by_company", ["company"]),
 
   // Medical Devices collection - Core data about each medical device
@@ -313,4 +338,20 @@ export default defineSchema({
   numbers: defineTable({
     value: v.number(),
   }),
+  // Add invitations table inside the schema object
+  invitations: defineTable({
+    organizationId: v.id("organizations"),
+    email: v.string(),
+    role: v.union(v.literal("admin"), v.literal("member")),
+    code: v.string(),
+    status: v.union(v.literal("pending"), v.literal("accepted"), v.literal("expired")),
+    createdById: v.id("users"),
+    createdAt: v.number(),
+    expiresAt: v.number(),
+    usedAt: v.optional(v.number()),
+    usedById: v.optional(v.id("users")),
+  }).index("by_organization", ["organizationId"])
+    .index("by_email", ["email"])
+    .index("by_code", ["code"])
+    .index("by_status", ["status"]),
 });

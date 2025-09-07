@@ -17,6 +17,7 @@ import type * as admin from "../admin.js";
 import type * as equipment from "../equipment.js";
 import type * as myFunctions from "../myFunctions.js";
 import type * as organizations from "../organizations.js";
+import type * as types from "../types.js";
 import type * as users from "../users.js";
 
 /**
@@ -32,6 +33,7 @@ declare const fullApi: ApiFromModules<{
   equipment: typeof equipment;
   myFunctions: typeof myFunctions;
   organizations: typeof organizations;
+  types: typeof types;
   users: typeof users;
 }>;
 export declare const api: FilterApi<
