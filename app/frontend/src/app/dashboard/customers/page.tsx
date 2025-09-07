@@ -19,7 +19,7 @@ import {
 
 export default function CustomersPage() {
   const currentUser = useQuery(api.users.getCurrentUser);
-  const customers = useQuery(api.customers.getAllCustomers);
+  const customers = useQuery(api.users.getAllCustomers); // This should work since getAllCustomers is in users.ts
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [showActions, setShowActions] = useState(null);
 
