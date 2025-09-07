@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
 
-// Get current user info (updated to handle both customers and admins)
+// Get current user info (updated to handle unified users table)
 export const getCurrentUser = query({
   args: {},
   handler: async (ctx) => {
@@ -10,35 +10,17 @@ export const getCurrentUser = query({
       return null;
     }
 
-    // First check customers table
-    const customer = await ctx.db
-      .query("customers")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkUserId", identity.subject))
+    // Single query to users table
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
       .first();
 
-    if (customer) {
+    if (user) {
       return {
-        ...customer,
-        userType: "customer" as const,
+        ...user,
         identity,
         isAuthenticated: true,
-        role: customer.role, // Explicitly include role
-      };
-    }
-
-    // Fallback to adminUsers for existing admin accounts
-    const adminUser = await ctx.db
-      .query("adminUsers")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkUserId", identity.subject))
-      .first();
-
-    if (adminUser) {
-      return {
-        ...adminUser,
-        userType: "admin" as const,
-        identity,
-        isAuthenticated: true,
-        role: adminUser.role, // Explicitly include role
       };
     }
 
@@ -46,7 +28,7 @@ export const getCurrentUser = query({
       identity,
       user: null,
       isAuthenticated: true,
-      role: null, // Add role property to maintain consistent type
+      role: null,
     };
   },
 });
@@ -59,35 +41,35 @@ export const createOrUpdateUser = mutation({
     name: v.string(),
   },
   handler: async (ctx, args) => {
-    // Check if user already exists in customers table
-    const existingCustomer = await ctx.db
-      .query("customers")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkUserId", args.clerkUserId))
+    // Check if user already exists in users table
+    const existingUser = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkUserId))
       .first();
 
-    if (existingCustomer) {
-      // Update existing customer's last login
-      await ctx.db.patch(existingCustomer._id, {
+    if (existingUser) {
+      // Update existing user's last login
+      await ctx.db.patch(existingUser._id, {
         lastUpdated: Date.now(),
+        updatedAt: Date.now(),
       });
-      return existingCustomer;
+      return existingUser;
     }
 
-    // Create new customer with default role
-    const newCustomer = await ctx.db.insert("customers", {
+    // Create new user with default role
+    const newUser = await ctx.db.insert("users", {
+      clerkId: args.clerkUserId,
       name: args.name,
       email: args.email,
-      company: "Default Company", // Can be updated later
       role: "customer", // Default role for all new signups
-      subscriptionTier: "basic",
+      status: "active",
       isActive: true,
-      isBlocked: false,
-      createdBy: "system", // System created
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
       lastUpdated: Date.now(),
-      clerkUserId: args.clerkUserId,
     });
 
-    return await ctx.db.get(newCustomer);
+    return await ctx.db.get(newUser);
   },
 });
 
@@ -102,14 +84,117 @@ export const getAllAdminUsers = query({
 
     // Check if current user is super admin
     const currentUser = await ctx.db
-      .query("adminUsers")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkUserId", identity.subject))
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
       .first();
 
     if (!currentUser || currentUser.role !== "super_admin") {
       throw new Error("Unauthorized: Super admin access required");
     }
 
-    return await ctx.db.query("adminUsers").collect();
+    // Get all admin users
+    return await ctx.db
+      .query("users")
+      .filter((q) => q.or(
+        q.eq(q.field("role"), "super_admin"),
+        q.eq(q.field("role"), "admin"),
+        q.eq(q.field("role"), "analyst")
+      ))
+      .collect();
+  },
+});
+
+// Get current user with organization context
+export const getCurrentUserWithOrganization = query({
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return null;
+    }
+
+    // Get user from unified users table
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .first();
+
+    if (!user) {
+      return null;
+    }
+
+    // Get user's organization if they have one
+    let organization = null;
+    if (user.organizationId) {
+      organization = await ctx.db.get(user.organizationId);
+    }
+
+    return {
+      ...user,
+      organization,
+      currentOrganization: organization,
+    };
+  },
+});
+
+// Get all customers (admin only)
+export const getAllCustomers = query({
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const currentUser = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .first();
+
+    if (!currentUser || !["super_admin", "admin"].includes(currentUser.role)) {
+      throw new Error("Admin access required");
+    }
+
+    // Get all users with customer role
+    return await ctx.db
+      .query("users")
+      .withIndex("by_role", (q) => q.eq("role", "customer"))
+      .collect();
+  },
+});
+
+// Update user role
+export const updateUserRole = mutation({
+  args: {
+    userId: v.id("users"),
+    newRole: v.union(
+      v.literal("customer"),
+      v.literal("orgMember"),
+      v.literal("orgOwner"),
+      v.literal("admin"),
+      v.literal("super_admin"),
+      v.literal("analyst")
+    ),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const currentUser = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .first();
+
+    if (!currentUser || !["super_admin", "admin"].includes(currentUser.role)) {
+      throw new Error("Admin access required");
+    }
+
+    await ctx.db.patch(args.userId, {
+      role: args.newRole,
+      updatedAt: Date.now(),
+      lastUpdated: Date.now(),
+    });
+
+    return { success: true };
   },
 });

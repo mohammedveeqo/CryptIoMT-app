@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { OrganizationSelector } from './organization-selector';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -131,10 +132,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <Menu className="h-6 w-6" />
           </button>
           <div className="flex-1 px-4 flex justify-between items-center">
-            <div className="flex-1">
+            <div className="flex items-center space-x-4">
               <h1 className="text-2xl font-semibold text-gray-900">
                 {filteredNavigation.find(item => item.href === pathname)?.name || 'Dashboard'}
               </h1>
+              <OrganizationSelector />
             </div>
             <div className="ml-4 flex items-center md:ml-6">
               <div className="flex items-center space-x-4">

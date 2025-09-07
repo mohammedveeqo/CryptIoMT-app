@@ -1,9 +1,10 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
 
-// Get all equipment for a customer
-export const getCustomerEquipment = query({
-  args: { customerId: v.id("customers") },
+
+// Get all equipment for an organization
+export const getOrganizationEquipment = query({
+  args: { organizationId: v.id("organizations") },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
@@ -12,15 +13,16 @@ export const getCustomerEquipment = query({
 
     return await ctx.db
       .query("equipment")
-      .withIndex("by_customer", (q) => q.eq("customerId", args.customerId))
+      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
       .collect();
   },
 });
 
+
 // Add new equipment
 export const addEquipment = mutation({
   args: {
-    customerId: v.id("customers"),
+    organizationId: v.id("organizations"), // Changed from customerId
     deviceName: v.string(),
     deviceType: v.union(
       v.literal("server"),
@@ -29,6 +31,7 @@ export const addEquipment = mutation({
       v.literal("mobile"),
       v.literal("iot"),
       v.literal("network_device"),
+      v.literal("medical_device"), // Added medical device type
       v.literal("other")
     ),
     operatingSystem: v.string(),
@@ -110,7 +113,7 @@ export const deleteEquipment = mutation({
 
 // Get equipment statistics
 export const getEquipmentStats = query({
-  args: { customerId: v.optional(v.id("customers")) },
+  args: { organizationId: v.optional(v.id("organizations")) },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
@@ -119,10 +122,10 @@ export const getEquipmentStats = query({
 
     let equipment;
     
-    if (args.customerId) {
+    if (args.organizationId) {
       equipment = await ctx.db
         .query("equipment")
-        .withIndex("by_customer", (q) => q.eq("customerId", args.customerId!))
+        .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId!))
         .collect();
     } else {
       equipment = await ctx.db
