@@ -14,7 +14,7 @@ import {
 // Custom hook to conditionally fetch customers
 function useCustomersForAdmin(isAdmin: boolean) {
   const customers = useQuery(
-    api.customers.getAllCustomers,
+    api.users.getAllCustomers, // Changed from api.customers.getAllCustomers
     isAdmin ? {} : "skip"
   );
   return isAdmin ? customers : [];
