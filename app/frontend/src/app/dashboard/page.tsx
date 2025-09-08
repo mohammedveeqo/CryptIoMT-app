@@ -10,6 +10,12 @@ import { DeviceInventory } from '@/components/dashboard/device-inventory'
 import { DashboardOverview } from '@/components/dashboard/overview'
 import { Shield } from 'lucide-react'
 import { NetworkTopology } from '@/components/dashboard/network-topology'
+import React from 'react';
+
+// Memoize heavy components to prevent unnecessary re-renders
+const MemoizedNetworkTopology = React.memo(NetworkTopology);
+const MemoizedDeviceInventory = React.memo(DeviceInventory);
+const MemoizedDashboardOverview = React.memo(DashboardOverview);
 
 export default function Dashboard() {
   const { user } = useUser()
@@ -83,11 +89,11 @@ export default function Dashboard() {
           </div>
 
           <TabsContent value="overview" className="animate-in fade-in-50 duration-500">
-            <DashboardOverview />
+            <MemoizedDashboardOverview />
           </TabsContent>
 
           <TabsContent value="devices" className="animate-in fade-in-50 duration-500">
-            <DeviceInventory  />
+            <MemoizedDeviceInventory isAdmin={isAdmin} userRole={userRole} />
           </TabsContent>
 
           <TabsContent value="risk" className="animate-in fade-in-50 duration-500">
@@ -103,7 +109,7 @@ export default function Dashboard() {
           </TabsContent>
 
           <TabsContent value="network" className="animate-in fade-in-50 duration-500">
-            <NetworkTopology />
+            <MemoizedNetworkTopology />
           </TabsContent>
 
           <TabsContent value="alerts" className="animate-in fade-in-50 duration-500">

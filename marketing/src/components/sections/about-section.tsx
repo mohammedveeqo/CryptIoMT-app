@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Users, Award, CheckCircle } from "lucide-react";
 import { useScrollAnimation } from "@/lib/hooks/useScrollAnimation";
+import Image from "next/image";
 
 export function AboutSection() {
   const { ref: sectionRef, isVisible: sectionVisible } = useScrollAnimation();
@@ -65,18 +66,38 @@ export function AboutSection() {
                 </div>
               </div>
             </div>
-            <Card className="p-8">
-              <div className="text-center">
-                <Shield className="h-16 w-16 text-blue-600 mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-gray-900 mb-2">
-                  Healthcare-First Approach
-                </h3>
-                <p className="text-gray-600">
-                  Unlike generic cybersecurity firms, we understand the unique 
-                  challenges of healthcare environments and medical device security.
-                </p>
+            <div className="relative">
+              {/* Team Photo */}
+              <div className="relative overflow-hidden rounded-2xl shadow-xl">
+                <Image
+                  src="/images/team-photo.jpg"
+                  alt="CryptIoMT cybersecurity team - Clinical Engineering Professionals"
+                  width={600}
+                  height={400}
+                  className="w-full h-auto object-cover"
+                  priority={false}
+                />
+                {/* Professional Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-blue-900/20 to-transparent" />
+                
+                {/* Floating Badge */}
+                <div className="absolute bottom-6 left-6 right-6">
+                  <Card className="p-4 bg-white/95 backdrop-blur-sm border-0 shadow-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-900 mb-1">
+                          Expert Team
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          Clinical Engineering Professionals with globally recognized security certifications
+                        </p>
+                      </div>
+                      <Shield className="h-8 w-8 text-blue-600" />
+                    </div>
+                  </Card>
+                </div>
               </div>
-            </Card>
+            </div>
           </div>
         </div>
       </section>

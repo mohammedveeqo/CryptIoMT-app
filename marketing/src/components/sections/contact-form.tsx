@@ -325,19 +325,6 @@ export function ContactForm() {
                   </p>
                 </CardContent>
               </Card>
-
-              {/* Pricing Info */}
-              <Card className="p-6 bg-gradient-to-br from-green-50 to-blue-50 border border-green-200">
-                <CardContent className="text-center space-y-3">
-                  <div className="text-2xl font-bold text-gray-900">Starting at $5,000</div>
-                  <p className="text-sm text-gray-600">
-                    Comprehensive risk assessment with detailed report and implementation roadmap.
-                  </p>
-                  <Badge className="bg-green-100 text-green-800 border-green-200">
-                    ROI: 300%+ in first year
-                  </Badge>
-                </CardContent>
-              </Card>
             </div>
           </div>
         </div>

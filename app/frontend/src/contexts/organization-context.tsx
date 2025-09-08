@@ -55,19 +55,17 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
   // More precise loading state
   const isLoading = !isLoaded || (isSignedIn && userOrganizations === undefined);
 
-  // Set default organization when data loads
+  // Set default organization when data loads - ONLY once
   useEffect(() => {
     if (userOrganizations && userOrganizations.length > 0 && !currentOrganization) {
       // Set the first active organization as default
       const activeOrg = userOrganizations.find(org => org.status === 'active');
       setCurrentOrganization(activeOrg || userOrganizations[0]);
-    } else if (userOrganizations && userOrganizations.length === 0) {
-      // Explicitly set to null when user has no organizations
-      setCurrentOrganization(null);
     }
-  }, [userOrganizations, currentOrganization]);
+    // Remove the else if clause that was resetting to null
+  }, [userOrganizations]); // Remove currentOrganization from dependencies
 
-  // Reset organization when user signs out
+  // Reset organization ONLY when user signs out
   useEffect(() => {
     if (!isSignedIn) {
       setCurrentOrganization(null);

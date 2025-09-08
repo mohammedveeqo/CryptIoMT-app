@@ -2,8 +2,9 @@
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowRight, Hospital, User, Wind, AlertTriangle, Activity, Brain, Bed, Heart, Wifi, LogIn, UserPlus } from "lucide-react";
+import { ArrowRight, Hospital, User, Wind, AlertTriangle, Activity, Brain, Bed, Heart, Wifi } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { useScrollAnimation } from "@/lib/hooks/useScrollAnimation";
 
 export function Hero() {
@@ -26,7 +27,7 @@ export function Hero() {
                 : 'opacity-0 translate-y-4'
             }`}>
               <Hospital className="h-4 w-4" />
-              <span>Expert-led Clinical Engineering Professionalss</span>
+              <span>Expert-led Clinical Engineering Professionals</span>
             </div>
             
             {/* Main Heading */}
@@ -66,8 +67,8 @@ export function Hero() {
                 : 'opacity-0 translate-y-8'
             }`}>
               <div className="text-center transform hover:scale-105 transition-transform duration-300">
-                <div className="text-3xl font-bold text-blue-600">20+</div>
-                <div className="text-sm text-gray-600">Hospital Systems Secured</div>
+                <div className="text-3xl font-bold text-blue-600">10k+</div>
+                <div className="text-sm text-gray-600">Devices Secured</div>
               </div>
               <div className="text-center transform hover:scale-105 transition-transform duration-300">
                 <div className="text-3xl font-bold text-green-600">HIPAA</div>
@@ -80,8 +81,6 @@ export function Hero() {
             </div>
             
             {/* CTA Buttons */}
-
-            {/* CTA Buttons */}
             <div className={`flex flex-col sm:flex-row gap-4 pt-4 transition-all duration-1000 delay-700 ${
               heroVisible 
                 ? 'opacity-100 translate-y-0' 
@@ -93,178 +92,56 @@ export function Hero() {
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
-              <div className="flex gap-2">
-                <Button size="lg" variant="outline" className="border-2 border-blue-600 text-blue-600 hover:bg-blue-50 px-6 py-4 text-lg transform hover:scale-105 transition-all duration-300" asChild>
-                  <a href="https://app.cryptiomt.com/login" target="_blank" rel="noopener noreferrer">
-                    <LogIn className="mr-2 h-5 w-5" />
-                    Login
-                  </a>
-                </Button>
-                <Button size="lg" variant="outline" className="border-2 border-green-600 text-green-600 hover:bg-green-50 px-6 py-4 text-lg transform hover:scale-105 transition-all duration-300" asChild>
-                  <a href="https://app.cryptiomt.com/signup" target="_blank" rel="noopener noreferrer">
-                    <UserPlus className="mr-2 h-5 w-5" />
-                    Sign Up
-                  </a>
-                </Button>
-              </div>
             </div>
           </div>
           
-          {/* Right Column - Hospital Device Risk Diagram */}
+          {/* Right Column - Smart Hospital Room Image */}
           <div className={`relative transition-all duration-1000 delay-400 ${
             heroVisible 
               ? 'opacity-100 translate-x-0' 
               : 'opacity-0 translate-x-8'
           }`}>
-            <Card className="p-8 bg-white border border-gray-200 shadow-xl rounded-2xl transform hover:shadow-2xl transition-all duration-500">
-              <div className="space-y-6">
-                {/* Header with Expert Profile */}
-                <div className="flex items-center justify-between">
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-bold text-red-700">Hidden Risks in Hospital Devices</h3>
-                    <p className="text-sm text-gray-600">Cyber threats hiding in your medical equipment</p>
-                  </div>
-                  {/* Expert Profile Element */}
-                  <div className="flex items-center space-x-2 bg-blue-50 px-3 py-2 rounded-lg">
-                    <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                      <User className="h-4 w-4 text-white" />
-                    </div>
-                    <div className="text-xs">
-                      <div className="font-semibold text-gray-900">Expert Analysis</div>
-                      <div className="text-gray-600">Cybersecurity Specialist</div>
-                    </div>
-                  </div>
-                </div>
+            <div className="relative">
+              {/* Main Hospital Room Image */}
+              <div className="relative overflow-hidden rounded-2xl shadow-2xl">
+                <Image
+                  src="/images/smart-hospital-room.jpg"
+                  alt="Smart hospital room with connected medical devices and cybersecurity monitoring"
+                  width={600}
+                  height={400}
+                  className="w-full h-auto object-cover"
+                  priority
+                />
                 
-                {/* Device Grid */}
-                <div className="grid grid-cols-3 gap-6 py-4">
-                  {/* Ventilator */}
-                  <div className="relative group">
-                    <div className="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center mx-auto group-hover:bg-blue-200 transition-colors">
-                      <Wind className="h-8 w-8 text-blue-600" />
-                    </div>
-                    <div className="text-center mt-2">
-                      <div className="text-xs font-medium text-gray-700">Ventilator</div>
-                    </div>
-                    {/* Risk Indicator */}
-                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center animate-pulse">
-                      <AlertTriangle className="h-3 w-3 text-white" />
-                    </div>
-                  </div>
-
-                  {/* Infusion Pump */}
-                  <div className="relative group">
-                    <div className="w-16 h-16 bg-green-100 rounded-xl flex items-center justify-center mx-auto group-hover:bg-green-200 transition-colors">
-                      <Activity className="h-8 w-8 text-green-600" />
-                    </div>
-                    <div className="text-center mt-2">
-                      <div className="text-xs font-medium text-gray-700">Infusion Pump</div>
-                    </div>
-                    {/* Risk Indicator */}
-                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center animate-pulse">
-                      <AlertTriangle className="h-3 w-3 text-white" />
+                {/* Overlay with Security Status */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent">
+                  <div className="absolute bottom-6 left-6 right-6">
+                    <div className="bg-white/95 backdrop-blur-sm rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-lg font-bold text-gray-900">Smart Hospital Room</h3>
+                        <div className="flex items-center space-x-2">
+                          <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                          <span className="text-sm font-medium text-red-600">5 Devices at Risk</span>
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        Connected medical devices require continuous cybersecurity monitoring
+                      </p>
                     </div>
                   </div>
-
-                  {/* MRI Machine */}
-                  <div className="relative group">
-                    <div className="w-16 h-16 bg-purple-100 rounded-xl flex items-center justify-center mx-auto group-hover:bg-purple-200 transition-colors">
-                      <Brain className="h-8 w-8 text-purple-600" />
-                    </div>
-                    <div className="text-center mt-2">
-                      <div className="text-xs font-medium text-gray-700">MRI System</div>
-                    </div>
-                    {/* Risk Indicator */}
-                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
-                      <AlertTriangle className="h-3 w-3 text-white" />
-                    </div>
-                  </div>
-
-                  {/* Smart Bed */}
-                  <div className="relative group">
-                    <div className="w-16 h-16 bg-indigo-100 rounded-xl flex items-center justify-center mx-auto group-hover:bg-indigo-200 transition-colors">
-                      <Bed className="h-8 w-8 text-indigo-600" />
-                    </div>
-                    <div className="text-center mt-2">
-                      <div className="text-xs font-medium text-gray-700">Smart Bed</div>
-                    </div>
-                    {/* Risk Indicator */}
-                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center">
-                      <AlertTriangle className="h-3 w-3 text-white" />
-                    </div>
-                  </div>
-
-                  {/* Patient Monitor */}
-                  <div className="relative group">
-                    <div className="w-16 h-16 bg-red-100 rounded-xl flex items-center justify-center mx-auto group-hover:bg-red-200 transition-colors">
-                      <Heart className="h-8 w-8 text-red-600" />
-                    </div>
-                    <div className="text-center mt-2">
-                      <div className="text-xs font-medium text-gray-700">Patient Monitor</div>
-                    </div>
-                    {/* Risk Indicator */}
-                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center animate-pulse">
-                      <AlertTriangle className="h-3 w-3 text-white" />
-                    </div>
-                  </div>
-
-                  {/* HVAC System */}
-                  <div className="relative group">
-                    <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto group-hover:bg-gray-200 transition-colors">
-                      <Wifi className="h-8 w-8 text-gray-600" />
-                    </div>
-                    <div className="text-center mt-2">
-                      <div className="text-xs font-medium text-gray-700">HVAC System</div>
-                    </div>
-                    {/* Risk Indicator */}
-                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
-                      <AlertTriangle className="h-3 w-3 text-white" />
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Risk Legend */}
-                <div className="border-t border-gray-100 pt-4">
-                  <div className="flex justify-center space-x-6 text-xs">
-                    <div className="flex items-center space-x-1">
-                      <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-                      <span className="text-gray-600">Critical Risk</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <div className="w-3 h-3 bg-orange-500 rounded-full" />
-                      <span className="text-gray-600">Medium Risk</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <div className="w-3 h-3 bg-yellow-500 rounded-full" />
-                      <span className="text-gray-600">Low Risk</span>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Network Connection Lines */}
-                <div className="absolute inset-0 pointer-events-none">
-                  {/* Subtle connecting lines between devices */}
-                  <svg className="w-full h-full opacity-10">
-                    <defs>
-                      <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-                        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#EF4444" strokeWidth="0.5" strokeDasharray="2,2"/>
-                      </pattern>
-                    </defs>
-                    <rect width="100%" height="100%" fill="url(#grid)" />
-                  </svg>
                 </div>
               </div>
-            </Card>
-            
-            {/* Floating Alert - More Urgent */}
-            <div className={`absolute -bottom-4 -right-4 bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg animate-pulse transition-all duration-1000 delay-1000 ${
-              heroVisible 
-                ? 'opacity-100 translate-y-0' 
-                : 'opacity-0 translate-y-4'
-            }`}>
-              <div className="flex items-center space-x-2">
-                <AlertTriangle className="h-4 w-4" />
-                <span className="text-sm font-bold">5 Critical Threats Found</span>
+              
+              {/* Floating Security Alert */}
+              <div className={`absolute -top-4 -right-4 bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg animate-pulse transition-all duration-1000 delay-1000 ${
+                heroVisible 
+                  ? 'opacity-100 translate-y-0' 
+                  : 'opacity-0 translate-y-4'
+              }`}>
+                <div className="flex items-center space-x-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  <span className="text-sm font-bold">Critical Threats Detected</span>
+                </div>
               </div>
             </div>
           </div>
@@ -273,19 +150,3 @@ export function Hero() {
     </section>
   );
 }
-
-
-<div className="grid grid-cols-3 gap-4 py-6">
-  <div className="text-center">
-    <div className="text-3xl font-bold text-red-600">300%</div>
-    <div className="text-sm text-gray-600">Increase in Healthcare Cyberattacks</div>
-  </div>
-  <div className="text-center">
-    <div className="text-3xl font-bold text-blue-600">89%</div>
-    <div className="text-sm text-gray-600">Devices Run Outdated Software</div>
-  </div>
-  <div className="text-center">
-    <div className="text-3xl font-bold text-orange-600">$10M</div>
-    <div className="text-sm text-gray-600">Average Ransomware Cost</div>
-  </div>
-</div>

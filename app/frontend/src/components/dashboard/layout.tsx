@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useUser, UserButton } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
@@ -38,55 +38,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const currentUser = useQuery(api.users.getCurrentUser);
   const userRole = (currentUser && 'role' in currentUser && currentUser.role) ? currentUser.role : "customer";
 
-  // Redirect users without organizations to onboarding (except admins)
-  useEffect(() => {
-    if (!isLoading && currentUser && userOrganizations !== undefined) {
-      const isAdmin = ['super_admin', 'admin'].includes(userRole);
-      const hasOrganizations = userOrganizations && userOrganizations.length > 0;
-      
-      // Debug logging to help identify the issue
-      console.log('Dashboard redirect check:', {
-        isLoading,
-        currentUser: !!currentUser,
-        userOrganizations,
-        hasOrganizations,
-        isAdmin,
-        userRole,
-        pathname
-      });
-      
-      // Only redirect non-admin users without organizations
-      // Make sure we're not in a redirect loop and give more time for data to load
-      // Also check if we're coming from impersonation
-      const isFromImpersonation = typeof window !== 'undefined' && 
-        (window.location.search.includes('impersonate=true') || 
-         sessionStorage.getItem('impersonation'));
-      
-      // Add additional checks to prevent premature redirects
-      const shouldRedirect = !isAdmin && 
-                           !hasOrganizations && 
-                           !pathname.includes('/onboarding') && 
-                           !isFromImpersonation &&
-                           userOrganizations !== undefined && // Ensure data is actually loaded
-                           Array.isArray(userOrganizations); // Ensure it's a proper array
-      
-      if (shouldRedirect) {
-        // Add a delay to ensure organization data has fully loaded
-        const timeoutId = setTimeout(() => {
-          // Double-check organizations are still empty after delay
-          if (userOrganizations && userOrganizations.length === 0) {
-            console.log('Redirecting to onboarding after delay');
-            router.push('/onboarding');
-          }
-        }, 1500); // Increased delay to 1.5 seconds
-        
-        return () => clearTimeout(timeoutId);
-      }
-    }
-  }, [isLoading, currentUser, userOrganizations, userRole, router, pathname]);
-
-  // Show loading while checking organization membership
-  if (isLoading || !currentUser || userOrganizations === undefined) {
+  // Simple loading check - no redirect logic
+  if (isLoading || !currentUser) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
@@ -96,6 +49,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       </div>
     );
   }
+
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: Home, roles: ["super_admin", "admin", "analyst", "customer"] },
     { name: "Equipment", href: "/dashboard/equipment", icon: Server, roles: ["super_admin", "admin", "analyst", "customer"] },

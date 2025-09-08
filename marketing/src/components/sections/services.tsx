@@ -18,6 +18,7 @@ import {
   UserCheck,
   Lock
 } from "lucide-react";
+import Image from "next/image";
 import { useScrollAnimation } from "@/lib/hooks/useScrollAnimation";
 import { useState } from "react";
 
@@ -134,29 +135,82 @@ export function Services() {
   return (
     <section id="services" className="py-20 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4">
-        {/* Section Header */}
-        <div 
-          ref={headerRef}
-          className={`text-center space-y-6 mb-16 transition-all duration-1000 ease-out ${
-            headerVisible 
-              ? 'opacity-100 translate-y-0' 
-              : 'opacity-0 translate-y-8'
-          }`}
-        >
-          <Badge 
-            variant="outline" 
-            className="border-blue-200 text-blue-700 bg-blue-50 px-4 py-2 text-sm font-medium mx-auto"
+        {/* Section Header with Dashboard Image */}
+        <div className="grid lg:grid-cols-2 gap-12 items-center mb-16">
+          {/* Left Column - Text Content */}
+          <div 
+            ref={headerRef}
+            className={`space-y-6 transition-all duration-1000 ease-out ${
+              headerVisible 
+                ? 'opacity-100 translate-y-0' 
+                : 'opacity-0 translate-y-8'
+            }`}
           >
-            Medical Device Risk Assessments & Security Planning
-          </Badge>
-          <h2 className="text-4xl lg:text-5xl font-bold text-gray-900">
-            Specialized Risk-Centric Threat Modeling
-          </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            Specialized risk centric threat modeling and asset valuation designed specifically for 
-            connected medical assets. Protect patient safety, secure sensitive data, and 
-            maintain uninterrupted care.
-          </p>
+            <Badge 
+              variant="outline" 
+              className="border-blue-200 text-blue-700 bg-blue-50 px-4 py-2 text-sm font-medium"
+            >
+              Medical Device Risk Assessments & Security Planning
+            </Badge>
+            <h2 className="text-4xl lg:text-5xl font-bold text-gray-900">
+              Specialized Risk-Centric Threat Modeling
+            </h2>
+            <p className="text-xl text-gray-600 leading-relaxed">
+              Specialized risk centric threat modeling and asset valuation designed specifically for 
+              connected medical assets. Protect patient safety, secure sensitive data, and 
+              maintain uninterrupted care.
+            </p>
+          </div>
+          
+          {/* Right Column - Cybersecurity Dashboard Image */}
+          <div className={`transition-all duration-1000 delay-300 ${
+            headerVisible 
+              ? 'opacity-100 translate-x-0' 
+              : 'opacity-0 translate-x-8'
+          }`}>
+            <div className="relative">
+              <div className="relative overflow-hidden rounded-2xl shadow-2xl">
+                <Image
+                  src="/images/cybersecurity-dashboard.jpg"
+                  alt="Cybersecurity dashboard showing real-time medical device monitoring and threat detection"
+                  width={600}
+                  height={400}
+                  className="w-full h-auto object-cover"
+                  priority
+                />
+                
+                {/* Dashboard Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent">
+                  <div className="absolute bottom-6 left-6 right-6">
+                    <div className="bg-white/95 backdrop-blur-sm rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-lg font-bold text-gray-900">Real-Time Monitoring</h3>
+                        <div className="flex items-center space-x-2">
+                          <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                          <span className="text-sm font-medium text-green-600">Active Monitoring</span>
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        24/7 cybersecurity monitoring and threat detection for medical devices
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Floating Security Metrics */}
+              <div className={`absolute -top-4 -right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg transition-all duration-1000 delay-500 ${
+                headerVisible 
+                  ? 'opacity-100 translate-y-0' 
+                  : 'opacity-0 translate-y-4'
+              }`}>
+                <div className="flex items-center space-x-2">
+                  <Shield className="h-4 w-4" />
+                  <span className="text-sm font-bold">99.9% Uptime</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Main Services Grid */}
