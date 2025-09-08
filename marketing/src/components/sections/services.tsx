@@ -34,7 +34,11 @@ const services = [
       "Asset Privacy Impact Assessment (PIA)"
     ],
     color: "from-blue-500 to-cyan-500",
-    detailedDescription: "When implementing a comprehensive cybersecurity IoMT asset management program, a detailed inventory of networked and networkable devices must be developed. This may require a physical inventory that may include the documentation of IP and MAC addresses, operating system, software versions and device types. Existing Computerized Maintenance Management Systems (CMMS) data extract are ingested, and data is normalized so that qualitative or quantitative asset valuations can take place. The integration of asset valuation into a Clinical Engineering&apos;s IoMT program allows for the prioritization assets based on criticality, value and potential business impact. This ensures that Clinical Engineering resources are directed to interrogate IoMT devices with a high financial, patient care, and operational impact. A Data Privacy Impact Assessment (PIA) type assessment is conducted against IoMT devices to further identify, evaluate potential privacy risks while ensuring security mandates from regulatory bodies like the Health Insurance Portability and Accountability Act (HIPAA) are understood."
+    detailedDescription: [
+      "When implementing a comprehensive cybersecurity IoMT asset management program, a detailed inventory of networked and networkable devices must be developed. This may require a physical inventory that may include the documentation of IP and MAC addresses, operating system, software versions and device types.",
+      "Existing Computerized Maintenance Management Systems (CMMS) data extract are ingested, and data is normalized so that qualitative or quantitative asset valuations can take place. The integration of asset valuation into a Clinical Engineering's IoMT program allows for the prioritization assets based on criticality, value and potential business impact.",
+      "This ensures that Clinical Engineering resources are directed to interrogate IoMT devices with a high financial, patient care, and operational impact. A Data Privacy Impact Assessment (PIA) type assessment is conducted against IoMT devices to further identify, evaluate potential privacy risks while ensuring security mandates from regulatory bodies like the Health Insurance Portability and Accountability Act (HIPAA) are understood."
+    ]
   },
   {
     icon: BarChart3,
@@ -47,7 +51,12 @@ const services = [
       "Risk Management Framework (RMF)"
     ],
     color: "from-purple-500 to-violet-500",
-    detailedDescription: "Upon a thorough inventory of networked and networkable medical devices, a security risk analysis should be conducted to assess and prioritize risk while leveraging the qualitative/quantitative report and Privacy Impact Assessment. These perquisites are instrumental in formulating a Business Impact Analysis (BIA) that will aid in the identification of valuable assets, potential threats and vulnerabilities. The BIA will help determine the likelihood of threat exploitation and potential impact to the organization driving informed decision-making and prioritization of resources to reduce risk to an acceptable level minimizing disruption of critical business functions. The Risk Analysis is accomplished by leveraging industry standardized methodologies utilized in Information systems organizations such as, NIST SP 800-37, Risk Management Frameworks (RFM) developed by the National Institute of Standards and Technology (NIST). This helps align the medical device security program with methodologies that Information Security teams and Organizational Governance such as CISO&apos;s understand. Risk Management Frameworks allow proactive security, risk-based decision making, compliance support (HIPAA, NIST & FDA alignment), and continuous monitoring."
+    detailedDescription: [
+      "Upon a thorough inventory of networked and networkable medical devices, a security risk analysis should be conducted to assess and prioritize risk while leveraging the qualitative/quantitative report and Privacy Impact Assessment. These perquisites are instrumental in formulating a Business Impact Analysis (BIA) that will aid in the identification of valuable assets, potential threats and vulnerabilities.",
+      "The BIA will help determine the likelihood of threat exploitation and potential impact to the organization driving informed decision-making and prioritization of resources to reduce risk to an acceptable level minimizing disruption of critical business functions.",
+      "The Risk Analysis is accomplished by leveraging industry standardized methodologies utilized in Information systems organizations such as, NIST SP 800-37, Risk Management Frameworks (RFM) developed by the National Institute of Standards and Technology (NIST). This helps align the medical device security program with methodologies that Information Security teams and Organizational Governance such as CISO's understand.",
+      "Risk Management Frameworks allow proactive security, risk-based decision making, compliance support (HIPAA, NIST & FDA alignment), and continuous monitoring."
+    ]
   },
   {
     icon: Settings,
@@ -60,7 +69,13 @@ const services = [
       "MDS2 adherence & Cyber Hygiene"
     ],
     color: "from-green-500 to-emerald-500",
-    detailedDescription: "Upon completion of a Medical Device Inventory Classification/Categorization and Medical Device Risk Analysis, one must codify findings to create a customized cybersecurity plan to meet the hospital&apos;s inherit security standards in a cost-effective yet effective manner so that security resources are allocated intelligently. Previously completed analytics have brought visibility and should ensure security of the medical device throughout the product lifecycle. Security gaps such as lack of patching or security updates ae identified and compensating controls such as firewall rules and segmentation based on vendor recommendations can be enforced. Manufacturer Disclosure Statement for Medical Device Security (MDS2) forms developed by NENA are provided by healthcare manufacturers for healthcare organizations with information about the medical device&apos;s security features and capabilities will be incorporated as a part of the security control process. MDS2&apos;s inform healthcare organizations about a medical device&apos;s security controls, such as patch management, encryption, and remote access, to help them evaluate risks and make informed purchasing decisions. Cyber Hygiene guidelines will be shared advising on the implementation of strong passwords, access controls, network segmentation, and regular software updates. Risk Management consisting of regularly scheduled risk audits on medical devices will be presented as part of a continuous postmarked surveillance protocol. A Medical Device Cybersecurity Plan will be developed to ensure that monitoring or predefine risk controls is effective and updates to these controls take place as needed. A patching cadence will be established for medical devices identified with high asset valuation as determined by the qualitative/quantitative findings. A well-executed Comprehensive Healthcare IoMT Cybersecurity program is crucial in ensuring patients are protected from harm, ensuring data privacy, and maintaining the availability of healthcare services."
+    detailedDescription: [
+      "Upon completion of a Medical Device Inventory Classification/Categorization and Medical Device Risk Analysis, one must codify findings to create a customized cybersecurity plan to meet the hospital's inherit security standards in a cost-effective yet effective manner so that security resources are allocated intelligently.",
+      "Previously completed analytics have brought visibility and should ensure security of the medical device throughout the product lifecycle. Security gaps such as lack of patching or security updates are identified and compensating controls such as firewall rules and segmentation based on vendor recommendations can be enforced.",
+      "Manufacturer Disclosure Statement for Medical Device Security (MDS2) forms developed by NENA are provided by healthcare manufacturers for healthcare organizations with information about the medical device's security features and capabilities will be incorporated as a part of the security control process. MDS2's inform healthcare organizations about a medical device's security controls, such as patch management, encryption, and remote access, to help them evaluate risks and make informed purchasing decisions.",
+      "Cyber Hygiene guidelines will be shared advising on the implementation of strong passwords, access controls, network segmentation, and regular software updates. Risk Management consisting of regularly scheduled risk audits on medical devices will be presented as part of a continuous postmarked surveillance protocol.",
+      "A Medical Device Cybersecurity Plan will be developed to ensure that monitoring or predefine risk controls is effective and updates to these controls take place as needed. A patching cadence will be established for medical devices identified with high asset valuation as determined by the qualitative/quantitative findings. A well-executed Comprehensive Healthcare IoMT Cybersecurity program is crucial in ensuring patients are protected from harm, ensuring data privacy, and maintaining the availability of healthcare services."
+    ]
   }
 ];
 
@@ -75,7 +90,10 @@ const additionalServices = [
       "Project Management methodologies and frameworks are utilized"
     ],
     color: "from-indigo-500 to-indigo-600",
-    detailedDescription: "Our biomedical project management services provide comprehensive oversight for complex healthcare technology implementations. We specialize in managing large-scale biomedical and diagnostic imaging system deployments, ensuring seamless integration with existing hospital networks and workflows. Our experienced project managers utilize industry-standard methodologies and frameworks to deliver projects on time, within budget, and to specification, while maintaining the highest standards of patient safety and regulatory compliance."
+    detailedDescription: [
+      "Our biomedical project management services provide comprehensive oversight for complex healthcare technology implementations. We specialize in managing large-scale biomedical and diagnostic imaging system deployments, ensuring seamless integration with existing hospital networks and workflows.",
+      "Our experienced project managers utilize industry-standard methodologies and frameworks to deliver projects on time, within budget, and to specification, while maintaining the highest standards of patient safety and regulatory compliance."
+    ]
   },
   {
     icon: GraduationCap,
@@ -87,17 +105,23 @@ const additionalServices = [
       "Entry-level Clinical Engineering Networking principles"
     ],
     color: "from-teal-500 to-teal-600",
-    detailedDescription: "We provide specialized education programs designed specifically for clinical engineering professionals who need to understand IT networking in the context of medical device connectivity. Our curriculum covers essential networking concepts, PACS system integration, troubleshooting methodologies, and best practices for maintaining secure and reliable medical device networks. These educational programs bridge the gap between traditional clinical engineering skills and modern IT networking requirements."
+    detailedDescription: [
+      "We provide specialized education programs designed specifically for clinical engineering professionals who need to understand IT networking in the context of medical device connectivity. Our curriculum covers essential networking concepts, PACS system integration, troubleshooting methodologies, and best practices for maintaining secure and reliable medical device networks.",
+      "These educational programs bridge the gap between traditional clinical engineering skills and modern IT networking requirements."
+    ]
   },
   {
     icon: FileCheck,
     title: "Biomedical / IT Service Level Agreements",
-    description: "Drafting of SLA\'s as they relate to the identification of service and responsibilities associated with CE, IT, Operations or Facilities Management.",
+    description: "Drafting of SLA's as they relate to the identification of service and responsibilities associated with CE, IT, Operations or Facilities Management.",
     features: [
-      "Drafting of SLA\'s as they relate to the identification of service and responsibilities associated with CE, IT, Operations or Facilities Management"
+      "Drafting of SLA's as they relate to the identification of service and responsibilities associated with CE, IT, Operations or Facilities Management"
     ],
     color: "from-rose-500 to-rose-600",
-    detailedDescription: "Our service level agreement development ensures clear definition of roles, responsibilities, and performance expectations between clinical engineering, IT, operations, and facilities management teams. We create comprehensive SLAs that establish accountability frameworks, response time requirements, escalation procedures, and performance metrics specific to biomedical and IT service delivery in healthcare environments."
+    detailedDescription: [
+      "Our service level agreement development ensures clear definition of roles, responsibilities, and performance expectations between clinical engineering, IT, operations, and facilities management teams.",
+      "We create comprehensive SLAs that establish accountability frameworks, response time requirements, escalation procedures, and performance metrics specific to biomedical and IT service delivery in healthcare environments."
+    ]
   },
   {
     icon: UserCheck,
@@ -108,7 +132,10 @@ const additionalServices = [
       "Temporary Clinical Engineering Director or Managerial oversight due to leadership staff turnover"
     ],
     color: "from-amber-500 to-amber-600",
-    detailedDescription: "Our consulting services provide strategic guidance for clinical engineering departments seeking to optimize their IT infrastructure and processes. We offer interim leadership solutions during staff transitions, develop long-term strategic plans that balance cost control with performance improvement, and ensure ongoing regulatory compliance. Our consultants bring extensive experience in healthcare technology management and can quickly assess organizational needs to implement effective solutions."
+    detailedDescription: [
+      "Our consulting services provide strategic guidance for clinical engineering departments seeking to optimize their IT infrastructure and processes. We offer interim leadership solutions during staff transitions, develop long-term strategic plans that balance cost control with performance improvement, and ensure ongoing regulatory compliance.",
+      "Our consultants bring extensive experience in healthcare technology management and can quickly assess organizational needs to implement effective solutions."
+    ]
   }
 ];
 
@@ -199,11 +226,7 @@ export function Services() {
               </div>
               
               {/* Floating Security Metrics */}
-              <div className={`absolute -top-4 -right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg transition-all duration-1000 delay-500 ${
-                headerVisible 
-                  ? 'opacity-100 translate-y-0' 
-                  : 'opacity-0 translate-y-4'
-              }`}>
+              <div className="absolute -top-4 -right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg">
                 <div className="flex items-center space-x-2">
                   <Shield className="h-4 w-4" />
                   <span className="text-sm font-bold">99.9% Uptime</span>
@@ -445,9 +468,13 @@ export function Services() {
                   
                   <div>
                     <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Detailed Overview:</h4>
-                    <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
-                      {services[selectedService].detailedDescription}
-                    </p>
+                    <div className="space-y-4">
+                      {services[selectedService].detailedDescription.map((paragraph, idx) => (
+                        <p key={idx} className="text-sm sm:text-base text-gray-600 leading-relaxed">
+                          {paragraph}
+                        </p>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -508,9 +535,13 @@ export function Services() {
                   
                   <div>
                     <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Detailed Overview:</h4>
-                    <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
-                      {additionalServices[selectedAdditionalService].detailedDescription}
-                    </p>
+                    <div className="space-y-4">
+                      {additionalServices[selectedAdditionalService].detailedDescription.map((paragraph, idx) => (
+                        <p key={idx} className="text-sm sm:text-base text-gray-600 leading-relaxed">
+                          {paragraph}
+                        </p>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
