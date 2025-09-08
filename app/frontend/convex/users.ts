@@ -318,3 +318,26 @@ export const setDefaultOrganization = mutation({
     return { success: true };
   },
 });
+// Get all users (for admin panel)
+export const getAllUsers = query({
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const currentUser = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .first();
+
+    if (!currentUser || !["super_admin", "admin"].includes(currentUser.role)) {
+      throw new Error("Admin access required");
+    }
+
+    // Get all users regardless of role
+    return await ctx.db
+      .query("users")
+      .collect();
+  },
+});

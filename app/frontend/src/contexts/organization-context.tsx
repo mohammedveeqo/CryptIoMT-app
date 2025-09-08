@@ -52,6 +52,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
     isSignedIn ? {} : "skip"
   );
   
+  // More precise loading state
   const isLoading = !isLoaded || (isSignedIn && userOrganizations === undefined);
 
   // Set default organization when data loads
@@ -60,6 +61,9 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
       // Set the first active organization as default
       const activeOrg = userOrganizations.find(org => org.status === 'active');
       setCurrentOrganization(activeOrg || userOrganizations[0]);
+    } else if (userOrganizations && userOrganizations.length === 0) {
+      // Explicitly set to null when user has no organizations
+      setCurrentOrganization(null);
     }
   }, [userOrganizations, currentOrganization]);
 

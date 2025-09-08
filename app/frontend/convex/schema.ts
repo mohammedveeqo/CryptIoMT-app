@@ -105,34 +105,44 @@ export default defineSchema({
   // Medical Devices collection - Core data about each medical device
   medicalDevices: defineTable({
     organizationId: v.id("organizations"),     // Organization that owns the device
-    controlNumber: v.string(),                 // Control/asset number
-    entity: v.string(),                        // Hospital/entity name
-    name: v.string(),                          // Device name
-    manufacturer: v.string(),                  // Device manufacturer
-    model: v.string(),                         // Device model
-    serialNumber: v.string(),                  // Serial number
-    category: v.string(),                      // Device category
-    modalityType: v.optional(v.string()),      // Modality type (e.g., "MRI", "CT")
-    classification: v.string(),                // Device classification
-    equipmentCriticality: v.union(v.literal("Critical"), v.literal("High"), v.literal("Medium"), v.literal("Low")), // Criticality level
-    technician: v.optional(v.string()),        // Assigned technician name
-    location: v.optional(v.string()),          // Physical location
-    department: v.optional(v.string()),        // Department
-    acquisitionDate: v.optional(v.number()),   // When device was acquired
-    lastServiceDate: v.optional(v.number()),   // Last service date
-    nextServiceDate: v.optional(v.number()),   // Next scheduled service
-    status: v.union(v.literal("active"), v.literal("inactive"), v.literal("maintenance"), v.literal("retired")), // Device status
-    importBatch: v.string(),                   // Import batch identifier
+    name: v.string(),                          // Device name (from "Name" column)
+    entity: v.string(),                        // Hospital/entity name (from "Entity" column)
+    serialNumber: v.string(),                  // Serial number (from "Serial Number" column)
+    manufacturer: v.string(),                  // Device manufacturer (from "Manufacturer" column)
+    model: v.string(),                         // Device model (from "Model" column)
+    category: v.string(),                      // Device category (from "Category" column)
+    classification: v.string(),                // Device classification (from "Classification" column)
+    technician: v.optional(v.string()),        // Assigned technician name (from "Technician" column)
+    customerPHICategory: v.optional(v.string()), // Customer PHI category (from "Customer PHI category" column)
+    deviceOnNetwork: v.boolean(),              // Device on network status (from "Device on network?" column)
+    hasPHI: v.boolean(),                       // Has PHI status (from "Has PHI" column)
+    ipAddress: v.optional(v.string()),         // IP address (from "IP Address" column)
+    macAddress: v.optional(v.string()),        // MAC address (from "MAC Address" column)
+    osManufacturer: v.optional(v.string()),    // OS manufacturer (from "OS manufacturer" column)
+    osVersion: v.optional(v.string()),         // OS version (from "OS Version" column)
+    
+    // Keep existing fields for backward compatibility
+    controlNumber: v.optional(v.string()),     // Control/asset number (legacy)
+    modalityType: v.optional(v.string()),      // Modality type (legacy)
+    equipmentCriticality: v.optional(v.union(v.literal("Critical"), v.literal("High"), v.literal("Medium"), v.literal("Low"))), // Criticality level (legacy)
+    location: v.optional(v.string()),          // Physical location (legacy)
+    department: v.optional(v.string()),        // Department (legacy)
+    acquisitionDate: v.optional(v.number()),   // When device was acquired (legacy)
+    lastServiceDate: v.optional(v.number()),   // Last service date (legacy)
+    nextServiceDate: v.optional(v.number()),   // Next scheduled service (legacy)
+    status: v.optional(v.union(v.literal("active"), v.literal("inactive"), v.literal("maintenance"), v.literal("retired"))), // Device status (legacy)
+    importBatch: v.optional(v.string()),       // Import batch identifier
     createdAt: v.number(),                     // Timestamp of creation
     updatedAt: v.number(),                     // Timestamp of last update
-    importedBy: v.id("users"),                 // Admin who imported the device
+    importedBy: v.optional(v.id("users")),     // Admin who imported the device
   }).index("by_organization", ["organizationId"])
-    .index("by_control_number", ["controlNumber"])
     .index("by_serial_number", ["serialNumber"])
-    .index("by_equipment_criticality", ["equipmentCriticality"])
     .index("by_manufacturer_model", ["manufacturer", "model"])
     .index("by_category", ["category"])
-    .index("by_status", ["status"])
+    .index("by_device_on_network", ["deviceOnNetwork"])
+    .index("by_has_phi", ["hasPHI"])
+    .index("by_ip_address", ["ipAddress"])
+    .index("by_mac_address", ["macAddress"])
     .index("by_import_batch", ["importBatch"]),
 
   // Technical Details collection - Technical specifications including network and OS details

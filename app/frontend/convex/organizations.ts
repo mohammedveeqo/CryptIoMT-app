@@ -634,3 +634,22 @@ export const removeMember = mutation({
     return { success: true };
   },
 });
+
+export const getOrganizationOwner = query({
+  args: { organizationId: v.id("organizations") },
+  handler: async (ctx, args) => {
+    const member = await ctx.db
+      .query("organizationMembers")
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("organizationId"), args.organizationId),
+          q.eq(q.field("memberRole"), "owner")
+        )
+      )
+      .first();
+    
+    if (!member) return null;
+    
+    return await ctx.db.get(member.userId);
+  },
+});

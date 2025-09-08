@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useUser, UserButton } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
+import { useRouter } from "next/navigation";
 // Use the backend's generated API
 import { api } from "../../../convex/_generated/api";
 import {
@@ -20,6 +21,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { OrganizationSelector } from './organization-selector';
+import { useOrganization } from '../../contexts/organization-context';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -29,11 +31,71 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user } = useUser();
   const pathname = usePathname();
+  const router = useRouter();
+  const { userOrganizations, isLoading } = useOrganization();
   
   // Get user role from Convex with better type safety
   const currentUser = useQuery(api.users.getCurrentUser);
   const userRole = (currentUser && 'role' in currentUser && currentUser.role) ? currentUser.role : "customer";
 
+  // Redirect users without organizations to onboarding (except admins)
+  useEffect(() => {
+    if (!isLoading && currentUser && userOrganizations !== undefined) {
+      const isAdmin = ['super_admin', 'admin'].includes(userRole);
+      const hasOrganizations = userOrganizations && userOrganizations.length > 0;
+      
+      // Debug logging to help identify the issue
+      console.log('Dashboard redirect check:', {
+        isLoading,
+        currentUser: !!currentUser,
+        userOrganizations,
+        hasOrganizations,
+        isAdmin,
+        userRole,
+        pathname
+      });
+      
+      // Only redirect non-admin users without organizations
+      // Make sure we're not in a redirect loop and give more time for data to load
+      // Also check if we're coming from impersonation
+      const isFromImpersonation = typeof window !== 'undefined' && 
+        (window.location.search.includes('impersonate=true') || 
+         sessionStorage.getItem('impersonation'));
+      
+      // Add additional checks to prevent premature redirects
+      const shouldRedirect = !isAdmin && 
+                           !hasOrganizations && 
+                           !pathname.includes('/onboarding') && 
+                           !isFromImpersonation &&
+                           userOrganizations !== undefined && // Ensure data is actually loaded
+                           Array.isArray(userOrganizations); // Ensure it's a proper array
+      
+      if (shouldRedirect) {
+        // Add a delay to ensure organization data has fully loaded
+        const timeoutId = setTimeout(() => {
+          // Double-check organizations are still empty after delay
+          if (userOrganizations && userOrganizations.length === 0) {
+            console.log('Redirecting to onboarding after delay');
+            router.push('/onboarding');
+          }
+        }, 1500); // Increased delay to 1.5 seconds
+        
+        return () => clearTimeout(timeoutId);
+      }
+    }
+  }, [isLoading, currentUser, userOrganizations, userRole, router, pathname]);
+
+  // Show loading while checking organization membership
+  if (isLoading || !currentUser || userOrganizations === undefined) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="text-gray-600 font-medium">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: Home, roles: ["super_admin", "admin", "analyst", "customer"] },
     { name: "Equipment", href: "/dashboard/equipment", icon: Server, roles: ["super_admin", "admin", "analyst", "customer"] },
@@ -50,89 +112,16 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile sidebar */}
-      <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
-        <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-white shadow-xl">
-          <div className="flex h-16 items-center justify-between px-4">
-            <div className="flex items-center">
-              <Shield className="h-8 w-8 text-blue-600" />
-              <span className="ml-2 text-xl font-bold text-gray-900">CryptIoMT</span>
-            </div>
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <X className="h-6 w-6" />
-            </button>
-          </div>
-          <nav className="flex-1 space-y-1 px-2 py-4">
-            {filteredNavigation.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
-                    isActive
-                      ? 'bg-blue-100 text-blue-900'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
-                >
-                  <item.icon className={`mr-3 h-5 w-5 ${
-                    isActive ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500'
-                  }`} />
-                  {item.name}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-      </div>
-
-      {/* Desktop sidebar */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
-        <div className="flex flex-col flex-grow bg-white border-r border-gray-200 pt-5 pb-4 overflow-y-auto">
-          <div className="flex items-center flex-shrink-0 px-4">
-            <Shield className="h-8 w-8 text-blue-600" />
-            <span className="ml-2 text-xl font-bold text-gray-900">CryptIoMT</span>
-          </div>
-          <nav className="mt-8 flex-1 space-y-1 px-2">
-            {filteredNavigation.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
-                    isActive
-                      ? 'bg-blue-100 text-blue-900'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
-                >
-                  <item.icon className={`mr-3 h-5 w-5 ${
-                    isActive ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500'
-                  }`} />
-                  {item.name}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-      </div>
-
-      {/* Main content */}
-      <div className="lg:pl-64 flex flex-col flex-1">
+      {/* Main content - full width, no sidebar */}
+      <div className="flex flex-col flex-1">
         {/* Top navigation */}
         <div className="sticky top-0 z-10 flex-shrink-0 flex h-16 bg-white shadow">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 lg:hidden"
-          >
-            <Menu className="h-6 w-6" />
-          </button>
-          <div className="flex-1 px-4 flex justify-between items-center">
-            <div className="flex items-center space-x-4">
+          <div className="flex-1 px-6 flex justify-between items-center">
+            <div className="flex items-center space-x-6">
+              <div className="flex items-center">
+                <Shield className="h-8 w-8 text-blue-600" />
+                <span className="ml-2 text-xl font-bold text-gray-900">CryptIoMT</span>
+              </div>
               <h1 className="text-2xl font-semibold text-gray-900">
                 {filteredNavigation.find(item => item.href === pathname)?.name || 'Dashboard'}
               </h1>
@@ -152,10 +141,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
         </div>
 
-        {/* Page content */}
+        {/* Page content - with proper padding */}
         <main className="flex-1">
-          <div className="py-6">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+          <div className="py-8">
+            <div className="max-w-full mx-auto px-6 sm:px-8 lg:px-12">
               {children}
             </div>
           </div>

@@ -103,10 +103,11 @@ export default function OnboardingPage() {
     
     try {
       await handleEnsureUser();
-      router.push('/dashboard');
+      // Add a query parameter to indicate the user skipped onboarding
+      router.push('/dashboard?skipped=true');
     } catch (error) {
       console.error('Failed to create user:', error);
-      router.push('/dashboard'); // Continue anyway
+      router.push('/dashboard?skipped=true'); // Continue anyway
     }
   };
   

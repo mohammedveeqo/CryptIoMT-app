@@ -1,5 +1,6 @@
 import { OrganizationProvider } from '../../contexts/organization-context';
 import { DashboardLayout } from '../../components/dashboard/layout';
+import { ImpersonationCheck } from '@/components/ImpersonationCheck';
 
 export default function DashboardLayoutWrapper({
   children,
@@ -8,6 +9,7 @@ export default function DashboardLayoutWrapper({
 }) {
   return (
     <OrganizationProvider>
+      <ImpersonationCheck />
       <DashboardLayout>{children}</DashboardLayout>
     </OrganizationProvider>
   );

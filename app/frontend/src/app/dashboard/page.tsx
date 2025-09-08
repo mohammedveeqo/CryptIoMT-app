@@ -8,10 +8,28 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Upload, Users, Shield, Activity, Network, AlertTriangle, Download, FileSpreadsheet, User, Crown, Settings } from 'lucide-react'
+import { useOrganization } from '@/contexts/organization-context'
 
 export default function Dashboard() {
   const { user } = useUser()
   const currentUser = useQuery(api.users.getCurrentUser)
+  const { currentOrganization } = useOrganization()
+  
+  // Get device statistics using currentOrganization
+  const deviceStats = useQuery(
+    api.medicalDevices.getDeviceStats,
+    currentOrganization ? { organizationId: currentOrganization._id } : "skip"
+  );
+  
+  const devicesByCategory = useQuery(
+    api.medicalDevices.getDevicesByCategory,
+    currentOrganization ? { organizationId: currentOrganization._id } : "skip"
+  );
+  
+  const recentActivities = useQuery(
+    api.medicalDevices.getRecentDeviceActivities,
+    currentOrganization ? { organizationId: currentOrganization._id } : "skip"
+  );
   
   const userRole = (currentUser && 'role' in currentUser && currentUser.role) ? currentUser.role : "customer"
   const isAdmin = ["super_admin", "admin", "analyst"].includes(userRole)
@@ -67,74 +85,58 @@ export default function Dashboard() {
         </Card>
       )}
 
-      {/* Customer Notice */}
-      {!isAdmin && (
-        <Card className="bg-blue-50/80 backdrop-blur-sm border-blue-200">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
-                <Shield className="h-6 w-6 text-white" />
-              </div>
-              <div className="flex-1">
-                <p className="text-lg font-semibold text-blue-900">
-                  Welcome to Your Security Dashboard
-                </p>
-                <p className="text-sm text-blue-700">
-                  Your dashboard data is managed and updated weekly by our security team. 
-                  This is a read-only view of your cybersecurity posture.
-                </p>
-                <p className="text-xs text-blue-600 mt-1">
-                  Last update: January 15, 2024 | Next update: January 22, 2024
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
+   
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         <Card className="bg-white/60 backdrop-blur-sm border-blue-200 hover:shadow-lg transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Devices</CardTitle>
-            <Shield className="h-4 w-4 text-blue-600" />
+            <Shield className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-700">1,247</div>
-            <p className="text-xs text-gray-600">+12% from last week</p>
+            <div className="text-2xl font-bold">{deviceStats?.totalDevices || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              {deviceStats?.totalDevices ? '+12% from last week' : 'No devices found'}
+            </p>
           </CardContent>
         </Card>
 
         <Card className="bg-white/60 backdrop-blur-sm border-green-200 hover:shadow-lg transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Online Devices</CardTitle>
-            <Activity className="h-4 w-4 text-green-600" />
+            <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-700">1,189</div>
-            <p className="text-xs text-gray-600">95.3% uptime</p>
+            <div className="text-2xl font-bold text-green-600">{deviceStats?.onlineDevices || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              {deviceStats?.networkStats.percentage || 0}% connected
+            </p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white/60 backdrop-blur-sm border-red-200 hover:shadow-lg transition-all">
+        <Card className="bg-white/60 backdrop-blur-sm border-orange-200 hover:shadow-lg transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Critical Alerts</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-red-600" />
+            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-700">23</div>
-            <p className="text-xs text-gray-600">Requires attention</p>
+            <div className="text-2xl font-bold text-orange-600">{deviceStats?.criticalDevices || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              Devices requiring attention
+            </p>
           </CardContent>
         </Card>
 
         <Card className="bg-white/60 backdrop-blur-sm border-purple-200 hover:shadow-lg transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Risk Score</CardTitle>
-            <Network className="h-4 w-4 text-purple-600" />
+            <CardTitle className="text-sm font-medium">PHI Devices</CardTitle>
+            <Shield className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-700">7.2/10</div>
-            <p className="text-xs text-gray-600">Medium risk level</p>
+            <div className="text-2xl font-bold text-purple-600">{deviceStats?.devicesWithPHI || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              {deviceStats?.phiStats.percentage || 0}% contain PHI
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -176,18 +178,20 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                    <span className="text-sm">Device health check completed</span>
-                    <Badge variant="secondary">2 min ago</Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                    <span className="text-sm">Security scan passed</span>
-                    <Badge variant="secondary">15 min ago</Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
-                    <span className="text-sm">Firmware update available</span>
-                    <Badge variant="secondary">1 hour ago</Badge>
-                  </div>
+                  {recentActivities && recentActivities.length > 0 ? (
+                    recentActivities.slice(0, 3).map((activity, index) => (
+                      <div key={activity.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                        <span className="text-sm">{activity.message}</span>
+                        <Badge variant="secondary">
+                          {new Date(activity.timestamp).toLocaleTimeString()}
+                        </Badge>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <span className="text-sm text-gray-500">No recent activities</span>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -284,8 +288,25 @@ export default function Dashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-64 flex items-center justify-center text-gray-500">
-                📋 Device inventory table will appear here
+              <div className="space-y-4">
+                {devicesByCategory && Object.values(devicesByCategory).length > 0 ? (
+                  Object.values(devicesByCategory)
+                    .sort((a, b) => b.count - a.count)
+                    .slice(0, 5)
+                    .map((category) => (
+                      <div key={category.name} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                          <span className="text-sm font-medium">{category.name}</span>
+                          <p className="text-xs text-gray-500">{category.count} devices</p>
+                        </div>
+                        <Badge variant="outline">{category.count}</Badge>
+                      </div>
+                    ))
+                ) : (
+                  <div className="h-64 flex items-center justify-center text-gray-500">
+                    📋 Device inventory table will appear here
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
