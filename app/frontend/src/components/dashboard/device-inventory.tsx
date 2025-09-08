@@ -44,7 +44,7 @@ const columnHelper = createColumnHelper<Device>()
 
 // Memoized virtual row component
 const VirtualRow = memo(({ row, cells }: { row: any; cells: any[] }) => (
-  <div className="flex w-full border-b hover:bg-gray-50/75 transition-colors">
+  <div className="flex w-full border-b hover:bg-gray-50 hover:bg-opacity-75 transition-colors">
     {cells.map(cell => (
       <div
         key={cell.id}
@@ -189,15 +189,50 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
     })
   }, [allDevices, filters])
 
-  // Cached filter options using Set for performance
+  // Cascading filter options based on current selections
   const filterOptions = useMemo(() => {
     if (!allDevices) return { categories: [], manufacturers: [], classifications: [] }
+    
+    // Start with all devices, then progressively filter based on current selections
+    let availableDevices = allDevices
+    
+    // Apply search filter first
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase()
+      availableDevices = availableDevices.filter(device => 
+        device.name.toLowerCase().includes(searchLower) ||
+        device.entity.toLowerCase().includes(searchLower) ||
+        device.manufacturer.toLowerCase().includes(searchLower) ||
+        device.serialNumber.toLowerCase().includes(searchLower)
+      )
+    }
+    
+    // Apply other filters to determine available options
+    if (filters.category !== 'all') {
+      availableDevices = availableDevices.filter(device => device.category === filters.category)
+    }
+    if (filters.manufacturer !== 'all') {
+      availableDevices = availableDevices.filter(device => device.manufacturer === filters.manufacturer)
+    }
+    if (filters.classification !== 'all') {
+      availableDevices = availableDevices.filter(device => device.classification === filters.classification)
+    }
+    if (filters.network === 'connected') {
+      availableDevices = availableDevices.filter(device => device.deviceOnNetwork)
+    } else if (filters.network === 'offline') {
+      availableDevices = availableDevices.filter(device => !device.deviceOnNetwork)
+    }
+    if (filters.phi === 'yes') {
+      availableDevices = availableDevices.filter(device => device.hasPHI)
+    } else if (filters.phi === 'no') {
+      availableDevices = availableDevices.filter(device => !device.hasPHI)
+    }
     
     const categorySet = new Set<string>()
     const manufacturerSet = new Set<string>()
     const classificationSet = new Set<string>()
     
-    allDevices.forEach(device => {
+    availableDevices.forEach(device => {
       categorySet.add(device.category)
       manufacturerSet.add(device.manufacturer)
       classificationSet.add(device.classification)
@@ -208,7 +243,7 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
       manufacturers: Array.from(manufacturerSet).sort(),
       classifications: Array.from(classificationSet).sort()
     }
-  }, [allDevices])
+  }, [allDevices, filters])
 
   // Table instance - call useReactTable directly, not inside useMemo
   const table = useReactTable({
@@ -308,10 +343,10 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
               onValueChange={(value) => handleFilterChange('category', value)}
             >
               <SelectTrigger className="w-40 transition-all duration-200 hover:border-blue-300 hover:bg-blue-50/50">
-                <SelectValue placeholder="Category" />
+                <SelectValue placeholder="Device Type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
+                <SelectItem value="all">All Device Types</SelectItem>
                 {filterOptions.categories.map(category => (
                   <SelectItem 
                     key={category} 
@@ -329,10 +364,10 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
               onValueChange={(value) => handleFilterChange('manufacturer', value)}
             >
               <SelectTrigger className="w-40 transition-all duration-200 hover:border-blue-300 hover:bg-blue-50/50">
-                <SelectValue placeholder="Manufacturer" />
+                <SelectValue placeholder="Brand" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Manufacturers</SelectItem>
+                <SelectItem value="all">All Brands</SelectItem>
                 {filterOptions.manufacturers.map(manufacturer => (
                   <SelectItem 
                     key={manufacturer} 
@@ -350,10 +385,10 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
               onValueChange={(value) => handleFilterChange('classification', value)}
             >
               <SelectTrigger className="w-40 transition-all duration-200 hover:border-blue-300 hover:bg-blue-50/50">
-                <SelectValue placeholder="Classification" />
+                <SelectValue placeholder="Risk Level" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Classifications</SelectItem>
+                <SelectItem value="all">All Risk Levels</SelectItem>
                 {filterOptions.classifications.map(classification => (
                   <SelectItem 
                     key={classification} 
@@ -371,10 +406,10 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
               onValueChange={(value) => handleFilterChange('network', value)}
             >
               <SelectTrigger className="w-32 transition-all duration-200 hover:border-blue-300 hover:bg-blue-50/50">
-                <SelectValue placeholder="Network" />
+                <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all" className="hover:bg-blue-50 cursor-pointer transition-colors duration-150">All</SelectItem>
+                <SelectItem value="all" className="hover:bg-blue-50 cursor-pointer transition-colors duration-150">Any Status</SelectItem>
                 <SelectItem value="connected" className="hover:bg-blue-50 cursor-pointer transition-colors duration-150">Connected</SelectItem>
                 <SelectItem value="offline" className="hover:bg-blue-50 cursor-pointer transition-colors duration-150">Offline</SelectItem>
               </SelectContent>
@@ -384,13 +419,13 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
               value={filters.phi}
               onValueChange={(value) => handleFilterChange('phi', value)}
             >
-              <SelectTrigger className="w-24 transition-all duration-200 hover:border-blue-300 hover:bg-blue-50/50">
-                <SelectValue placeholder="PHI" />
+              <SelectTrigger className="w-32 transition-all duration-200 hover:border-blue-300 hover:bg-blue-50/50">
+                <SelectValue placeholder="PHI Data" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all" className="hover:bg-blue-50 cursor-pointer transition-colors duration-150">All</SelectItem>
-                <SelectItem value="yes" className="hover:bg-blue-50 cursor-pointer transition-colors duration-150">Yes</SelectItem>
-                <SelectItem value="no" className="hover:bg-blue-50 cursor-pointer transition-colors duration-150">No</SelectItem>
+                <SelectItem value="all" className="hover:bg-blue-50 cursor-pointer transition-colors duration-150">Any PHI</SelectItem>
+                <SelectItem value="yes" className="hover:bg-blue-50 cursor-pointer transition-colors duration-150">Has PHI</SelectItem>
+                <SelectItem value="no" className="hover:bg-blue-50 cursor-pointer transition-colors duration-150">No PHI</SelectItem>
               </SelectContent>
             </Select>
 
@@ -406,68 +441,94 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
           </div>
 
           {/* Virtualized table */}
-          <div className="flex-1 min-h-0">
-            <div className="border rounded-lg overflow-hidden bg-white">
-              {/* Sticky header */}
-              <div className="bg-gray-50 border-b sticky top-0 z-10">
-                <div className="flex w-full">
-                  {table.getHeaderGroups().map(headerGroup => (
-                    headerGroup.headers.map(header => (
-                      <div
-                        key={header.id}
-                        className="p-3 text-left text-sm font-medium text-gray-700 border-r last:border-r-0"
-                        style={{ width: header.getSize() }}
-                      >
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                      </div>
-                    ))
-                  ))}
-                </div>
-              </div>
-
-              {/* Virtualized rows */}
+{/* Virtualized table */}
+<div className="flex-1 min-h-0">
+  {filteredData.length === 0 ? (
+    <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+      <Filter className="h-12 w-12 mb-4 text-gray-300" />
+      <h3 className="text-lg font-medium mb-2">No devices found</h3>
+      <p className="text-sm text-center max-w-md">
+        {filters.search || filters.category !== 'all' || filters.manufacturer !== 'all' || 
+         filters.classification !== 'all' || filters.network !== 'all' || filters.phi !== 'all'
+          ? 'Try adjusting your filters or search terms to find more devices.'
+          : 'No devices are available in your organization.'}
+      </p>
+      {(filters.search || filters.category !== 'all' || filters.manufacturer !== 'all' || 
+        filters.classification !== 'all' || filters.network !== 'all' || filters.phi !== 'all') && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={clearFilters}
+          className="mt-4 flex items-center gap-2"
+        >
+          <X className="h-4 w-4" />
+          Clear All Filters
+        </Button>
+      )}
+    </div>
+  ) : (
+    <div className="border rounded-lg overflow-hidden bg-white">
+      {/* Sticky header */}
+      <div className="bg-gray-50 border-b sticky top-0 z-10">
+        <div className="flex w-full">
+          {table.getHeaderGroups().map(headerGroup => (
+            headerGroup.headers.map(header => (
               <div
-                ref={tableContainerRef}
-                className="overflow-auto"
-                style={{ height: '400px' }}
+                key={header.id}
+                className="p-3 text-left text-sm font-medium text-gray-700 border-r last:border-r-0"
+                style={{ width: header.getSize() }}
               >
-                <div
-                  style={{
-                    height: `${rowVirtualizer.getTotalSize()}px`,
-                    width: '100%',
-                    position: 'relative',
-                  }}
-                >
-                  {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                    const row = rows[virtualRow.index]
-                    return (
-                      <div
-                        key={row.id}
-                        style={{
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          width: '100%',
-                          height: `${virtualRow.size}px`,
-                          transform: `translateY(${virtualRow.start}px)`,
-                        }}
-                      >
-                        <VirtualRow
-                          row={row}
-                          cells={row.getVisibleCells()}
-                        />
-                      </div>
-                    )
-                  })}
-                </div>
+                {header.isPlaceholder
+                  ? null
+                  : flexRender(
+                      header.column.columnDef.header,
+                      header.getContext()
+                    )}
               </div>
-            </div>
-          </div>
+            ))
+          ))}
+        </div>
+      </div>
+
+      {/* Virtualized rows */}
+      <div
+        ref={tableContainerRef}
+        className="overflow-auto"
+        style={{ height: '400px' }}
+      >
+        <div
+          style={{
+            height: `${rowVirtualizer.getTotalSize()}px`,
+            width: '100%',
+            position: 'relative',
+          }}
+        >
+          {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+            const row = rows[virtualRow.index]
+            return (
+              <div
+                key={row.id}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: `${virtualRow.size}px`,
+                  transform: `translateY(${virtualRow.start}px)`,
+                }}
+              >
+                <VirtualRow
+                  row={row}
+                  cells={row.getVisibleCells()}
+                />
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )}
+</div>
         </div>
       </CardContent>
     </Card>
