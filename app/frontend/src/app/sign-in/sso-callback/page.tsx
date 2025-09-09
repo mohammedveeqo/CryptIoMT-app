@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSignIn, useClerk } from '@clerk/nextjs';
 
-export default function SSOCallbackPage() {
+function SSOCallbackContent() {
   const { signIn, setActive } = useSignIn();
   const { signOut } = useClerk();
   const router = useRouter();
@@ -81,5 +81,20 @@ export default function SSOCallbackPage() {
         <p className="text-gray-600 font-medium">Processing impersonation...</p>
       </div>
     </div>
+  );
+}
+
+export default function SSOCallbackPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="text-gray-600 font-medium">Loading...</p>
+        </div>
+      </div>
+    }>
+      <SSOCallbackContent />
+    </Suspense>
   );
 }
