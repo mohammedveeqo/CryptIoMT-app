@@ -82,6 +82,7 @@ export default function LoginPage() {
               <div className="flex justify-center">
                 <SignIn 
                   forceRedirectUrl="/onboarding"
+                  signUpUrl="/login"  // Allow sign-up in the same component
                   appearance={{
                     elements: {
                       rootBox: "w-full !mx-auto !flex !justify-center",
