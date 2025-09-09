@@ -2,6 +2,7 @@
 
 import { Mail, Phone } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
+import Link from "next/link";
 
 const scrollToSection = (sectionId: string) => {
   const element = document.getElementById(sectionId);
@@ -116,18 +117,18 @@ export function Footer() {
               © 2025 CryptIoMT. All rights reserved.
             </p>
             <div className="flex space-x-6 mt-4 md:mt-0">
-              <button 
-                onClick={() => scrollToSection("home")}
+              <Link 
+                href="/privacy"
                 className="text-sm text-gray-600 hover:text-blue-600 transition-colors"
               >
                 Privacy Policy
-              </button>
-              <button 
-                onClick={() => scrollToSection("home")}
+              </Link>
+              <Link 
+                href="/terms"
                 className="text-sm text-gray-600 hover:text-blue-600 transition-colors"
               >
                 Terms of Service
-              </button>
+              </Link>
             </div>
           </div>
         </div>
