@@ -8,7 +8,11 @@ const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)',
   '/sign-up(.*)',
   '/api(.*)',
-  '/sign-in/sso-callback'
+  '/sign-in/sso-callback' // Keep this for normal OAuth
+]);
+
+const isImpersonationRoute = createRouteMatcher([
+  '/admin/impersonate-callback'
 ]);
 
 export default clerkMiddleware(async (auth, req: NextRequest) => {
@@ -16,28 +20,30 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
   const url = new URL(req.url);
   const path = url.pathname;
   
-  // Check for impersonation mode
-  const isImpersonating = url.searchParams.has('impersonate');
-  const impersonationCookie = req.cookies.get('impersonation_state');
-  
-  // Allow impersonation access
-  if (isImpersonating || impersonationCookie) {
-    return NextResponse.next();
+  // Handle impersonation routes separately
+  if (isImpersonationRoute(req)) {
+    const isImpersonating = url.searchParams.has('ticket');
+    const impersonationCookie = req.cookies.get('impersonation_state');
+    
+    if (isImpersonating || impersonationCookie) {
+      return NextResponse.next();
+    }
+    // Redirect to admin if no impersonation context
+    return NextResponse.redirect(new URL('/admin', req.url));
   }
   
-  // Allow public routes
+  // Allow public routes (normal auth flow)
   if (isPublicRoute(req)) {
     return NextResponse.next();
   }
   
-  // Redirect unauthenticated users to login
+  // Normal authentication logic
   if (!userId) {
     const signInUrl = new URL('/login', req.url);
     signInUrl.searchParams.set('redirect_url', path);
     return NextResponse.redirect(signInUrl);
   }
   
-  // Redirect authenticated users away from login to dashboard
   if (userId && path === '/login') {
     return NextResponse.redirect(new URL('/dashboard', req.url));
   }

@@ -38,9 +38,9 @@ export async function POST(request: NextRequest) {
         expiresInSeconds: 3600, // 1 hour
       });
 
-      // Construct the impersonation URL - remove trailing slash from baseUrl
+      // Construct the impersonation URL - use dedicated callback
       const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3002').replace(/\/$/, '');
-      const impersonationUrl = `${baseUrl}/sign-in/sso-callback?ticket=${signInToken.token}`;
+      const impersonationUrl = `${baseUrl}/admin/impersonate-callback?ticket=${signInToken.token}`;
 
       // Set up the response
       const response = NextResponse.json({

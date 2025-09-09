@@ -30,7 +30,6 @@ export default function RootLayout({
       <body className="bg-gray-950 text-gray-100 antialiased">
         <ClerkProvider>
           <ConvexClientProvider>
-            <ImpersonationBanner />
             {children}
           </ConvexClientProvider>
         </ClerkProvider>
