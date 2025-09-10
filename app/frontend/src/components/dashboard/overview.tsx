@@ -30,6 +30,8 @@ import {
   Cell,
   ResponsiveContainer
 } from "recharts";
+import { DeviceDistribution } from './charts/device-distribution';
+import { CustomizableDashboard } from './customizable-dashboard';
 
 // Define proper types for the data
 interface TechnicianData {
@@ -110,6 +112,33 @@ export function DashboardOverview() {
     return osDistribution?.filter((os: any) => os.type === 'manufacturer').slice(0, 8).map((os: any) => ({
       name: os.name,
       count: os.count
+    })) || [];
+  }, [osDistribution]);
+
+  // Add the missing data transformations with correct structure
+  const hospitalChartData = useMemo(() => {
+    return equipmentCriticality?.map((hospital: any, index: number) => ({
+      name: hospital.name,
+      count: (hospital.Critical || 0) + (hospital.High || 0) + (hospital.Medium || 0) + (hospital.Low || 0) + (hospital['Network Only'] || 0),
+      color: COLORS[index % COLORS.length]
+    })) || [];
+  }, [equipmentCriticality]);
+
+  const deviceTypesData = useMemo(() => {
+    // Mock data for device types with correct structure
+    return [
+      { type: 'Medical Devices', count: analytics?.totalDevices ? Math.floor(analytics.totalDevices * 0.4) : 0, risk: 'high' as const },
+      { type: 'Network Equipment', count: analytics?.totalDevices ? Math.floor(analytics.totalDevices * 0.3) : 0, risk: 'medium' as const },
+      { type: 'Workstations', count: analytics?.totalDevices ? Math.floor(analytics.totalDevices * 0.2) : 0, risk: 'low' as const },
+      { type: 'Mobile Devices', count: analytics?.totalDevices ? Math.floor(analytics.totalDevices * 0.1) : 0, risk: 'low' as const }
+    ];
+  }, [analytics?.totalDevices]);
+
+  const osVersionsData = useMemo(() => {
+    return osDistribution?.filter((os: any) => os.type === 'version').slice(0, 10).map((os: any) => ({
+      version: os.name,
+      count: os.count,
+      supported: true // You can add logic to determine if the OS version is supported
     })) || [];
   }, [osDistribution]);
 
@@ -199,26 +228,29 @@ export function DashboardOverview() {
           </p>
         </div>
       </div>
-  
-      {/* Stats Grid - Mobile Responsive */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {visibleStats.map((stat, index) => (
           <StatsCard key={index} stat={stat} />
         ))}
       </div>
-  
-      {/* Charts Grid - Mobile Responsive */}
+
+      {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        <div className="order-1">
-          <TechnicianPerformanceChart data={technicianChartData} />
-        </div>
-        <div className="order-2">
-          <OSDistributionChart data={osChartData} colors={COLORS} />
-        </div>
+        <TechnicianPerformanceChart data={technicianChartData} />
+        <OSDistributionChart data={osChartData} colors={COLORS} />
       </div>
-  
+
+      {/* Full Width Charts */}
       <div className="grid grid-cols-1 gap-4 sm:gap-6">
         <CriticalityChart data={criticalityChartData} />
+        {/* Update the DeviceDistribution usage */}
+        <DeviceDistribution 
+          hospitalData={hospitalChartData}
+          deviceTypes={deviceTypesData}
+          osVersions={osVersionsData}
+        />
       </div>
     </div>
   );

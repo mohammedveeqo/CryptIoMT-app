@@ -1,9 +1,11 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, useUser } from "@clerk/nextjs";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
+import { useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 
 // Handle missing environment variable gracefully
 const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
@@ -17,10 +19,38 @@ if (!convexUrl) {
 
 const convex = new ConvexReactClient(convexUrl);
 
+function UserSyncWrapper({ children }: { children: ReactNode }) {
+  const { user, isSignedIn } = useUser();
+  const createOrUpdateUser = useMutation(api.users.createOrUpdateUser);
+
+  useEffect(() => {
+    const syncUser = async () => {
+      if (isSignedIn && user) {
+        try {
+          await createOrUpdateUser({
+            clerkUserId: user.id,
+            email: user.emailAddresses[0]?.emailAddress || '',
+            name: user.fullName || user.firstName || 'User'
+          });
+          console.log('User automatically synced to Convex:', user.id);
+        } catch (error) {
+          console.error('Failed to sync user to Convex:', error);
+        }
+      }
+    };
+
+    syncUser();
+  }, [isSignedIn, user, createOrUpdateUser]);
+
+  return <>{children}</>;
+}
+
 export function ConvexClientProvider({ children }: { children: ReactNode }) {
   return (
     <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
-      {children}
+      <UserSyncWrapper>
+        {children}
+      </UserSyncWrapper>
     </ConvexProviderWithClerk>
   );
 }
