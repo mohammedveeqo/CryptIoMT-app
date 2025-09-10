@@ -75,7 +75,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <div className="flex flex-col space-y-4 py-4 sm:hidden">
               {/* Top row: Logo + User */}
               <div className="flex justify-between items-center">
-                <div className="flex items-center group">
+                <div className="flex items-center group flex-shrink-0">
                   <div className="relative">
                     <Shield className="h-8 w-8 text-blue-600 group-hover:text-blue-700 transition-colors duration-200" />
                     <div className="absolute -inset-1 bg-blue-600/20 rounded-full blur opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
@@ -85,9 +85,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   </span>
                 </div>
                 
-                <div className="flex items-center space-x-3">
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900 truncate max-w-24">{user?.fullName}</p>
+                <div className="flex items-center space-x-3 flex-shrink-0">
+                  <div className="text-right min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate max-w-20">{user?.fullName}</p>
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 capitalize">
                       {userRole.replace('_', ' ')}
                     </span>
@@ -104,16 +104,18 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               </div>
               
               {/* Second row: Page title */}
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900">
+              <div className="min-w-0">
+                <h1 className="text-xl font-semibold text-gray-900 truncate">
                   {filteredNavigation.find(item => item.href === pathname)?.name || 'Dashboard'}
                 </h1>
-                <p className="text-sm text-gray-500 mt-0.5">Medical Device Security Management</p>
+                <p className="text-sm text-gray-500 mt-0.5 truncate">Medical Device Security Management</p>
               </div>
               
               {/* Third row: Organization selector */}
-              <div className="w-full">
-                <OrganizationSelector />
+              <div className="w-full min-w-0">
+                <div className="max-w-full">
+                  <OrganizationSelector />
+                </div>
               </div>
             </div>
           

@@ -214,15 +214,37 @@ export const getTechnicianPerformance = query({
         };
       }
       acc[technician].totalDevices++;
-      // Mock completion rate based on device data completeness
-      const completeness = [device.name, device.manufacturer, device.model, device.category, device.osManufacturer].filter(Boolean).length;
-      acc[technician].completedAssessments += completeness >= 4 ? 1 : 0;
+      
+      // More comprehensive scoring system
+      const requiredFields = [
+        device.name,
+        device.manufacturer, 
+        device.model,
+        device.category,
+        device.osManufacturer,
+        device.serialNumber,
+        device.entity,
+        device.customerPHICategory,
+        device.hasPHI,
+        device.deviceOnNetwork
+      ];
+      
+      const completedFields = requiredFields.filter(field => 
+        field !== null && field !== undefined && field !== ""
+      ).length;
+      
+      // Score based on percentage of completed fields (0-100)
+      const completionScore = Math.round((completedFields / requiredFields.length) * 100);
+      acc[technician].completedAssessments += completionScore;
+      
       return acc;
     }, {} as Record<string, any>);
 
     // Calculate average scores
     Object.values(technicianStats).forEach((tech: any) => {
-      tech.avgScore = tech.totalDevices > 0 ? Math.round((tech.completedAssessments / tech.totalDevices) * 100) : 0;
+      tech.avgScore = tech.totalDevices > 0 
+        ? Math.round(tech.completedAssessments / tech.totalDevices) 
+        : 0;
     });
 
     return Object.values(technicianStats).sort((a: any, b: any) => b.avgScore - a.avgScore);
@@ -254,16 +276,25 @@ export const getEquipmentCriticalityByHospital = query({
       
       acc[hospital].total++;
       
-      // Determine criticality based on PHI category and device characteristics
+      // Improved criticality logic with fallbacks
       const phiCategory = device.customerPHICategory?.toLowerCase() || "";
-      const hasPHI = device.hasPHI;
-      const isNetworked = device.deviceOnNetwork;
+      const hasPHI = device.hasPHI || false;
+      const isNetworked = device.deviceOnNetwork || false;
+      const category = device.category?.toLowerCase() || "";
       
-      if (phiCategory.includes("critical") || (hasPHI && isNetworked)) {
+      // More robust classification
+      if (phiCategory.includes("critical") || 
+          category.includes("life support") || 
+          category.includes("ventilator") ||
+          category.includes("defibrillator")) {
         acc[hospital].critical++;
-      } else if (phiCategory.includes("high") || hasPHI) {
+      } else if (phiCategory.includes("high") || 
+                 hasPHI || 
+                 category.includes("monitor") ||
+                 category.includes("imaging")) {
         acc[hospital].high++;
-      } else if (phiCategory.includes("medium")) {
+      } else if (phiCategory.includes("medium") ||
+                 category.includes("diagnostic")) {
         acc[hospital].medium++;
       } else if (isNetworked && !hasPHI) {
         acc[hospital].networkOnly++;

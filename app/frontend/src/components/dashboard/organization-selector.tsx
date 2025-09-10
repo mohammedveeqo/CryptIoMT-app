@@ -302,21 +302,23 @@ export function OrganizationSelector() {
   }
 
   return (
-    <div className="flex items-center space-x-2">
+    <div className="flex items-center space-x-2 w-full">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" className="flex items-center space-x-2 border-gray-300 hover:bg-gray-50">
-            <Building2 className="h-4 w-4 text-blue-600" />
-            <span className="text-gray-900 font-medium">
-              {currentOrganization?.name || 'Select Organization'}
-            </span>
-            <Badge variant="secondary" className="ml-2 text-xs">
-              {currentOrganization?.type || 'None'}
-            </Badge>
-            <ChevronDown className="h-4 w-4 text-gray-500" />
+          <Button variant="outline" className="flex items-center space-x-2 border-gray-300 hover:bg-gray-50 w-full justify-between min-w-0">
+            <div className="flex items-center space-x-2 min-w-0 flex-1">
+              <Building2 className="h-4 w-4 text-blue-600 flex-shrink-0" />
+              <span className="text-gray-900 font-medium truncate">
+                {currentOrganization?.name || 'Select Organization'}
+              </span>
+              <Badge variant="secondary" className="text-xs flex-shrink-0 hidden sm:inline-flex">
+                {currentOrganization?.type || 'None'}
+              </Badge>
+            </div>
+            <ChevronDown className="h-4 w-4 text-gray-500 flex-shrink-0" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-80">
+        <DropdownMenuContent className="w-80 max-w-[calc(100vw-2rem)]">
           <DropdownMenuLabel className="text-gray-900 font-semibold">
             Organizations
           </DropdownMenuLabel>

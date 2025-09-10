@@ -62,41 +62,40 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'
 
 export function DashboardOverview() {
   const { currentOrganization } = useOrganization();
-  const customers = useCustomersForAdmin(true);
 
-  const dashboardAnalytics = useQuery(
+  // Separate queries for each data type
+  const analytics = useQuery(
     api.medicalDevices.getDashboardAnalytics,
     currentOrganization ? { organizationId: currentOrganization._id } : "skip"
   );
-
+  
   const technicianPerformance = useQuery(
     api.medicalDevices.getTechnicianPerformance,
     currentOrganization ? { organizationId: currentOrganization._id } : "skip"
   );
-
+  
   const equipmentCriticality = useQuery(
     api.medicalDevices.getEquipmentCriticalityByHospital,
     currentOrganization ? { organizationId: currentOrganization._id } : "skip"
   );
-
+  
   const osDistribution = useQuery(
     api.medicalDevices.getOperatingSystemDistribution,
     currentOrganization ? { organizationId: currentOrganization._id } : "skip"
   );
 
-  // Fix: Only show loading when organization exists but data is still loading
-  const isLoading = currentOrganization && (dashboardAnalytics === undefined || technicianPerformance === undefined || equipmentCriticality === undefined || osDistribution === undefined);
+  const isLoading = currentOrganization && (analytics === undefined || technicianPerformance === undefined || equipmentCriticality === undefined || osDistribution === undefined);
 
-  // Memoized chart data with proper typing
+  // Memoized chart data
   const technicianChartData = useMemo(() => {
-    return (technicianPerformance as TechnicianData[] | undefined)?.slice(0, 5).map((tech: TechnicianData) => ({
+    return technicianPerformance?.slice(0, 5).map((tech: any) => ({
       name: tech.name,
       score: tech.avgScore
     })) || [];
   }, [technicianPerformance]);
 
   const criticalityChartData = useMemo(() => {
-    return (equipmentCriticality as HospitalData[] | undefined)?.slice(0, 5).map((hospital: HospitalData) => ({
+    return equipmentCriticality?.slice(0, 5).map((hospital: any) => ({
       name: hospital.name,
       Critical: hospital.critical,
       High: hospital.high,
@@ -108,17 +107,16 @@ export function DashboardOverview() {
   }, [equipmentCriticality]);
 
   const osChartData = useMemo(() => {
-    return (osDistribution as OSData[] | undefined)?.filter((os: OSData) => os.type === 'manufacturer').slice(0, 8).map((os: OSData) => ({
+    return osDistribution?.filter((os: any) => os.type === 'manufacturer').slice(0, 8).map((os: any) => ({
       name: os.name,
       count: os.count
     })) || [];
   }, [osDistribution]);
 
-  // Simplified stats without previousPeriod comparison
   const stats = useMemo(() => [
     {
       name: "Total Devices",
-      value: dashboardAnalytics?.totalDevices || 0,
+      value: analytics?.totalDevices || 0,
       icon: Server,
       change: "Real-time",
       changeType: "neutral" as const,
@@ -126,7 +124,7 @@ export function DashboardOverview() {
     },
     {
       name: "Critical Alerts",
-      value: dashboardAnalytics?.criticalAlerts || 0,
+      value: analytics?.criticalAlerts || 0,
       icon: AlertTriangle,
       change: "Live data",
       changeType: "neutral" as const,
@@ -134,7 +132,7 @@ export function DashboardOverview() {
     },
     {
       name: "PHI Devices",
-      value: dashboardAnalytics?.phiDevices || 0,
+      value: analytics?.phiDevices || 0,
       icon: Shield,
       change: "Current",
       changeType: "neutral" as const,
@@ -142,13 +140,13 @@ export function DashboardOverview() {
     },
     {
       name: "Data Collection Score",
-      value: `${dashboardAnalytics?.dataCollectionScore || 0}%`,
+      value: `${analytics?.dataCollectionScore || 0}%`,
       icon: BarChart3,
       change: "Active",
       changeType: "neutral" as const,
       visible: true,
     },
-  ], [dashboardAnalytics]);
+  ], [analytics]);
 
   const visibleStats = useMemo(() => stats.filter(stat => stat.visible), [stats]);
 
