@@ -380,22 +380,389 @@ export const getDashboardAnalytics = query({
       .collect();
 
     const totalDevices = devices.length;
+    const uniqueHospitals = new Set(devices.map(d => d.entity).filter(Boolean)).size;
+    const uniqueTechnicians = new Set(devices.map(d => d.technician).filter(Boolean)).size;
+    
+    // Network connectivity analysis
+    const networkConnectedDevices = devices.filter(d => d.deviceOnNetwork).length;
+    const networkConnectedPercentage = totalDevices > 0 ? Math.round((networkConnectedDevices / totalDevices) * 100) : 0;
+    
+    // PHI Risk Distribution
+    const phiDevices = devices.filter(d => d.hasPHI);
+    const criticalPHI = devices.filter(d => 
+      d.hasPHI && (d.customerPHICategory?.toLowerCase().includes("critical") || 
+      (d.deviceOnNetwork && d.customerPHICategory?.toLowerCase().includes("high")))
+    ).length;
+    const highPHI = devices.filter(d => 
+      d.hasPHI && d.customerPHICategory?.toLowerCase().includes("high") && 
+      !d.customerPHICategory?.toLowerCase().includes("critical")
+    ).length;
+    const mediumPHI = devices.filter(d => 
+      d.hasPHI && d.customerPHICategory?.toLowerCase().includes("medium")
+    ).length;
+    const lowPHI = phiDevices.length - criticalPHI - highPHI - mediumPHI;
+    
+    // Legacy OS Detection
+    const legacyOSDevices = devices.filter(d => {
+      const os = d.osVersion?.toLowerCase() || "";
+      return os.includes("xp") || os.includes("2000") || os.includes("vista") || 
+             os.includes("windows 7") || os.includes("windows 8");
+    }).length;
+    
+    // Critical alerts calculation
     const criticalAlerts = devices.filter(d => 
       d.customerPHICategory?.toLowerCase().includes("critical") || 
-      (d.hasPHI && d.deviceOnNetwork)
+      (d.hasPHI && d.deviceOnNetwork) ||
+      (d.osVersion?.toLowerCase().includes("xp") || d.osVersion?.toLowerCase().includes("2000"))
     ).length;
-    const phiDevices = devices.filter(d => d.hasPHI).length;
-    const onlineDevices = devices.filter(d => d.deviceOnNetwork).length;
+    
+    // Average technician score from performance data
+    const technicianScores = devices.reduce((acc, device) => {
+      if (device.technician) {
+        if (!acc[device.technician]) {
+          acc[device.technician] = { total: 0, count: 0 };
+        }
+        // Calculate score based on data completeness
+        const completeness = [
+          device.name, device.manufacturer, device.model, device.category,
+          device.serialNumber, device.ipAddress, device.osVersion
+        ].filter(Boolean).length / 7 * 100;
+        acc[device.technician].total += completeness;
+        acc[device.technician].count += 1;
+      }
+      return acc;
+    }, {} as Record<string, { total: number; count: number }>);
+    
+    const avgTechnicianScore = Object.values(technicianScores).length > 0 
+      ? Math.round(Object.values(technicianScores).reduce((sum, tech) => 
+          sum + (tech.total / tech.count), 0) / Object.values(technicianScores).length)
+      : 0;
 
     return {
+      // Basic counts
       totalDevices,
+      totalHospitals: uniqueHospitals,
+      totalTechnicians: uniqueTechnicians,
+      
+      // Network analysis
+      networkConnectedDevices,
+      networkConnectedPercentage,
+      offlineDevices: totalDevices - networkConnectedDevices,
+      
+      // PHI Risk Distribution
+      phiDevices: phiDevices.length,
+      phiRiskDistribution: {
+        critical: criticalPHI,
+        high: highPHI,
+        medium: mediumPHI,
+        low: lowPHI
+      },
+      
+      // Security metrics
       criticalAlerts,
-      phiDevices,
-      onlineDevices,
-      offlineDevices: totalDevices - onlineDevices,
+      legacyOSDevices,
+      avgTechnicianScore,
+      
+      // Data quality
       dataCollectionScore: totalDevices > 0 ? Math.round((devices.filter(d => 
         d.name && d.manufacturer && d.model && d.category
       ).length / totalDevices) * 100) : 0
     };
+  },
+});
+
+// Risk Assessment Queries
+export const getRiskAssessmentData = query({
+  args: { organizationId: v.id("organizations") },
+  handler: async (ctx, { organizationId }) => {
+    const devices = await ctx.db
+      .query("medicalDevices")
+      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+      .collect();
+
+    if (devices.length === 0) {
+      return {
+        hospitalRiskHeatmap: [],
+        osRiskProfile: [],
+        phiRiskOverview: { critical: 0, high: 0, medium: 0, low: 0 },
+        deviceCategoryRisk: [],
+        totalRiskScore: 0,
+        riskTrends: []
+      };
+    }
+
+    // Hospital Risk Heatmap Data
+    const hospitalRiskMap = devices.reduce((acc, device) => {
+      const hospital = device.entity || "Unknown";
+      if (!acc[hospital]) {
+        acc[hospital] = { critical: 0, high: 0, medium: 0, low: 0, total: 0 };
+      }
+      
+      // Calculate device risk level
+      let riskLevel = "low";
+      const hasLegacyOS = device.osVersion?.toLowerCase().includes("xp") || 
+                         device.osVersion?.toLowerCase().includes("2000") ||
+                         device.osVersion?.toLowerCase().includes("vista");
+      const hasCriticalPHI = device.hasPHI && device.customerPHICategory?.toLowerCase().includes("critical");
+      const hasHighPHI = device.hasPHI && device.customerPHICategory?.toLowerCase().includes("high");
+      const isNetworkExposed = device.deviceOnNetwork && device.hasPHI;
+      
+      if (hasLegacyOS || hasCriticalPHI || isNetworkExposed) {
+        riskLevel = "critical";
+      } else if (hasHighPHI || (device.deviceOnNetwork && !device.osVersion)) {
+        riskLevel = "high";
+      } else if (device.hasPHI || device.deviceOnNetwork) {
+        riskLevel = "medium";
+      }
+      
+      acc[hospital][riskLevel as keyof typeof acc[typeof hospital]]++;
+      acc[hospital].total++;
+      return acc;
+    }, {} as Record<string, { critical: number; high: number; medium: number; low: number; total: number }>);
+
+    const hospitalRiskHeatmap = Object.entries(hospitalRiskMap).map(([hospital, risks]) => ({
+      hospital,
+      critical: risks.critical,
+      high: risks.high,
+      medium: risks.medium,
+      low: risks.low,
+      total: risks.total,
+      riskScore: Math.round(((risks.critical * 4 + risks.high * 3 + risks.medium * 2 + risks.low * 1) / risks.total) * 25)
+    }));
+
+    // OS Risk Profile
+    const osRiskMap = devices.reduce((acc, device) => {
+      const os = device.osVersion || "Unknown";
+      const manufacturer = device.osManufacturer || "Unknown";
+      const key = `${manufacturer} ${os}`;
+      
+      if (!acc[key]) {
+        acc[key] = { 
+          os: key, 
+          count: 0, 
+          isLegacy: false, 
+          riskLevel: "low",
+          vulnerabilities: 0
+        };
+      }
+      
+      acc[key].count++;
+      
+      // Check if legacy OS
+      const osLower = os.toLowerCase();
+      const isLegacy = osLower.includes("xp") || osLower.includes("2000") || 
+                      osLower.includes("vista") || osLower.includes("windows 7") ||
+                      osLower.includes("windows 8");
+      
+      if (isLegacy) {
+        acc[key].isLegacy = true;
+        acc[key].riskLevel = "critical";
+        acc[key].vulnerabilities += 5; // High vulnerability count for legacy OS
+      } else if (osLower.includes("windows 10") && !osLower.includes("ltsc")) {
+        acc[key].riskLevel = "medium";
+        acc[key].vulnerabilities += 2;
+      } else if (osLower.includes("windows 11") || osLower.includes("ltsc")) {
+        acc[key].riskLevel = "low";
+        acc[key].vulnerabilities += 1;
+      } else {
+        acc[key].riskLevel = "medium";
+        acc[key].vulnerabilities += 2;
+      }
+      
+      return acc;
+    }, {} as Record<string, { os: string; count: number; isLegacy: boolean; riskLevel: string; vulnerabilities: number }>);
+
+    const osRiskProfile = Object.values(osRiskMap).sort((a, b) => {
+      const riskOrder = { critical: 4, high: 3, medium: 2, low: 1 };
+      return riskOrder[b.riskLevel as keyof typeof riskOrder] - riskOrder[a.riskLevel as keyof typeof riskOrder];
+    });
+
+    // PHI Risk Overview
+    const phiRiskOverview = devices.reduce((acc, device) => {
+      if (!device.hasPHI) return acc;
+      
+      const category = device.customerPHICategory?.toLowerCase() || "low";
+      if (category.includes("critical")) {
+        acc.critical++;
+      } else if (category.includes("high")) {
+        acc.high++;
+      } else if (category.includes("medium")) {
+        acc.medium++;
+      } else {
+        acc.low++;
+      }
+      return acc;
+    }, { critical: 0, high: 0, medium: 0, low: 0 });
+
+    // Device Category Risk Scoring
+    const categoryRiskMap = devices.reduce((acc, device) => {
+      const category = device.category || "Unknown";
+      if (!acc[category]) {
+        acc[category] = { 
+          category, 
+          count: 0, 
+          riskScore: 0, 
+          phiDevices: 0, 
+          networkDevices: 0,
+          legacyDevices: 0
+        };
+      }
+      
+      acc[category].count++;
+      
+      // Calculate risk factors
+      let deviceRisk = 1; // Base risk
+      
+      if (device.hasPHI) {
+        acc[category].phiDevices++;
+        deviceRisk += 2;
+      }
+      
+      if (device.deviceOnNetwork) {
+        acc[category].networkDevices++;
+        deviceRisk += 1;
+      }
+      
+      const hasLegacyOS = device.osVersion?.toLowerCase().includes("xp") || 
+                         device.osVersion?.toLowerCase().includes("2000");
+      if (hasLegacyOS) {
+        acc[category].legacyDevices++;
+        deviceRisk += 3;
+      }
+      
+      acc[category].riskScore += deviceRisk;
+      return acc;
+    }, {} as Record<string, { category: string; count: number; riskScore: number; phiDevices: number; networkDevices: number; legacyDevices: number }>);
+
+    const deviceCategoryRisk = Object.values(categoryRiskMap).map(cat => ({
+      ...cat,
+      avgRiskScore: Math.round((cat.riskScore / cat.count) * 20), // Scale to 0-100
+      phiPercentage: Math.round((cat.phiDevices / cat.count) * 100),
+      networkPercentage: Math.round((cat.networkDevices / cat.count) * 100),
+      legacyPercentage: Math.round((cat.legacyDevices / cat.count) * 100)
+    })).sort((a, b) => b.avgRiskScore - a.avgRiskScore);
+
+    // Calculate overall risk score
+    const totalRiskScore = Math.round(
+      deviceCategoryRisk.reduce((sum, cat) => sum + cat.avgRiskScore, 0) / deviceCategoryRisk.length
+    );
+
+    return {
+      hospitalRiskHeatmap,
+      osRiskProfile,
+      phiRiskOverview,
+      deviceCategoryRisk,
+      totalRiskScore,
+      riskTrends: [] // Placeholder for future trend analysis
+    };
+  },
+});
+
+export const getLegacyOSDevices = query({
+  args: { organizationId: v.id("organizations") },
+  handler: async (ctx, { organizationId }) => {
+    const devices = await ctx.db
+      .query("medicalDevices")
+      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+      .collect();
+
+    return devices.filter(device => {
+      const os = device.osVersion?.toLowerCase() || "";
+      return os.includes("xp") || os.includes("2000") || os.includes("vista") ||
+             os.includes("windows 7") || os.includes("windows 8");
+    }).map(device => ({
+      id: device._id,
+      name: device.name,
+      entity: device.entity,
+      osVersion: device.osVersion,
+      manufacturer: device.manufacturer,
+      model: device.model,
+      hasPHI: device.hasPHI,
+      deviceOnNetwork: device.deviceOnNetwork,
+      riskLevel: device.osVersion?.toLowerCase().includes("xp") || 
+                device.osVersion?.toLowerCase().includes("2000") ? "critical" : "high"
+    }));
+  },
+});
+
+// Add this to your existing medicalDevices.ts file
+
+export const getTechnicianMetrics = query({
+  args: { organizationId: v.id("organizations") },
+  handler: async (ctx, { organizationId }) => {
+    const devices = await ctx.db
+      .query("medicalDevices")
+      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+      .collect();
+
+    // Group devices by technician
+    const technicianGroups = devices.reduce((acc, device) => {
+      const technicianName = device.technician || "Unassigned";
+      if (!acc[technicianName]) {
+        acc[technicianName] = [];
+      }
+      acc[technicianName].push(device);
+      return acc;
+    }, {} as Record<string, typeof devices>);
+
+    return Object.entries(technicianGroups).map(([technicianName, technicianDevices]) => {
+      const deviceCount = technicianDevices.length;
+      const totalDevices = devices.length;
+      
+      const criticalPHIDevices = technicianDevices.filter(
+        d => d.hasPHI && (d.customerPHICategory === "Critical" || d.customerPHICategory === "High")
+      ).length;
+      
+      const supportedOSDevices = technicianDevices.filter(
+        d => d.osVersion && !d.osVersion.toLowerCase().includes("unsupported")
+      ).length;
+      
+      const networkConnectedDevices = technicianDevices.filter(
+        d => d.deviceOnNetwork
+      ).length;
+      
+      const validIPDevices = technicianDevices.filter(
+        d => d.ipAddress && d.ipAddress !== "Unknown" && !d.ipAddress.includes("DHCP")
+      ).length;
+      
+      const duplicateIPCount = technicianDevices.filter(
+        d => d.ipAddress && devices.filter(other => other.ipAddress === d.ipAddress).length > 1
+      ).length;
+      
+      const legacyOSCount = technicianDevices.filter(
+        d => d.osVersion && (d.osVersion.toLowerCase().includes("unsupported") || 
+             d.osVersion.toLowerCase().includes("legacy"))
+      ).length;
+
+      // Calculate rates (percentages) instead of raw counts
+      const osComplianceRate = deviceCount > 0 ? (supportedOSDevices / deviceCount) * 100 : 0;
+      const networkComplianceRate = deviceCount > 0 ? (networkConnectedDevices / deviceCount) * 100 : 0;
+      const ipValidityRate = deviceCount > 0 ? (validIPDevices / deviceCount) * 100 : 0;
+      const duplicateIPPenalty = deviceCount > 0 ? (duplicateIPCount / deviceCount) * 100 : 0;
+      const criticalPHIScore = deviceCount > 0 ? (criticalPHIDevices / deviceCount) * 100 : 0;
+      const legacyOSScore = deviceCount > 0 ? 100 - ((legacyOSCount / deviceCount) * 100) : 100;
+      const resolutionScore = Math.max(0, 100 - (duplicateIPPenalty * 0.5)); // Example calculation
+
+      return {
+        technicianId: technicianName.replace(/\s+/g, '_').toLowerCase(),
+        name: technicianName,
+        deviceCount,
+        totalDevices,
+        criticalPHIDevices,
+        supportedOSDevices,
+        networkConnectedDevices,
+        validIPDevices,
+        duplicateIPCount,
+        legacyOSCount,
+        // Add the required rate properties
+        osComplianceRate,
+        networkComplianceRate,
+        ipValidityRate,
+        duplicateIPPenalty,
+        criticalPHIScore,
+        legacyOSScore,
+        resolutionScore
+      };
+    });
   },
 });

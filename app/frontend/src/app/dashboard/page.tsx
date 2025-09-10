@@ -11,7 +11,9 @@ import { DeviceInventory } from '@/components/dashboard/device-inventory'
 import { DashboardOverview } from '@/components/dashboard/overview'
 import { Shield } from 'lucide-react'
 import { NetworkTopology } from '@/components/dashboard/network-topology'
+import { RiskAssessment } from '@/components/dashboard/risk-assessment';
 import React from 'react';
+import { AlertsAndThreats } from "@/components/dashboard/alerts-and-threats";
 
 // Memoize heavy components to prevent unnecessary re-renders
 const MemoizedNetworkTopology = React.memo(NetworkTopology);
@@ -123,15 +125,7 @@ export default function Dashboard() {
           </TabsContent>
 
           <TabsContent value="risk" className="animate-in fade-in-50 duration-500">
-            <div className="bg-gradient-to-br from-white to-gray-50 backdrop-blur-sm rounded-2xl p-12 text-center shadow-lg border border-gray-200/50">
-              <div className="max-w-md mx-auto">
-                <div className="w-16 h-16 bg-gradient-to-br from-orange-100 to-orange-200 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                  <Shield className="h-8 w-8 text-orange-600" />
-                </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">Risk Assessment</h3>
-                <p className="text-gray-600 leading-relaxed">Advanced risk assessment functionality is coming soon. This will include NIST-aligned evaluations and comprehensive threat analysis.</p>
-              </div>
-            </div>
+            <RiskAssessment />
           </TabsContent>
 
           <TabsContent value="network" className="animate-in fade-in-50 duration-500">
@@ -139,15 +133,13 @@ export default function Dashboard() {
           </TabsContent>
 
           <TabsContent value="alerts" className="animate-in fade-in-50 duration-500">
-            <div className="bg-gradient-to-br from-white to-gray-50 backdrop-blur-sm rounded-2xl p-12 text-center shadow-lg border border-gray-200/50">
-              <div className="max-w-md mx-auto">
-                <div className="w-16 h-16 bg-gradient-to-br from-red-100 to-red-200 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                  <Shield className="h-8 w-8 text-red-600" />
-                </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">Alerts & Threats</h3>
-                <p className="text-gray-600 leading-relaxed">Real-time security alerts and threat monitoring dashboard is being developed to keep your medical devices secure.</p>
+            {currentOrganization?._id ? (
+              <AlertsAndThreats organizationId={currentOrganization._id} />
+            ) : (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-gray-500">Please select an organization to view alerts</div>
               </div>
-            </div>
+            )}
           </TabsContent>
 
           {isAdmin && (
