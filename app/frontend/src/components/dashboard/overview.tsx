@@ -12,6 +12,7 @@ import {
   TrendingDown,
   BarChart3,
   PieChart,
+  Building2,
 } from "lucide-react";
 import { useOrganization } from "@/contexts/organization-context";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -83,7 +84,8 @@ export function DashboardOverview() {
     currentOrganization ? { organizationId: currentOrganization._id } : "skip"
   );
 
-  const isLoading = dashboardAnalytics === undefined || technicianPerformance === undefined || equipmentCriticality === undefined || osDistribution === undefined;
+  // Fix: Only show loading when organization exists but data is still loading
+  const isLoading = currentOrganization && (dashboardAnalytics === undefined || technicianPerformance === undefined || equipmentCriticality === undefined || osDistribution === undefined);
 
   // Memoized chart data with proper typing
   const technicianChartData = useMemo(() => {
@@ -150,6 +152,25 @@ export function DashboardOverview() {
 
   const visibleStats = useMemo(() => stats.filter(stat => stat.visible), [stats]);
 
+  // Fix: Show empty state when no organization is selected
+  if (!currentOrganization) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white overflow-hidden shadow rounded-lg">
+          <div className="px-4 py-5 sm:p-6 text-center">
+            <Building2 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg leading-6 font-medium text-gray-900 mb-2">
+              No Organization Selected
+            </h3>
+            <p className="text-sm text-gray-500">
+              Please select an organization to view dashboard analytics and device information.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -168,7 +189,7 @@ export function DashboardOverview() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Welcome Section */}
       <div className="bg-white overflow-hidden shadow rounded-lg">
         <div className="px-4 py-5 sm:p-6">
@@ -180,21 +201,25 @@ export function DashboardOverview() {
           </p>
         </div>
       </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+  
+      {/* Stats Grid - Mobile Responsive */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {visibleStats.map((stat, index) => (
           <StatsCard key={index} stat={stat} />
         ))}
       </div>
-
-      {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <TechnicianPerformanceChart data={technicianChartData} />
-        <OSDistributionChart data={osChartData} colors={COLORS} />
+  
+      {/* Charts Grid - Mobile Responsive */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <div className="order-1">
+          <TechnicianPerformanceChart data={technicianChartData} />
+        </div>
+        <div className="order-2">
+          <OSDistributionChart data={osChartData} colors={COLORS} />
+        </div>
       </div>
-
-      <div className="grid grid-cols-1 gap-6">
+  
+      <div className="grid grid-cols-1 gap-4 sm:gap-6">
         <CriticalityChart data={criticalityChartData} />
       </div>
     </div>
@@ -202,24 +227,34 @@ export function DashboardOverview() {
 }
 
 // Chart Components with proper typing
+// Update chart components for mobile
 const TechnicianPerformanceChart = memo(({ data }: { data: Array<{name: string, score: number}> }) => (
   <Card>
     <CardHeader>
-      <CardTitle className="flex items-center gap-2">
-        <BarChart3 className="h-5 w-5" />
-        Data Collection Avg Score
+      <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+        <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" />
+        <span className="hidden sm:inline">Data Collection Avg Score</span>
+        <span className="sm:hidden">Avg Score</span>
       </CardTitle>
-      <CardDescription>
+      <CardDescription className="text-sm">
         Performance metrics by technician
       </CardDescription>
     </CardHeader>
     <CardContent>
-      <div className="h-80">
+      <div className="h-64 sm:h-80">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data}>
+          <BarChart data={data} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis domain={[0, 100]} />
+            <XAxis 
+              dataKey="name" 
+              fontSize={12}
+              tick={{ fontSize: 12 }}
+              interval={0}
+              angle={-45}
+              textAnchor="end"
+              height={60}
+            />
+            <YAxis domain={[0, 100]} fontSize={12} />
             <Tooltip formatter={(value) => [`${value}%`, 'Score']} />
             <Bar dataKey="score" fill="#3B82F6" />
           </BarChart>

@@ -4,6 +4,7 @@ import { useUser } from '@clerk/nextjs'
 import { useQuery } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useOrganization } from '@/contexts/organization-context'
 import { AdminControlPanel } from '@/components/dashboard/admin-control-panel'
 import { DeviceInventory } from '@/components/dashboard/device-inventory'
@@ -26,7 +27,7 @@ export default function Dashboard() {
   const isAdmin = ["super_admin", "admin", "analyst"].includes(userRole)
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 sm:space-y-6 lg:space-y-8">
       {/* Admin Controls */}
       {isAdmin && (
         <div className="animate-in slide-in-from-top-4 duration-500">
@@ -36,53 +37,78 @@ export default function Dashboard() {
 
       {/* Main Dashboard Tabs */}
       <div className="animate-in slide-in-from-bottom-4 duration-700">
-        <Tabs defaultValue="overview" className="space-y-8">
-          <div className="flex justify-center">
-            <TabsList className="bg-white/80 backdrop-blur-sm shadow-lg border border-gray-200/50 p-1.5 rounded-xl">
+        <Tabs defaultValue="overview" className="space-y-4 sm:space-y-6 lg:space-y-8">
+          {/* Mobile: Dropdown Tabs */}
+          <div className="sm:hidden">
+            <Select defaultValue="overview">
+              <SelectTrigger className="w-full bg-white/80 backdrop-blur-sm shadow-lg border border-gray-200/50">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="overview">Overview</SelectItem>
+                <SelectItem value="devices">Device Inventory</SelectItem>
+                <SelectItem value="risk">Risk Assessment</SelectItem>
+                <SelectItem value="network">Network Topology</SelectItem>
+                <SelectItem value="alerts">Alerts & Threats</SelectItem>
+                {isAdmin && <SelectItem value="import">Data Import</SelectItem>}
+                {isAdmin && <SelectItem value="customers">Customer Management</SelectItem>}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Desktop: Horizontal Tabs */}
+          <div className="hidden sm:flex justify-center">
+            <TabsList className="bg-white/80 backdrop-blur-sm shadow-lg border border-gray-200/50 p-1.5 rounded-xl flex-wrap gap-1">
               <TabsTrigger 
                 value="overview" 
-                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 rounded-lg px-6 py-2.5 font-medium"
+                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 rounded-lg px-3 sm:px-4 lg:px-6 py-2.5 font-medium text-sm"
               >
                 Overview
               </TabsTrigger>
               <TabsTrigger 
                 value="devices"
-                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 rounded-lg px-6 py-2.5 font-medium"
+                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 rounded-lg px-3 sm:px-4 lg:px-6 py-2.5 font-medium text-sm"
               >
-                Device Inventory
+                <span className="hidden sm:inline">Device Inventory</span>
+                <span className="sm:hidden">Devices</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="risk"
-                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 rounded-lg px-6 py-2.5 font-medium"
+                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 rounded-lg px-3 sm:px-4 lg:px-6 py-2.5 font-medium text-sm"
               >
-                Risk Assessment
+                <span className="hidden sm:inline">Risk Assessment</span>
+                <span className="sm:hidden">Risk</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="network"
-                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 rounded-lg px-6 py-2.5 font-medium"
+                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 rounded-lg px-3 sm:px-4 lg:px-6 py-2.5 font-medium text-sm"
               >
-                Network Topology
+                <span className="hidden sm:inline">Network Topology</span>
+                <span className="sm:hidden">Network</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="alerts"
-                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 rounded-lg px-6 py-2.5 font-medium"
+                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 rounded-lg px-3 sm:px-4 lg:px-6 py-2.5 font-medium text-sm"
               >
-                Alerts & Threats
+                <span className="hidden sm:inline">Alerts & Threats</span>
+                <span className="sm:hidden">Alerts</span>
               </TabsTrigger>
               {isAdmin && (
                 <TabsTrigger 
                   value="import"
-                  className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 rounded-lg px-6 py-2.5 font-medium"
+                  className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 rounded-lg px-3 sm:px-4 lg:px-6 py-2.5 font-medium text-sm"
                 >
-                  Data Import
+                  <span className="hidden lg:inline">Data Import</span>
+                  <span className="lg:hidden">Import</span>
                 </TabsTrigger>
               )}
               {isAdmin && (
                 <TabsTrigger 
                   value="customers"
-                  className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 rounded-lg px-6 py-2.5 font-medium"
+                  className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 rounded-lg px-3 sm:px-4 lg:px-6 py-2.5 font-medium text-sm"
                 >
-                  Customer Management
+                  <span className="hidden lg:inline">Customer Management</span>
+                  <span className="lg:hidden">Customers</span>
                 </TabsTrigger>
               )}
             </TabsList>

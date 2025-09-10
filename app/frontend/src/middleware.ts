@@ -5,10 +5,9 @@ import type { NextRequest } from 'next/server';
 const isPublicRoute = createRouteMatcher([
   '/',
   '/login',
-  '/sign-in(.*)',
-  '/sign-up(.*)',
-  '/api(.*)',
-  '/sign-in/sso-callback' // Keep this for normal OAuth
+  '/login/sso-callback',
+  '/sign-in/sso-callback',
+  '/api(.*)'
 ]);
 
 const isImpersonationRoute = createRouteMatcher([
@@ -28,11 +27,10 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
     if (isImpersonating || impersonationCookie) {
       return NextResponse.next();
     }
-    // Redirect to admin if no impersonation context
     return NextResponse.redirect(new URL('/admin', req.url));
   }
   
-  // Allow public routes (normal auth flow)
+  // Allow public routes
   if (isPublicRoute(req)) {
     return NextResponse.next();
   }

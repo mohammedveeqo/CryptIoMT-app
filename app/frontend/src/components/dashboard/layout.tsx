@@ -68,9 +68,57 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Main content - full width, no sidebar */}
       <div className="flex flex-col flex-1">
-        {/* Top navigation */}
-        <div className="sticky top-0 z-10 flex-shrink-0 flex h-20 bg-white/95 backdrop-blur-md shadow-lg border-b border-gray-200/50">
-          <div className="flex-1 px-8 flex justify-between items-center">
+        {/* Top navigation - Mobile Responsive */}
+        <div className="sticky top-0 z-10 flex-shrink-0 bg-white/95 backdrop-blur-md shadow-lg border-b border-gray-200/50">
+          <div className="flex-1 px-4 sm:px-6 lg:px-8">
+            {/* Mobile Layout */}
+            <div className="flex flex-col space-y-4 py-4 sm:hidden">
+              {/* Top row: Logo + User */}
+              <div className="flex justify-between items-center">
+                <div className="flex items-center group">
+                  <div className="relative">
+                    <Shield className="h-8 w-8 text-blue-600 group-hover:text-blue-700 transition-colors duration-200" />
+                    <div className="absolute -inset-1 bg-blue-600/20 rounded-full blur opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  </div>
+                  <span className="ml-2 text-lg font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+                    CryptIoMT
+                  </span>
+                </div>
+                
+                <div className="flex items-center space-x-3">
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-gray-900 truncate max-w-24">{user?.fullName}</p>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 capitalize">
+                      {userRole.replace('_', ' ')}
+                    </span>
+                  </div>
+                  <UserButton 
+                    afterSignOutUrl="/" 
+                    appearance={{
+                      elements: {
+                        avatarBox: "w-8 h-8 ring-2 ring-blue-100 hover:ring-blue-200 transition-all duration-200"
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+              
+              {/* Second row: Page title */}
+              <div>
+                <h1 className="text-xl font-semibold text-gray-900">
+                  {filteredNavigation.find(item => item.href === pathname)?.name || 'Dashboard'}
+                </h1>
+                <p className="text-sm text-gray-500 mt-0.5">Medical Device Security Management</p>
+              </div>
+              
+              {/* Third row: Organization selector */}
+              <div className="w-full">
+                <OrganizationSelector />
+              </div>
+            </div>
+          
+          {/* Desktop Layout */}
+          <div className="hidden sm:flex justify-between items-center h-20">
             <div className="flex items-center space-x-8">
               {/* Logo and Brand */}
               <div className="flex items-center group">
@@ -109,7 +157,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               
               {/* User Info */}
               <div className="flex items-center space-x-4">
-                <div className="text-right hidden sm:block">
+                <div className="text-right hidden md:block">
                   <p className="text-sm font-medium text-gray-900">{user?.fullName}</p>
                   <div className="flex items-center justify-end mt-1">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 capitalize">
@@ -131,16 +179,17 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
           </div>
         </div>
-
-        {/* Page content - with improved padding and background */}
-        <main className="flex-1 relative">
-          <div className="py-8">
-            <div className="max-w-full mx-auto px-8 sm:px-10 lg:px-12">
-              {children}
-            </div>
-          </div>
-        </main>
       </div>
+
+      {/* Page content - with improved padding and background */}
+      <main className="flex-1 relative">
+        <div className="py-4 sm:py-6 lg:py-8">
+          <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+            {children}
+          </div>
+        </div>
+      </main>
     </div>
-  );
+  </div>
+);
 }
