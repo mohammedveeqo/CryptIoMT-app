@@ -1,5 +1,6 @@
 'use client'
 
+import React, { useState, useMemo } from 'react';
 import { useUser } from '@clerk/nextjs'
 import { useQuery } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
@@ -12,18 +13,24 @@ import { DashboardOverview } from '@/components/dashboard/overview'
 import { Shield } from 'lucide-react'
 import { NetworkTopology } from '@/components/dashboard/network-topology'
 import { RiskAssessment } from '@/components/dashboard/risk-assessment';
-import React from 'react';
-import { AlertsAndThreats } from "@/components/dashboard/alerts-and-threats";
+import AlertsAndThreats from "@/components/dashboard/alerts-and-threats";
 
 // Memoize heavy components to prevent unnecessary re-renders
 const MemoizedNetworkTopology = React.memo(NetworkTopology);
 const MemoizedDeviceInventory = React.memo(DeviceInventory);
 const MemoizedDashboardOverview = React.memo(DashboardOverview);
+// Memoize the AlertsAndThreats component to prevent unnecessary re-renders
+const MemoizedAlertsAndThreats = React.memo(AlertsAndThreats);
 
 export default function Dashboard() {
-  const { user } = useUser()
+  const { user } = useUser();
+  const { currentOrganization } = useOrganization();
+  const [activeTab, setActiveTab] = useState("overview");
+
+  // Memoize organization ID to prevent unnecessary re-renders
+  const organizationId = useMemo(() => currentOrganization?._id, [currentOrganization?._id]);
+
   const currentUser = useQuery(api.users.getCurrentUser)
-  const { currentOrganization } = useOrganization()
   
   const userRole = (currentUser && 'role' in currentUser && currentUser.role) ? currentUser.role : "customer"
   const isAdmin = ["super_admin", "admin", "analyst"].includes(userRole)
@@ -134,7 +141,14 @@ export default function Dashboard() {
 
           <TabsContent value="alerts" className="animate-in fade-in-50 duration-500">
             {currentOrganization?._id ? (
-              <AlertsAndThreats organizationId={currentOrganization._id} />
+              <React.Suspense fallback={
+                <div className="flex items-center justify-center h-64">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <span className="ml-2">Loading alerts...</span>
+                </div>
+              }>
+                <MemoizedAlertsAndThreats organizationId={currentOrganization._id} />
+              </React.Suspense>
             ) : (
               <div className="flex items-center justify-center h-64">
                 <div className="text-gray-500">Please select an organization to view alerts</div>
