@@ -223,7 +223,7 @@ export default function PrivacyPage() {
                     <div className="space-y-2 text-gray-600">
                       <p><strong>Privacy Officer:</strong> privacy@cryptiomt.com</p>
                       <p><strong>General Contact:</strong> contact@cryptiomt.com</p>
-                      <p><strong>Phone:</strong> (555) 123-4567</p>
+                      <p><strong>Phone:</strong> 414-943-9726</p>
                       <p><strong>Response Time:</strong> We respond to privacy inquiries within 48 hours</p>
                     </div>
                   </div>

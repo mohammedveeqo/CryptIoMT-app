@@ -104,7 +104,7 @@ export function AssessmentCTA() {
                         </div>
                         <div className="flex items-center space-x-3">
                           <Phone className="h-4 w-4 text-green-300" />
-                          <span className="text-sm">(555) 123-4567</span>
+                          <span className="text-sm">414-943-9726</span>
                         </div>
                       </div>
                       

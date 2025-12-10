@@ -285,7 +285,7 @@ export function ContactForm() {
                       <Phone className="h-5 w-5 text-blue-600" />
                     </div>
                     <div>
-                      <div className="font-medium text-gray-900">(555) 123-4567</div>
+                      <div className="font-medium text-gray-900">414-943-9726</div>
                       <div className="text-sm text-gray-600">Mon-Fri 8AM-6PM EST</div>
                     </div>
                   </div>
