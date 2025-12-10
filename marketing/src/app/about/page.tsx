@@ -3,6 +3,7 @@ import { Footer } from "@/components/layout/footer";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Users, Award, CheckCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import Script from "next/script";
 
 export const metadata = {
   title: "About - CryptIoMT Healthcare Cybersecurity",
@@ -118,6 +119,24 @@ export default function AboutPage() {
                 </p>
               </Card>
             </div>
+          </div>
+        </section>
+
+        <section className="py-16 bg-white">
+          <div className="max-w-6xl mx-auto px-4">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold text-gray-900">Certifications</h2>
+              <p className="text-lg text-gray-600">CISSP Certified</p>
+            </div>
+            <Card className="p-6 flex justify-center">
+              <div
+                data-iframe-width="150"
+                data-iframe-height="270"
+                data-share-badge-id="ffbe391c-d251-4158-86be-b99c86c64a18"
+                data-share-badge-host="https://www.credly.com"
+              />
+            </Card>
+            <Script src="https://cdn.credly.com/assets/utilities/embed.js" strategy="afterInteractive" />
           </div>
         </section>
       </main>
