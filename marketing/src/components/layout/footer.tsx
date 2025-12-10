@@ -31,6 +31,14 @@ export function Footer() {
                 <Phone className="h-4 w-4" />
                 <span>414-943-9726</span>
               </div>
+              <div className="pt-2">
+                <div
+                  data-iframe-width="120"
+                  data-iframe-height="220"
+                  data-share-badge-id="ffbe391c-d251-4158-86be-b99c86c64a18"
+                  data-share-badge-host="https://www.credly.com"
+                />
+              </div>
             </div>
           </div>
 
