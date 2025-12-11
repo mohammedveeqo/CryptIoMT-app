@@ -1,6 +1,6 @@
 "use client";
 
-import { Mail, Phone } from "lucide-react";
+import { Mail, Phone, Award } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import Link from "next/link";
 
@@ -32,12 +32,20 @@ export function Footer() {
                 <span>414-943-9726</span>
               </div>
               <div className="pt-2">
-                <div
-                  data-iframe-width="120"
-                  data-iframe-height="220"
-                  data-share-badge-id="ffbe391c-d251-4158-86be-b99c86c64a18"
-                  data-share-badge-host="https://www.credly.com"
-                />
+                <a
+                  href="https://www.credly.com/badges/ffbe391c-d251-4158-86be-b99c86c64a18/public_url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block"
+                >
+                  <div className="border border-gray-200 rounded-lg p-3 flex items-center space-x-3 hover:border-blue-300 transition">
+                    <Award className="h-5 w-5 text-green-600" />
+                    <div>
+                      <p className="text-xs font-semibold text-gray-900">CISSP Certified</p>
+                      <p className="text-[11px] text-gray-500">Verified on Credly</p>
+                    </div>
+                  </div>
+                </a>
               </div>
             </div>
           </div>

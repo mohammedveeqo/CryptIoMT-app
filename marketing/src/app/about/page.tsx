@@ -3,7 +3,7 @@ import { Footer } from "@/components/layout/footer";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Users, Award, CheckCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import Script from "next/script";
+import Link from "next/link";
 
 export const metadata = {
   title: "About - CryptIoMT Healthcare Cybersecurity",
@@ -128,17 +128,25 @@ export default function AboutPage() {
               <h2 className="text-3xl font-bold text-gray-900">Certifications</h2>
               <p className="text-lg text-gray-600">CISSP Certified</p>
             </div>
-            <Card className="p-6 flex justify-center">
-              <div
-                data-iframe-width="150"
-                data-iframe-height="270"
-                data-share-badge-id="ffbe391c-d251-4158-86be-b99c86c64a18"
-                data-share-badge-host="https://www.credly.com"
-              />
+            <Card className="p-6">
+              <div className="flex items-center gap-4 justify-center">
+                <Award className="h-8 w-8 text-green-600" />
+                <div className="text-left">
+                  <p className="text-sm font-semibold text-gray-900">Certified Information Systems Security Professional (CISSP)</p>
+                  <p className="text-xs text-gray-500">Issued by ISC2</p>
+                  <Link
+                    href="https://www.credly.com/badges/ffbe391c-d251-4158-86be-b99c86c64a18/public_url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                  >
+                    View verified badge
+                  </Link>
+                </div>
+              </div>
             </Card>
-            <Script src="https://cdn.credly.com/assets/utilities/embed.js" strategy="afterInteractive" />
-          </div>
-        </section>
+         </div>
+       </section>
       </main>
       <Footer />
     </>
