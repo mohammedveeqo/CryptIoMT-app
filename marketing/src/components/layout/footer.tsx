@@ -1,6 +1,6 @@
 "use client";
 
-import { Mail, Phone, Award } from "lucide-react";
+import { Mail, Phone, CheckCircle } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import Link from "next/link";
 
@@ -38,15 +38,18 @@ export function Footer() {
                   rel="noopener noreferrer"
                   className="block"
                 >
-                  <div className="border border-gray-200 rounded-lg p-2 flex items-center space-x-3 hover:border-blue-300 transition">
-                    <div className="relative h-10 w-10 rounded-lg bg-[#0f6a55] flex items-end justify-start p-2">
-                      <span className="text-white font-bold text-[10px] leading-none">CISSP</span>
-                      <span className="absolute top-1 right-1 text-[9px] font-semibold text-white/90 leading-none">ISC2</span>
+                  <div className="border border-gray-200 rounded-xl p-4 flex items-center justify-between gap-4 hover:border-blue-300 transition w-full max-w-[340px]">
+                    <div className="flex items-center gap-3">
+                      <div className="relative h-14 w-14 rounded-xl bg-[#0f6a55] flex items-end justify-start p-3">
+                        <span className="text-white font-bold text-sm leading-none">CISSP</span>
+                        <span className="absolute top-1 right-2 text-[10px] font-semibold text-white/90 leading-none">ISC2</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">CISSP Certified</p>
+                        <p className="text-xs text-gray-500 flex items-center gap-1"><CheckCircle className="h-3 w-3 text-green-600" /> Verified on Credly</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-xs font-semibold text-gray-900">CISSP Certified</p>
-                      <p className="text-[11px] text-gray-500">Verified on Credly</p>
-                    </div>
+                    <span className="px-3 py-1 text-xs font-medium rounded-md border border-gray-300 text-gray-700">Verify</span>
                   </div>
                 </a>
               </div>
