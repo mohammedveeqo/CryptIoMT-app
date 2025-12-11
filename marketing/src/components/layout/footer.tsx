@@ -38,10 +38,13 @@ export function Footer() {
                   rel="noopener noreferrer"
                   className="block"
                 >
-                  <div className="border border-gray-200 rounded-2xl p-5 flex items-center justify-between gap-6 hover:border-blue-300 transition w-full max-w-[460px] shadow-sm">
-                    <div className="flex items-center gap-5">
-                      <div className="h-16 w-16 rounded-full bg-[#0f6a55] flex items-center justify-center">
-                        <span className="text-white font-bold text-sm">CISSP</span>
+                  <div className="border border-gray-200 rounded-2xl p-5 flex items-center justify-between gap-6 hover:border-blue-300 transition w-full max-w-[520px] shadow-sm">
+                    <div className="flex items-center gap-6">
+                      <div className="relative h-20 w-20 rounded-2xl bg-[#0f6a55] flex-shrink-0">
+                        <div className="absolute top-1 left-2 text-[10px] font-semibold text-white/90">ISC2</div>
+                        <div className="h-full w-full flex items-end justify-start p-3">
+                          <span className="text-white font-bold text-base leading-none">CISSP</span>
+                        </div>
                       </div>
                       <div>
                         <p className="text-base font-semibold text-gray-900">CISSP Certified</p>

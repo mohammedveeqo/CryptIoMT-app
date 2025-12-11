@@ -130,8 +130,11 @@ export default function AboutPage() {
             </div>
             <Card className="p-6">
               <div className="flex items-center gap-8 justify-center">
-                <div className="h-24 w-24 rounded-full bg-[#0f6a55] flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">CISSP</span>
+                <div className="relative h-24 w-24 rounded-2xl bg-[#0f6a55] flex-shrink-0">
+                  <div className="absolute top-2 left-3 text-[11px] font-semibold text-white/90">ISC2</div>
+                  <div className="h-full w-full flex items-end justify-start p-4">
+                    <span className="text-white font-bold text-lg leading-none">CISSP</span>
+                  </div>
                 </div>
                 <div className="text-left">
                   <p className="text-lg font-semibold text-gray-900">Certified Information Systems Security Professional</p>
