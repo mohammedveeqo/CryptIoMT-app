@@ -129,10 +129,13 @@ export default function AboutPage() {
               <p className="text-lg text-gray-600">CISSP Certified</p>
             </div>
             <Card className="p-6">
-              <div className="flex items-center gap-4 justify-center">
-                <Award className="h-8 w-8 text-green-600" />
+              <div className="flex items-center gap-5 justify-center">
+                <div className="relative h-16 w-16 rounded-xl bg-[#0f6a55] shadow-sm flex items-end justify-start p-2">
+                  <span className="text-white font-bold text-xs">CISSP</span>
+                  <span className="absolute top-1 right-1 text-[10px] font-semibold text-white/90">ISC2</span>
+                </div>
                 <div className="text-left">
-                  <p className="text-sm font-semibold text-gray-900">Certified Information Systems Security Professional (CISSP)</p>
+                  <p className="text-sm font-semibold text-gray-900">Certified Information Systems Security Professional</p>
                   <p className="text-xs text-gray-500">Issued by ISC2</p>
                   <Link
                     href="https://www.credly.com/badges/ffbe391c-d251-4158-86be-b99c86c64a18/public_url"
