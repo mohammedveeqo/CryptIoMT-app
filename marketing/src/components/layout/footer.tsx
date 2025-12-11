@@ -45,7 +45,7 @@ export function Footer() {
                     width={160}
                     height={160}
                     quality={95}
-                    sizes="80px"
+                    unoptimized
                     className="h-20 w-20 rounded-xl"
                     priority
                   />

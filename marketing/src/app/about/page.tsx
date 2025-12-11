@@ -137,7 +137,7 @@ export default function AboutPage() {
                   width={192}
                   height={192}
                   quality={95}
-                  sizes="96px"
+                  unoptimized
                   className="h-24 w-24 rounded-2xl flex-shrink-0"
                   priority
                 />
