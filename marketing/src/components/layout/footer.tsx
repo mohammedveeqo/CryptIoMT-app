@@ -3,6 +3,7 @@
 import { Mail, Phone, CheckCircle } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import Link from "next/link";
+import Image from "next/image";
 
 const scrollToSection = (sectionId: string) => {
   const element = document.getElementById(sectionId);
@@ -38,14 +39,17 @@ export function Footer() {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-4"
                 >
-                  <div className="relative h-20 w-20 rounded-2xl border border-gray-200 bg-white shadow-sm">
-                    <div className="absolute top-2 left-2 h-7 w-7 rounded-md border-[6px] border-[#9fd1d1] border-r-transparent border-b-transparent" />
-                    <div className="absolute bottom-2 right-2 h-7 w-7 rounded-md border-[6px] border-[#3c7b47] border-l-transparent border-t-transparent" />
-                    <span className="absolute inset-0 flex items-center justify-center text-gray-900 font-bold text-sm">CISSP</span>
-                  </div>
+                  <Image
+                    src="/images/ISC2_badge.webp"
+                    alt="ISC2 CISSP badge"
+                    width={80}
+                    height={80}
+                    className="rounded-xl"
+                    priority
+                  />
                   <div>
                     <p className="text-sm font-semibold text-gray-900">CISSP Certified</p>
-                    <p className="text-xs text-gray-500">Verified on Credly</p>
+                    <p className="text-xs text-gray-500 flex items-center gap-1"><CheckCircle className="h-3 w-3 text-green-600" /> Verified on Credly</p>
                   </div>
                 </a>
               </div>

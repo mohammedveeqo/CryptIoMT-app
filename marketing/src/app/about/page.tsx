@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Shield, Users, Award, CheckCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
+import Image from "next/image";
 
 export const metadata = {
   title: "About - CryptIoMT Healthcare Cybersecurity",
@@ -130,11 +131,14 @@ export default function AboutPage() {
             </div>
             <Card className="p-6">
               <div className="flex items-center gap-8 justify-center">
-                <div className="relative h-24 w-24 rounded-2xl border border-gray-200 bg-white shadow-sm flex-shrink-0">
-                  <div className="absolute top-3 left-3 h-8 w-8 rounded-md border-[7px] border-[#9fd1d1] border-r-transparent border-b-transparent" />
-                  <div className="absolute bottom-3 right-3 h-8 w-8 rounded-md border-[7px] border-[#3c7b47] border-l-transparent border-t-transparent" />
-                  <span className="absolute inset-0 flex items-center justify-center text-gray-900 font-bold text-base">CISSP</span>
-                </div>
+                <Image
+                  src="/images/ISC2_badge.webp"
+                  alt="ISC2 CISSP badge"
+                  width={96}
+                  height={96}
+                  className="rounded-2xl flex-shrink-0"
+                  priority
+                />
                 <div className="text-left">
                   <p className="text-lg font-semibold text-gray-900">Certified Information Systems Security Professional</p>
                   <p className="text-sm text-gray-500">Issued by ISC2</p>
