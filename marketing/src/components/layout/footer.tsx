@@ -36,22 +36,16 @@ export function Footer() {
                   href="https://www.credly.com/badges/ffbe391c-d251-4158-86be-b99c86c64a18/public_url"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block"
+                  className="inline-flex items-center gap-4"
                 >
-                  <div className="border border-gray-200 rounded-2xl p-5 flex items-center justify-between gap-6 hover:border-blue-300 transition w-full max-w-[520px] shadow-sm">
-                    <div className="flex items-center gap-6">
-                      <div className="relative h-20 w-20 rounded-2xl bg-[#0f6a55] flex-shrink-0">
-                        <div className="absolute top-1 left-2 text-[10px] font-semibold text-white/90">ISC2</div>
-                        <div className="h-full w-full flex items-end justify-start p-3">
-                          <span className="text-white font-bold text-base leading-none">CISSP</span>
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-base font-semibold text-gray-900">CISSP Certified</p>
-                        <p className="text-sm text-gray-500 flex items-center gap-1"><CheckCircle className="h-4 w-4 text-green-600" /> Verified on Credly</p>
-                      </div>
-                    </div>
-                    <span className="px-4 py-2 text-sm font-medium rounded-md border border-gray-300 text-gray-700">Verify</span>
+                  <div className="relative h-20 w-20 rounded-2xl border border-gray-200 bg-white shadow-sm">
+                    <div className="absolute top-2 left-2 h-7 w-7 rounded-md border-[6px] border-[#9fd1d1] border-r-transparent border-b-transparent" />
+                    <div className="absolute bottom-2 right-2 h-7 w-7 rounded-md border-[6px] border-[#3c7b47] border-l-transparent border-t-transparent" />
+                    <span className="absolute inset-0 flex items-center justify-center text-gray-900 font-bold text-sm">CISSP</span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">CISSP Certified</p>
+                    <p className="text-xs text-gray-500">Verified on Credly</p>
                   </div>
                 </a>
               </div>

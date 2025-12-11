@@ -130,11 +130,10 @@ export default function AboutPage() {
             </div>
             <Card className="p-6">
               <div className="flex items-center gap-8 justify-center">
-                <div className="relative h-24 w-24 rounded-2xl bg-[#0f6a55] flex-shrink-0">
-                  <div className="absolute top-2 left-3 text-[11px] font-semibold text-white/90">ISC2</div>
-                  <div className="h-full w-full flex items-end justify-start p-4">
-                    <span className="text-white font-bold text-lg leading-none">CISSP</span>
-                  </div>
+                <div className="relative h-24 w-24 rounded-2xl border border-gray-200 bg-white shadow-sm flex-shrink-0">
+                  <div className="absolute top-3 left-3 h-8 w-8 rounded-md border-[7px] border-[#9fd1d1] border-r-transparent border-b-transparent" />
+                  <div className="absolute bottom-3 right-3 h-8 w-8 rounded-md border-[7px] border-[#3c7b47] border-l-transparent border-t-transparent" />
+                  <span className="absolute inset-0 flex items-center justify-center text-gray-900 font-bold text-base">CISSP</span>
                 </div>
                 <div className="text-left">
                   <p className="text-lg font-semibold text-gray-900">Certified Information Systems Security Professional</p>
@@ -143,9 +142,9 @@ export default function AboutPage() {
                     href="https://www.credly.com/badges/ffbe391c-d251-4158-86be-b99c86c64a18/public_url"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-block mt-3 px-4 py-2 text-sm font-medium rounded-md border border-gray-300 text-gray-700 hover:border-blue-300"
+                    className="text-blue-600 hover:text-blue-700 text-sm font-medium"
                   >
-                    Verify
+                    View verified badge
                   </Link>
                 </div>
               </div>
