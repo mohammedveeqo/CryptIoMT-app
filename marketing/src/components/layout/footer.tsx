@@ -42,9 +42,11 @@ export function Footer() {
                   <Image
                     src="/images/ISC2_CISSP.webp"
                     alt="ISC2 CISSP badge"
-                    width={80}
-                    height={80}
-                    className="rounded-xl"
+                    width={160}
+                    height={160}
+                    quality={95}
+                    sizes="80px"
+                    className="h-20 w-20 rounded-xl"
                     priority
                   />
                   <div>

@@ -134,9 +134,11 @@ export default function AboutPage() {
                 <Image
                   src="/images/ISC2_CISSP.webp"
                   alt="ISC2 CISSP badge"
-                  width={96}
-                  height={96}
-                  className="rounded-2xl flex-shrink-0"
+                  width={192}
+                  height={192}
+                  quality={95}
+                  sizes="96px"
+                  className="h-24 w-24 rounded-2xl flex-shrink-0"
                   priority
                 />
                 <div className="text-left">
