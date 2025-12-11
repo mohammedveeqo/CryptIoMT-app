@@ -40,7 +40,7 @@ export function Footer() {
                   className="inline-flex items-center gap-4"
                 >
                   <Image
-                    src="/images/ISC2_badge.webp"
+                    src="/images/ISC2_CISSP.webp"
                     alt="ISC2 CISSP badge"
                     width={80}
                     height={80}

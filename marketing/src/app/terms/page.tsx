@@ -48,7 +48,7 @@ export default function TermsPage() {
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900 mb-4">Introduction</h2>
                     <p className="text-gray-600 leading-relaxed">
-                      These Terms and Conditions ("Terms") govern your use of CryptIoMT's healthcare cybersecurity consulting services, including medical device risk assessments, cybersecurity planning, and IoMT security solutions. By engaging our services, you agree to be bound by these Terms.
+                      These Terms and Conditions (&quot;Terms&quot;) govern your use of CryptIoMT&apos;s healthcare cybersecurity consulting services, including medical device risk assessments, cybersecurity planning, and IoMT security solutions. By engaging our services, you agree to be bound by these Terms.
                     </p>
                   </div>
                 </div>
@@ -146,8 +146,8 @@ export default function TermsPage() {
                   <ul className="list-disc pl-6 space-y-2">
                     <li>Our assessments are based on information available at the time of evaluation</li>
                     <li>Cybersecurity is an ongoing process requiring continuous monitoring and updates</li>
-                    <li>Implementation of recommendations remains the client's responsibility</li>
-                    <li>CryptIoMT's liability is limited to the fees paid for services rendered</li>
+                    <li>Implementation of recommendations remains the client&apos;s responsibility</li>
+                    <li>CryptIoMT&apos;s liability is limited to the fees paid for services rendered</li>
                     <li>We do not guarantee protection against all possible cyber threats</li>
                   </ul>
                 </div>

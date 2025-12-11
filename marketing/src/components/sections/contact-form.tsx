@@ -123,7 +123,7 @@ export function ContactForm() {
                     Schedule Your Assessment
                   </CardTitle>
                   <p className="text-gray-600">
-                    Fill out the form below and we\'ll contact you within 24 hours to discuss your cybersecurity needs.
+                    Fill out the form below and we&apos;ll contact you within 24 hours to discuss your cybersecurity needs.
                   </p>
                 </CardHeader>
                 

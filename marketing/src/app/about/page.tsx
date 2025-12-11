@@ -132,7 +132,7 @@ export default function AboutPage() {
             <Card className="p-6">
               <div className="flex items-center gap-8 justify-center">
                 <Image
-                  src="/images/ISC2_badge.webp"
+                  src="/images/ISC2_CISSP.webp"
                   alt="ISC2 CISSP badge"
                   width={96}
                   height={96}

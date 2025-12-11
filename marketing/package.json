@@ -6,7 +6,7 @@
     "node": "22.x"
   },
   "scripts": {
-    "dev": "next dev",
+    "dev": "NEXT_DISABLE_NEXT_DEVTOOLS=1 next dev",
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint"
