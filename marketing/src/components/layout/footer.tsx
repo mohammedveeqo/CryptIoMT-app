@@ -38,18 +38,17 @@ export function Footer() {
                   rel="noopener noreferrer"
                   className="block"
                 >
-                  <div className="border border-gray-200 rounded-xl p-4 flex items-center justify-between gap-4 hover:border-blue-300 transition w-full max-w-[340px]">
-                    <div className="flex items-center gap-3">
-                      <div className="relative h-14 w-14 rounded-xl bg-[#0f6a55] flex items-end justify-start p-3">
-                        <span className="text-white font-bold text-sm leading-none">CISSP</span>
-                        <span className="absolute top-1 right-2 text-[10px] font-semibold text-white/90 leading-none">ISC2</span>
+                  <div className="border border-gray-200 rounded-2xl p-5 flex items-center justify-between gap-6 hover:border-blue-300 transition w-full max-w-[460px] shadow-sm">
+                    <div className="flex items-center gap-5">
+                      <div className="h-16 w-16 rounded-full bg-[#0f6a55] flex items-center justify-center">
+                        <span className="text-white font-bold text-sm">CISSP</span>
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-gray-900">CISSP Certified</p>
-                        <p className="text-xs text-gray-500 flex items-center gap-1"><CheckCircle className="h-3 w-3 text-green-600" /> Verified on Credly</p>
+                        <p className="text-base font-semibold text-gray-900">CISSP Certified</p>
+                        <p className="text-sm text-gray-500 flex items-center gap-1"><CheckCircle className="h-4 w-4 text-green-600" /> Verified on Credly</p>
                       </div>
                     </div>
-                    <span className="px-3 py-1 text-xs font-medium rounded-md border border-gray-300 text-gray-700">Verify</span>
+                    <span className="px-4 py-2 text-sm font-medium rounded-md border border-gray-300 text-gray-700">Verify</span>
                   </div>
                 </a>
               </div>
