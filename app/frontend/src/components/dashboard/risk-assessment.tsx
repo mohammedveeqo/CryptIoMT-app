@@ -21,6 +21,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { useCachedQuery } from "@/hooks/use-cached-query";
 import {
   BarChart,
   Bar,
@@ -46,13 +48,21 @@ const PHI_COLORS = ['#DC2626', '#EA580C', '#D97706', '#65A30D'];
 
 export function RiskAssessment() {
   const { currentOrganization } = useOrganization();
-  const riskData = useQuery(
+  const riskDataLive = useQuery(
     api.medicalDevices.getRiskAssessmentData,
     currentOrganization ? { organizationId: currentOrganization._id } : "skip"
   );
-  const legacyDevices = useQuery(
+  const { data: riskData, invalidate: invalidateRisk } = useCachedQuery(
+    currentOrganization ? `risk:${currentOrganization._id}` : "risk:none",
+    riskDataLive
+  );
+  const legacyDevicesLive = useQuery(
     api.medicalDevices.getLegacyOSDevices,
     currentOrganization ? { organizationId: currentOrganization._id } : "skip"
+  );
+  const { data: legacyDevices, invalidate: invalidateLegacy } = useCachedQuery(
+    currentOrganization ? `legacy:${currentOrganization._id}` : "legacy:none",
+    legacyDevicesLive
   );
 
   const phiChartData = useMemo(() => {
@@ -83,6 +93,11 @@ export function RiskAssessment() {
   if (riskData === undefined || legacyDevices === undefined) {
     return (
       <div className="space-y-6">
+        <div className="flex justify-end">
+          <Button variant="outline" onClick={() => { invalidateRisk(); invalidateLegacy(); }}>
+            Refresh Data
+          </Button>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
             <Card key={i}>
@@ -106,6 +121,11 @@ export function RiskAssessment() {
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-end">
+        <Button variant="outline" onClick={() => { invalidateRisk(); invalidateLegacy(); }}>
+          Refresh Data
+        </Button>
+      </div>
       {/* Risk Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>

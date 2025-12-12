@@ -48,6 +48,7 @@ import {
   type TechnicianScore,
   type ScoringModel
 } from "@/lib/scoring-utils";
+import { useCachedQuery } from "@/hooks/use-cached-query";
 
 const PERFORMANCE_COLORS = {
   excellent: '#10B981',
@@ -61,9 +62,13 @@ export function StaffPerformance() {
   const [selectedModel, setSelectedModel] = useState<string>('balanced');
   
   // Fetch technician performance data
-  const technicianData = useQuery(
+  const technicianDataLive = useQuery(
     api.medicalDevices.getTechnicianMetrics,
     currentOrganization ? { organizationId: currentOrganization._id } : "skip"
+  );
+  const { data: technicianData, invalidate } = useCachedQuery(
+    currentOrganization ? `tech-metrics:${currentOrganization._id}` : 'tech-metrics:none',
+    technicianDataLive
   );
   
   const isLoading = currentOrganization && technicianData === undefined;
@@ -120,6 +125,9 @@ export function StaffPerformance() {
   if (isLoading) {
     return (
       <div className="space-y-6">
+        <div className="flex justify-end">
+          <Button variant="outline" onClick={() => invalidate()}>Refresh Data</Button>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
             <Card key={i}>
@@ -165,6 +173,7 @@ export function StaffPerformance() {
               ))}
             </SelectContent>
           </Select>
+          <Button variant="outline" onClick={() => invalidate()}>Refresh Data</Button>
         </div>
       </div>
       

@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 // Use the backend's generated API
 import { api } from "../../../convex/_generated/api";
 import {
-  Shield,
   Users,
   Server,
   FileSpreadsheet,
@@ -76,12 +75,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               {/* Top row: Logo + User */}
               <div className="flex justify-between items-center">
                 <div className="flex items-center group flex-shrink-0">
-                  <div className="relative">
-                    <Shield className="h-8 w-8 text-blue-600 group-hover:text-blue-700 transition-colors duration-200" />
-                    <div className="absolute -inset-1 bg-blue-600/20 rounded-full blur opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                  </div>
-                  <span className="ml-2 text-lg font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-                    CryptIoMT
+                  <span className="text-lg font-bold">
+                    <span className="text-black">Crypt</span>
+                    <span className="text-blue-600">IoMT</span>
                   </span>
                 </div>
                 
@@ -124,12 +120,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <div className="flex items-center space-x-8">
               {/* Logo and Brand */}
               <div className="flex items-center group">
-                <div className="relative">
-                  <Shield className="h-10 w-10 text-blue-600 group-hover:text-blue-700 transition-colors duration-200" />
-                  <div className="absolute -inset-1 bg-blue-600/20 rounded-full blur opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                </div>
-                <span className="ml-3 text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-                  CryptIoMT
+                <span className="text-2xl font-bold">
+                  <span className="text-black">Crypt</span>
+                  <span className="text-blue-600">IoMT</span>
                 </span>
               </div>
               

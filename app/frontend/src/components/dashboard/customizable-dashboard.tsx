@@ -41,6 +41,16 @@ export function CustomizableDashboard() {
 
   const [isEditMode, setIsEditMode] = useState(false);
 
+  const addWidget = useCallback((type: 'stats' | 'chart') => {
+    const id = `${type}-${Math.random().toString(36).slice(2, 8)}`;
+    const newWidget: Widget = { id, type, title: type === 'stats' ? 'New Stat' : 'New Chart' };
+    setWidgets(prev => [...prev, newWidget]);
+    setLayouts(prev => ({
+      ...prev,
+      lg: [...(prev.lg || []), { i: id, x: 0, y: Infinity, w: 3, h: type === 'stats' ? 2 : 4 }]
+    }));
+  }, []);
+
   const handleLayoutChange = useCallback((layout: Layout[], layouts: { [key: string]: Layout[] }) => {
     setLayouts(layouts);
   }, []);
@@ -117,6 +127,14 @@ export function CustomizableDashboard() {
           </Button>
           {isEditMode && (
             <>
+              <Button variant="outline" onClick={() => addWidget('stats')}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Stat
+              </Button>
+              <Button variant="outline" onClick={() => addWidget('chart')}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Chart
+              </Button>
               <Button onClick={saveLayout}>
                 <Save className="h-4 w-4 mr-2" />
                 Save Layout

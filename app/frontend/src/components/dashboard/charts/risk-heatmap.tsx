@@ -60,19 +60,19 @@ export function RiskHeatmap({ riskData }: RiskHeatmapProps) {
                   <div
                     key={device.deviceId}
                     className={cn(
-                      "p-3 rounded-lg border-2 transition-all hover:shadow-md",
+                      "p-3 rounded-xl border bg-card/50 shadow-sm transition-all hover:shadow-md hover:-translate-y-[1px]",
                       device.networkStatus === 'secure' ? 'border-green-200' : 'border-red-200'
                     )}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-medium text-sm truncate">{device.deviceName}</span>
-                      <div className={cn("w-3 h-3 rounded-full", getRiskColor(device.riskScore))}></div>
+                      <div className={cn("w-2.5 h-2.5 rounded-full", getRiskColor(device.riskScore))}></div>
                     </div>
                     <div className="flex items-center justify-between">
                       <Badge variant={getPHIBadgeVariant(device.phiCategory)} className="text-xs">
                         PHI: {device.phiCategory}
                       </Badge>
-                      <span className="text-xs text-gray-600">{device.riskScore}%</span>
+                      <span className="text-xs text-muted-foreground">{device.riskScore}%</span>
                     </div>
                     <div className="flex items-center mt-2">
                       {device.networkStatus === 'secure' ? (
@@ -80,7 +80,7 @@ export function RiskHeatmap({ riskData }: RiskHeatmapProps) {
                       ) : (
                         <AlertTriangle className="h-3 w-3 text-red-600" />
                       )}
-                      <span className="text-xs ml-1 capitalize">{device.networkStatus}</span>
+                      <span className="text-xs ml-1 capitalize text-muted-foreground">{device.networkStatus}</span>
                     </div>
                   </div>
                 ))}

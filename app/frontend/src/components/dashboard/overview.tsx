@@ -2,7 +2,7 @@
 
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { useMemo, memo } from "react";
+import { useMemo, memo, useEffect, useState } from "react";
 import {
   Server,
   Users,
@@ -23,6 +23,8 @@ import { useOrganization } from "@/contexts/organization-context";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import {
   BarChart,
   Bar,
@@ -38,6 +40,7 @@ import {
 } from "recharts";
 import { DeviceDistribution } from './charts/device-distribution';
 import { CustomizableDashboard } from './customizable-dashboard';
+import { useCachedQuery } from '@/hooks/use-cached-query';
 
 // Define proper types for the data
 interface TechnicianData {
@@ -72,24 +75,40 @@ export function DashboardOverview() {
   const { currentOrganization } = useOrganization();
 
   // Separate queries for each data type
-  const analytics = useQuery(
+  const analyticsLive = useQuery(
     api.medicalDevices.getDashboardAnalytics,
     currentOrganization ? { organizationId: currentOrganization._id } : "skip"
   );
+  const { data: analytics } = useCachedQuery(
+    currentOrganization ? `analytics:${currentOrganization._id}` : 'analytics:none',
+    analyticsLive
+  );
   
-  const technicianPerformance = useQuery(
+  const technicianPerformanceLive = useQuery(
     api.medicalDevices.getTechnicianPerformance,
     currentOrganization ? { organizationId: currentOrganization._id } : "skip"
   );
+  const { data: technicianPerformance } = useCachedQuery(
+    currentOrganization ? `tech:${currentOrganization._id}` : 'tech:none',
+    technicianPerformanceLive
+  );
   
-  const equipmentCriticality = useQuery(
+  const equipmentCriticalityLive = useQuery(
     api.medicalDevices.getEquipmentCriticalityByHospital,
     currentOrganization ? { organizationId: currentOrganization._id } : "skip"
   );
+  const { data: equipmentCriticality } = useCachedQuery(
+    currentOrganization ? `criticality:${currentOrganization._id}` : 'criticality:none',
+    equipmentCriticalityLive
+  );
   
-  const osDistribution = useQuery(
+  const osDistributionLive = useQuery(
     api.medicalDevices.getOperatingSystemDistribution,
     currentOrganization ? { organizationId: currentOrganization._id } : "skip"
+  );
+  const { data: osDistribution } = useCachedQuery(
+    currentOrganization ? `os:${currentOrganization._id}` : 'os:none',
+    osDistributionLive
   );
 
   const isLoading = currentOrganization && (analytics === undefined || technicianPerformance === undefined || equipmentCriticality === undefined || osDistribution === undefined);
@@ -227,7 +246,36 @@ export function DashboardOverview() {
     })) ?? [];
   }, [osDistribution]);
 
-  const visibleStats = useMemo(() => stats.filter(stat => stat.visible), [stats]);
+  const [visibleStatNames, setVisibleStatNames] = useState<string[]>([]);
+  const [visibleSections, setVisibleSections] = useState({
+    phiRisk: true,
+    network: true,
+    tech: true,
+    os: true,
+    criticality: true,
+    distribution: true,
+  });
+
+  useEffect(() => {
+    const savedStats = typeof window !== "undefined" ? localStorage.getItem("dashboard:visibleStats") : null;
+    const savedSections = typeof window !== "undefined" ? localStorage.getItem("dashboard:visibleSections") : null;
+    if (savedStats) setVisibleStatNames(JSON.parse(savedStats));
+    if (savedSections) setVisibleSections(JSON.parse(savedSections));
+  }, []);
+
+  useEffect(() => {
+    if (!visibleStatNames.length) setVisibleStatNames(stats.map(s => s.name));
+  }, [stats]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") localStorage.setItem("dashboard:visibleStats", JSON.stringify(visibleStatNames));
+  }, [visibleStatNames]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") localStorage.setItem("dashboard:visibleSections", JSON.stringify(visibleSections));
+  }, [visibleSections]);
+
+  const visibleStats = useMemo(() => stats.filter(stat => visibleStatNames.includes(stat.name)), [stats, visibleStatNames]);
 
   // Fix: Show empty state when no organization is selected
   if (!currentOrganization) {
@@ -267,6 +315,66 @@ export function DashboardOverview() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold">Overview</h2>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline">Customize</Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Cards</DropdownMenuLabel>
+            {stats.map(s => (
+              <DropdownMenuCheckboxItem
+                key={s.name}
+                checked={visibleStatNames.includes(s.name)}
+                onCheckedChange={(checked) => {
+                  setVisibleStatNames(prev => checked ? Array.from(new Set([...prev, s.name])) : prev.filter(n => n !== s.name));
+                }}
+              >
+                {s.name}
+              </DropdownMenuCheckboxItem>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Sections</DropdownMenuLabel>
+            <DropdownMenuCheckboxItem
+              checked={visibleSections.phiRisk}
+              onCheckedChange={(c) => setVisibleSections(v => ({ ...v, phiRisk: !!c }))}
+            >
+              PHI Risk
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={visibleSections.network}
+              onCheckedChange={(c) => setVisibleSections(v => ({ ...v, network: !!c }))}
+            >
+              Network Connectivity
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={visibleSections.tech}
+              onCheckedChange={(c) => setVisibleSections(v => ({ ...v, tech: !!c }))}
+            >
+              Technician Performance
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={visibleSections.os}
+              onCheckedChange={(c) => setVisibleSections(v => ({ ...v, os: !!c }))}
+            >
+              OS Distribution
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={visibleSections.criticality}
+              onCheckedChange={(c) => setVisibleSections(v => ({ ...v, criticality: !!c }))}
+            >
+              Criticality Heatmap
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={visibleSections.distribution}
+              onCheckedChange={(c) => setVisibleSections(v => ({ ...v, distribution: !!c }))}
+            >
+              Device Distribution
+            </DropdownMenuCheckboxItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {visibleStats.map((stat, index) => (
@@ -275,30 +383,48 @@ export function DashboardOverview() {
       </div>
 
       {/* PHI Risk and Network Connectivity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        <PHIRiskDistributionChart data={phiRiskData} />
-        <NetworkConnectivityChart 
-          connected={analytics?.networkConnectedDevices ?? 0}
-          total={analytics?.totalDevices ?? 0}
-          percentage={analytics?.networkConnectedPercentage ?? 0}
-        />
-      </div>
+      {visibleSections.phiRisk || visibleSections.network ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          {visibleSections.phiRisk && (
+            <PHIRiskDistributionChart data={phiRiskData} />
+          )}
+          {visibleSections.network && (
+            <NetworkConnectivityChart 
+              connected={analytics?.networkConnectedDevices ?? 0}
+              total={analytics?.totalDevices ?? 0}
+              percentage={analytics?.networkConnectedPercentage ?? 0}
+            />
+          )}
+        </div>
+      ) : null}
 
       {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        <TechnicianPerformanceChart data={technicianChartData} />
-        <OSDistributionChart data={osChartData} colors={COLORS} />
-      </div>
+      {visibleSections.tech || visibleSections.os ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          {visibleSections.tech && (
+            <TechnicianPerformanceChart data={technicianChartData} />
+          )}
+          {visibleSections.os && (
+            <OSDistributionChart data={osChartData} colors={COLORS} />
+          )}
+        </div>
+      ) : null}
 
       {/* Full Width Charts */}
-      <div className="grid grid-cols-1 gap-4 sm:gap-6">
-        <CriticalityChart data={criticalityChartData} />
-        <DeviceDistribution 
-          hospitalData={hospitalChartData}
-          deviceTypes={deviceTypesData}
-          osVersions={osVersionsData}
-        />
-      </div>
+      {visibleSections.criticality || visibleSections.distribution ? (
+        <div className="grid grid-cols-1 gap-4 sm:gap-6">
+          {visibleSections.criticality && (
+            <CriticalityChart data={criticalityChartData} />
+          )}
+          {visibleSections.distribution && (
+            <DeviceDistribution 
+              hospitalData={hospitalChartData}
+              deviceTypes={deviceTypesData}
+              osVersions={osVersionsData}
+            />
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -319,22 +445,45 @@ const PHIRiskDistributionChart = memo(({ data }: { data: Array<{name: string, va
       <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
           <RechartsPieChart>
+            <defs>
+              <linearGradient id="phi-critical" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#DC2626" stopOpacity={0.9} />
+                <stop offset="100%" stopColor="#DC2626" stopOpacity={0.6} />
+              </linearGradient>
+              <linearGradient id="phi-high" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#EA580C" stopOpacity={0.9} />
+                <stop offset="100%" stopColor="#EA580C" stopOpacity={0.6} />
+              </linearGradient>
+              <linearGradient id="phi-medium" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#D97706" stopOpacity={0.9} />
+                <stop offset="100%" stopColor="#D97706" stopOpacity={0.6} />
+              </linearGradient>
+              <linearGradient id="phi-low" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#65A30D" stopOpacity={0.9} />
+                <stop offset="100%" stopColor="#65A30D" stopOpacity={0.6} />
+              </linearGradient>
+            </defs>
             <Pie
               data={data}
               cx="50%"
               cy="50%"
               labelLine={false}
               label={({ name, percent }) => `${name} ${percent ? (percent * 100).toFixed(0) : 0}%`}
-              outerRadius={80}
-              fill="#8884d8"
+              innerRadius={50}
+              outerRadius={92}
+              paddingAngle={3}
+              stroke="var(--card)"
+              strokeWidth={2}
+              isAnimationActive
+              animationDuration={600}
               dataKey="value"
             >
               {data.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} />
+                <Cell key={`cell-${index}`} fill={entry.name === 'Critical' ? 'url(#phi-critical)' : entry.name === 'High' ? 'url(#phi-high)' : entry.name === 'Medium' ? 'url(#phi-medium)' : 'url(#phi-low)'} />
               ))}
             </Pie>
-            <Tooltip />
-            <Legend />
+            <Tooltip contentStyle={{ backgroundColor: 'var(--popover)', borderColor: 'var(--border)', color: 'var(--popover-foreground)', borderRadius: 12 }} cursor={{ fill: 'transparent' }} />
+            <Legend wrapperStyle={{ color: 'var(--muted-foreground)' }} iconType="circle" />
           </RechartsPieChart>
         </ResponsiveContainer>
       </div>
@@ -397,17 +546,17 @@ const TechnicianPerformanceChart = memo(({ data }: { data: Array<{name: string, 
       <div className="h-64 sm:h-80">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
             <XAxis 
               dataKey="name" 
               fontSize={12}
-              tick={{ fontSize: 12 }}
+              tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }}
               interval={0}
               angle={-45}
               textAnchor="end"
               height={60}
             />
-            <YAxis domain={[0, 100]} fontSize={12} />
+            <YAxis domain={[0, 100]} fontSize={12} tick={{ fill: 'var(--muted-foreground)' }} />
             <Tooltip 
               formatter={(value, name) => {
                 const labels = {
@@ -418,35 +567,54 @@ const TechnicianPerformanceChart = memo(({ data }: { data: Array<{name: string, 
                 };
                 return [`${value}%`, labels[name as keyof typeof labels] || name];
               }}
+              contentStyle={{ backgroundColor: 'var(--popover)', borderColor: 'var(--border)', color: 'var(--popover-foreground)', borderRadius: 12 }}
             />
-            <Legend />
-            <Bar dataKey="score" fill="#3B82F6" name="Overall Score" />
-            <Bar dataKey="workload" fill="#10B981" name="Workload" />
-            <Bar dataKey="compliance" fill="#F59E0B" name="Compliance" />
-            <Bar dataKey="riskMitigation" fill="#EF4444" name="Risk Mitigation" />
+            <Legend wrapperStyle={{ color: 'var(--muted-foreground)' }} />
+            <defs>
+              <linearGradient id="perf-overall" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.9} />
+                <stop offset="100%" stopColor="#3B82F6" stopOpacity={0.6} />
+              </linearGradient>
+              <linearGradient id="perf-workload" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#10B981" stopOpacity={0.9} />
+                <stop offset="100%" stopColor="#10B981" stopOpacity={0.6} />
+              </linearGradient>
+              <linearGradient id="perf-compliance" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#F59E0B" stopOpacity={0.9} />
+                <stop offset="100%" stopColor="#F59E0B" stopOpacity={0.6} />
+              </linearGradient>
+              <linearGradient id="perf-risk" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#EF4444" stopOpacity={0.9} />
+                <stop offset="100%" stopColor="#EF4444" stopOpacity={0.6} />
+              </linearGradient>
+            </defs>
+            <Bar dataKey="score" name="Overall Score" fill="url(#perf-overall)" radius={[10, 10, 10, 10]} barSize={26} />
+            <Bar dataKey="workload" name="Workload" fill="url(#perf-workload)" radius={[10, 10, 10, 10]} barSize={26} />
+            <Bar dataKey="compliance" name="Compliance" fill="url(#perf-compliance)" radius={[10, 10, 10, 10]} barSize={26} />
+            <Bar dataKey="riskMitigation" name="Risk Mitigation" fill="url(#perf-risk)" radius={[10, 10, 10, 10]} barSize={26} />
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="text-center p-2 bg-blue-50 rounded-lg">
+        <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="text-center p-2 rounded-lg border bg-card/50">
           <p className="text-sm font-medium text-blue-900">Avg Overall</p>
           <p className="text-lg font-bold text-blue-600">
             {data.length > 0 ? Math.round(data.reduce((sum, d) => sum + d.score, 0) / data.length) : 0}%
           </p>
         </div>
-        <div className="text-center p-2 bg-green-50 rounded-lg">
+        <div className="text-center p-2 rounded-lg border bg-card/50">
           <p className="text-sm font-medium text-green-900">Avg Workload</p>
           <p className="text-lg font-bold text-green-600">
             {data.length > 0 ? Math.round(data.reduce((sum, d) => sum + (d.workload || 0), 0) / data.length) : 0}%
           </p>
         </div>
-        <div className="text-center p-2 bg-yellow-50 rounded-lg">
+        <div className="text-center p-2 rounded-lg border bg-card/50">
           <p className="text-sm font-medium text-yellow-900">Avg Compliance</p>
           <p className="text-lg font-bold text-yellow-600">
             {data.length > 0 ? Math.round(data.reduce((sum, d) => sum + (d.compliance || 0), 0) / data.length) : 0}%
           </p>
         </div>
-        <div className="text-center p-2 bg-red-50 rounded-lg">
+        <div className="text-center p-2 rounded-lg border bg-card/50">
           <p className="text-sm font-medium text-red-900">Risk Mitigation</p>
           <p className="text-lg font-bold text-red-600">
             {data.length > 0 ? Math.round(data.reduce((sum, d) => sum + (d.riskMitigation || 0), 0) / data.length) : 0}%
@@ -473,22 +641,32 @@ const OSDistributionChart = memo(({ data, colors }: { data: Array<{name: string,
       <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
           <RechartsPieChart>
+            <defs>
+              {colors.slice(0, 5).map((c, i) => (
+                <linearGradient key={`os-${i}`} id={`os-${i}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={c} stopOpacity={0.9} />
+                  <stop offset="100%" stopColor={c} stopOpacity={0.6} />
+                </linearGradient>
+              ))}
+            </defs>
             <Pie
               data={data}
               cx="50%"
               cy="50%"
               labelLine={false}
               label={({ name, percent }) => `${name} ${percent ? (percent * 100).toFixed(0) : 0}%`}
-              outerRadius={80}
-              fill="#8884d8"
+              innerRadius={50}
+              outerRadius={90}
+              stroke="var(--card)"
+              strokeWidth={2}
               dataKey="count"
             >
               {data.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+                <Cell key={`cell-${index}`} fill={`url(#os-${index % 5})`} />
               ))}
             </Pie>
-            <Tooltip />
-            <Legend />
+            <Tooltip contentStyle={{ backgroundColor: 'var(--popover)', borderColor: 'var(--border)', color: 'var(--popover-foreground)', borderRadius: 12 }} cursor={{ fill: 'transparent' }} />
+            <Legend wrapperStyle={{ color: 'var(--muted-foreground)' }} iconType="circle" />
           </RechartsPieChart>
         </ResponsiveContainer>
       </div>
@@ -625,15 +803,17 @@ const StatsCard = memo(({ stat }: { stat: any }) => {
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-gray-600">{stat.name}</p>
-            <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+            <p className="text-sm font-medium text-muted-foreground">{stat.name}</p>
+            <p className="text-2xl font-bold">{stat.value}</p>
           </div>
-          <div className="flex items-center space-x-2">
-            <Icon className="h-8 w-8 text-blue-600" />
+          <div className="flex items-center">
+            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Icon className="h-6 w-6 text-primary" />
+            </div>
           </div>
         </div>
-        <div className="mt-4 flex items-center">
-          <span className="text-sm text-gray-500">{stat.change}</span>
+        <div className="mt-4">
+          <span className="text-sm text-muted-foreground">{stat.change}</span>
         </div>
       </CardContent>
     </Card>

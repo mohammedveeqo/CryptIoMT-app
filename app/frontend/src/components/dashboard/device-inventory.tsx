@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Shield, Search, Filter, X, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import { Search, Filter, X, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { useOrganization } from '@/contexts/organization-context'
 import { Skeleton } from '@/components/ui/skeleton'
 import { 
@@ -21,6 +21,7 @@ import {
   type SortingState
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
+import { useCachedQuery } from '@/hooks/use-cached-query'
 
 interface DeviceInventoryProps {
   isAdmin?: boolean
@@ -75,9 +76,14 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
   })
 
   // Fetch devices data
-  const allDevices = useQuery(
+  const liveDevices = useQuery(
     api.medicalDevices.getAllMedicalDevices,
     currentOrganization ? { organizationId: currentOrganization._id } : 'skip'
+  )
+
+  const { data: allDevices, invalidate } = useCachedQuery(
+    currentOrganization ? `devices:${currentOrganization._id}` : 'devices:none',
+    liveDevices
   )
 
   // Memoized column definitions
@@ -289,7 +295,6 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
       <Card className="bg-white/60 backdrop-blur-sm h-full">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
             Device Inventory
           </CardTitle>
           <CardDescription>
@@ -314,13 +319,17 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
     <Card className="bg-white/60 backdrop-blur-sm h-full flex flex-col">
       <CardHeader className="flex-shrink-0">
         <CardTitle className="flex items-center gap-2">
-          <Shield className="h-5 w-5" />
           Device Inventory
         </CardTitle>
         <CardDescription>
           {filteredData.length} of {allDevices.length} devices
           {isPending && <span className="text-blue-600 ml-2">(Filtering...)</span>}
         </CardDescription>
+        <div className="mt-2">
+          <Button variant="outline" size="sm" onClick={invalidate}>
+            Refresh Data
+          </Button>
+        </div>
       </CardHeader>
       
       <CardContent className="flex-1 flex flex-col min-h-0">

@@ -10,9 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Network, Shield, Filter, Wifi, WifiOff, Router, Database, BarChart3 } from 'lucide-react'
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
 import { useOrganization } from '@/contexts/organization-context'
 import * as d3 from 'd3'
 import { Progress } from '@/components/ui/progress'
+import { useCachedQuery } from '@/hooks/use-cached-query'
 
 interface NetworkNode {
   id: string
@@ -58,7 +60,7 @@ interface SubnetInfo {
 }
 
 interface TopologyFilters {
-  view: 'logical' | 'security' | 'connectivity' | 'subnet'
+  view: 'overview' | 'subnet'
   phiLevel: 'all' | 'high' | 'medium' | 'low' | 'none'
   networkStatus: 'all' | 'connected' | 'offline'
   manufacturer: string
@@ -70,7 +72,7 @@ interface TopologyFilters {
 export function NetworkTopology() {
   const { currentOrganization } = useOrganization()
   const [filters, setFilters] = useState<TopologyFilters>({
-    view: 'subnet',
+    view: 'overview',
     phiLevel: 'all',
     networkStatus: 'all',
     manufacturer: 'all',
@@ -83,9 +85,13 @@ export function NetworkTopology() {
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 })
   const svgRef = useRef<SVGSVGElement>(null)
 
-  const allDevices = useQuery(
+  const allDevicesLive = useQuery(
     api.medicalDevices.getAllMedicalDevices,
     currentOrganization ? { organizationId: currentOrganization._id } : "skip"
+  )
+  const { data: allDevices, invalidate } = useCachedQuery(
+    currentOrganization ? `devices:${currentOrganization._id}` : 'devices:none',
+    allDevicesLive
   )
 
   // Enhanced subnet analysis with DHCP detection
@@ -204,7 +210,7 @@ export function NetworkTopology() {
     })
   }, [allDevices, filters])
 
-  // Create network data for visualization
+  // Create network data for visualization (subnet graph only)
   const networkData = useMemo(() => {
     const nodes: NetworkNode[] = []
     const links: NetworkLink[] = []
@@ -229,23 +235,21 @@ export function NetworkTopology() {
           hasPHI: false
         })
 
-        // Add device nodes connected to subnet
-        subnetInfo.devices.forEach(device => {
-          if (filteredDevices.some(d => d._id === device.id)) {
-            nodes.push(device)
-            // Link device to subnet
-            links.push({
-              source: device.id,
-              target: `subnet-${subnet}`,
-              value: 1,
-              type: 'subnet-connection'
-            })
-          }
+        // Add device nodes connected to subnet (limit per subnet for clarity)
+        const devicesToShow = subnetInfo.devices
+          .filter(device => filteredDevices.some(d => d._id === device.id))
+          .slice(0, 30)
+
+        devicesToShow.forEach(device => {
+          nodes.push(device)
+          links.push({
+            source: device.id,
+            target: `subnet-${subnet}`,
+            value: 1,
+            type: 'subnet-connection'
+          })
         })
       })
-    } else {
-      // Original network topology logic for other views
-      // ... existing code for logical, security, connectivity views ...
     }
 
     return { nodes, links }
@@ -263,8 +267,9 @@ export function NetworkTopology() {
     return { manufacturers, categories, entities, subnets }
   }, [allDevices, subnetAnalysis])
 
-  // D3 visualization effect
+  // D3 visualization effect (only in subnet view)
   useEffect(() => {
+    if (filters.view !== 'subnet') return
     if (!svgRef.current || networkData.nodes.length === 0) return
 
     const svg = d3.select(svgRef.current)
@@ -272,10 +277,18 @@ export function NetworkTopology() {
 
     const container = svg.append('g')
 
+    // Zoom & pan
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.3, 3])
+      .on('zoom', (event) => {
+        container.attr('transform', event.transform.toString())
+      })
+    svg.call(zoom as any)
+
     // Create simulation
     const simulation = d3.forceSimulation(networkData.nodes as any)
       .force('link', d3.forceLink(networkData.links).id((d: any) => d.id).distance(100))
-      .force('charge', d3.forceManyBody().strength(-300))
+      .force('charge', d3.forceManyBody().strength(-200))
       .force('center', d3.forceCenter(dimensions.width / 2, dimensions.height / 2))
       .force('collision', d3.forceCollide().radius((d: any) => d.size + 5))
 
@@ -284,8 +297,8 @@ export function NetworkTopology() {
       .selectAll('line')
       .data(networkData.links)
       .enter().append('line')
-      .attr('stroke', '#999')
-      .attr('stroke-opacity', 0.6)
+      .attr('stroke', 'var(--border)')
+      .attr('stroke-opacity', 0.5)
       .attr('stroke-width', 2)
 
     // Add nodes
@@ -295,7 +308,7 @@ export function NetworkTopology() {
       .enter().append('circle')
       .attr('r', (d: any) => d.size)
       .attr('fill', (d: any) => d.color)
-      .attr('stroke', '#fff')
+      .attr('stroke', 'var(--card)')
       .attr('stroke-width', 2)
       .style('cursor', 'pointer')
       .call(d3.drag<any, any>()
@@ -324,8 +337,9 @@ export function NetworkTopology() {
       .attr('font-size', '10px')
       .attr('font-family', 'Arial')
       .attr('text-anchor', 'middle')
-      .attr('dy', (d: any) => d.size + 15)
-      .attr('fill', '#333')
+      .attr('dy', (d: any) => d.size + 12)
+      .attr('fill', 'var(--muted-foreground)')
+      .style('opacity', (d: any) => d.group === 'subnet' ? 0.9 : 0.3)
 
     // Node click handler
     node.on('click', (event, d: any) => {
@@ -359,7 +373,7 @@ export function NetworkTopology() {
     return () => {
       simulation.stop()
     }
-  }, [networkData, dimensions, subnetAnalysis])
+  }, [networkData, dimensions, subnetAnalysis, filters.view])
 
   if (!allDevices) {
     return (
@@ -382,6 +396,9 @@ export function NetworkTopology() {
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-end">
+        <Button variant="outline" onClick={() => invalidate()}>Refresh Data</Button>
+      </div>
       {/* Network KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
@@ -457,15 +474,13 @@ export function NetworkTopology() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
             <div className="space-y-2">
               <Label>View Type</Label>
-              <Select value={filters.view} onValueChange={(value: 'logical' | 'security' | 'connectivity' | 'subnet') => setFilters(prev => ({ ...prev, view: value }))}>
+              <Select value={filters.view} onValueChange={(value: 'overview' | 'subnet') => setFilters(prev => ({ ...prev, view: value }))}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="subnet">Subnet View</SelectItem>
-                  <SelectItem value="logical">Logical View</SelectItem>
-                  <SelectItem value="security">Security View</SelectItem>
-                  <SelectItem value="connectivity">Connectivity View</SelectItem>
+                  <SelectItem value="overview">Overview</SelectItem>
+                  <SelectItem value="subnet">Subnet Graph</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -587,22 +602,42 @@ export function NetworkTopology() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Network className="h-5 w-5" />
-              Network Topology - {filters.view.charAt(0).toUpperCase() + filters.view.slice(1)} View
+              {filters.view === 'subnet' ? 'Network Topology - Subnet Graph' : 'Connectivity Overview'}
             </CardTitle>
             <CardDescription>
-              {networkData.nodes.length} nodes, {networkData.links.length} connections
+              {filters.view === 'subnet' ? `${networkData.nodes.length} nodes, ${networkData.links.length} connections` : 'Aggregated connectivity by subnet'}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="border rounded-lg overflow-hidden bg-gray-50 w-full">
-              <svg
-                ref={svgRef}
-                width={dimensions.width}
-                height={dimensions.height}
-                viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
-                style={{ background: '#f9fafb', display: 'block', width: '100%', height: 'auto' }}
-              />
-            </div>
+            {filters.view === 'subnet' ? (
+              <div className="border rounded-lg overflow-hidden bg-gray-50 w-full">
+                <svg
+                  ref={svgRef}
+                  width={dimensions.width}
+                  height={dimensions.height}
+                  viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
+                  style={{ background: '#f9fafb', display: 'block', width: '100%', height: 'auto' }}
+                />
+              </div>
+            ) : (
+              <div className="h-96">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={Array.from(subnetAnalysis.subnets.values()).slice(0, 12).map(s => ({
+                    subnet: s.subnet,
+                    connected: s.devices.filter(d => d.deviceOnNetwork).length,
+                    offline: s.devices.filter(d => !d.deviceOnNetwork).length
+                  }))}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                    <XAxis dataKey="subnet" tick={{ fill: 'var(--muted-foreground)' }} angle={-45} textAnchor="end" height={80} />
+                    <YAxis tick={{ fill: 'var(--muted-foreground)' }} />
+                    <Tooltip contentStyle={{ backgroundColor: 'var(--popover)', borderColor: 'var(--border)', color: 'var(--popover-foreground)', borderRadius: 12 }} />
+                    <Legend wrapperStyle={{ color: 'var(--muted-foreground)' }} />
+                    <Bar dataKey="connected" stackId="status" fill="var(--chart-1)" radius={[10, 10, 0, 0]} />
+                    <Bar dataKey="offline" stackId="status" fill="var(--destructive)" radius={[10, 10, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </CardContent>
         </Card>
 

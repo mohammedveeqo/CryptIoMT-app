@@ -4,17 +4,14 @@ import { useUser } from "@clerk/nextjs";
 import { SignIn } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { Shield } from "lucide-react";
+ 
 
 // Enhanced logo with security icon
 function AppLogo() {
   return (
-    <div className="flex items-center justify-center space-x-3">
-      <div className="bg-blue-600 p-3 rounded-xl">
-        <Shield className="h-8 w-8 text-white" />
-      </div>
+    <div className="flex items-center justify-center">
       <div className="text-3xl font-bold tracking-tight">
-        <span className="text-slate-800 font-extrabold">Crypt</span>
+        <span className="text-black font-extrabold">Crypt</span>
         <span className="text-blue-600 font-bold">IoMT</span>
       </div>
     </div>
@@ -54,13 +51,9 @@ export default function LoginPage() {
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
             {/* Header section */}
             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-8 text-center">
-              <div className="flex justify-center mb-4">
-                <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm">
-                  <Shield className="h-8 w-8 text-white" />
-                </div>
-              </div>
-              <h1 className="text-2xl font-bold text-white mb-2">
-                <span className="font-extrabold">Crypt</span><span className="font-bold">IoMT</span>
+              <div className="mb-4"></div>
+              <h1 className="text-2xl font-bold mb-2">
+                <span className="text-black font-extrabold">Crypt</span><span className="text-blue-600 font-bold">IoMT</span>
               </h1>
               <p className="text-blue-100 text-sm">
                 Healthcare Cybersecurity Platform
