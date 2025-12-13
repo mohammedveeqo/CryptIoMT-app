@@ -66,7 +66,7 @@ export default function Dashboard() {
           </div>
 
           {/* Desktop: Horizontal Tabs */}
-          <div className="hidden sm:flex justify-center">
+          <div className="hidden sm:flex justify-center sticky top-16 z-30 bg-white/80 backdrop-blur-sm border-b border-gray-200/50 py-2">
             <TabsList className="bg-white/80 backdrop-blur-sm shadow-lg border border-gray-200/50 p-1.5 rounded-xl flex-wrap gap-1">
               <TabsTrigger 
                 value="overview" 

@@ -21,9 +21,11 @@ import {
 } from "lucide-react";
 import { useOrganization } from "@/contexts/organization-context";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import {
   BarChart,
@@ -39,7 +41,9 @@ import {
   ResponsiveContainer
 } from "recharts";
 import { DeviceDistribution } from './charts/device-distribution';
-import { CustomizableDashboard } from './customizable-dashboard';
+import { Responsive, WidthProvider, type Layout } from 'react-grid-layout';
+import 'react-grid-layout/css/styles.css';
+import 'react-resizable/css/styles.css';
 import { useCachedQuery } from '@/hooks/use-cached-query';
 
 // Define proper types for the data
@@ -73,6 +77,76 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'
 
 export function DashboardOverview() {
   const { currentOrganization } = useOrganization();
+  const ResponsiveGridLayout = WidthProvider(Responsive);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const getSectionMin = (i: string) => {
+    switch (i) {
+      case 'phi':
+      case 'network':
+        return { minW: 6, minH: 8 };
+      case 'tech':
+      case 'os':
+        return { minW: 6, minH: 10 };
+      case 'criticality':
+      case 'distribution':
+        return { minW: 12, minH: 12 };
+      default:
+        return { minW: 6, minH: 8 };
+    }
+  };
+  const normalizeSectionLayouts = (all: { [key: string]: Layout[] }) => {
+    const result: { [key: string]: Layout[] } = {};
+    Object.entries(all || {}).forEach(([bp, arr]) => {
+      result[bp] = (arr || []).map(l => {
+        const { minW, minH } = getSectionMin(l.i);
+        return { ...l, minW, minH, w: Math.max(l.w || minW, minW), h: Math.max(l.h || minH, minH) } as Layout;
+      });
+    });
+    return result;
+  };
+  const normalizeStatLayouts = (all: { [key: string]: Layout[] }) => {
+    const result: { [key: string]: Layout[] } = {};
+    Object.entries(all || {}).forEach(([bp, arr]) => {
+      result[bp] = (arr || []).map(l => {
+        const minW = 3;
+        const minH = 2;
+        return { ...l, minW, minH, w: Math.max(l.w || minW, minW), h: Math.max(l.h || minH, minH) } as Layout;
+      });
+    });
+    return result;
+  };
+  const initialLayouts = (() => {
+    const key = currentOrganization ? `overview-layout:${currentOrganization._id}` : 'overview-layout:none';
+    try {
+      const raw = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
+      if (raw) return normalizeSectionLayouts(JSON.parse(raw) as { [key: string]: Layout[] });
+    } catch {}
+    return {
+      lg: [
+        { i: 'phi', x: 0, y: 0, w: 6, h: 8, minW: 6, minH: 8 },
+        { i: 'network', x: 6, y: 0, w: 6, h: 8, minW: 6, minH: 8 },
+        { i: 'tech', x: 0, y: 8, w: 6, h: 10, minW: 6, minH: 10 },
+        { i: 'os', x: 6, y: 8, w: 6, h: 10, minW: 6, minH: 10 },
+        { i: 'criticality', x: 0, y: 18, w: 12, h: 12, minW: 12, minH: 12 },
+        { i: 'distribution', x: 0, y: 30, w: 12, h: 12, minW: 12, minH: 12 },
+      ],
+    } as { [key: string]: Layout[] };
+  })();
+  const [layouts, setLayouts] = useState<{ [key: string]: Layout[] }>(initialLayouts);
+  const saveLayouts = () => {
+    const key = currentOrganization ? `overview-layout:${currentOrganization._id}` : 'overview-layout:none';
+    try {
+      if (typeof window !== 'undefined') localStorage.setItem(key, JSON.stringify(layouts));
+    } catch {}
+    setIsEditMode(false);
+  };
+
+  useEffect(() => {
+    const key = currentOrganization ? `overview-layout:${currentOrganization._id}` : 'overview-layout:none';
+    try {
+      if (typeof window !== 'undefined') localStorage.setItem(key, JSON.stringify(layouts));
+    } catch {}
+  }, [layouts, currentOrganization]);
 
   // Separate queries for each data type
   const analyticsLive = useQuery(
@@ -109,6 +183,15 @@ export function DashboardOverview() {
   const { data: osDistribution } = useCachedQuery(
     currentOrganization ? `os:${currentOrganization._id}` : 'os:none',
     osDistributionLive
+  );
+
+  const allDevicesLive = useQuery(
+    api.medicalDevices.getAllMedicalDevices,
+    currentOrganization ? { organizationId: currentOrganization._id } : "skip"
+  );
+  const { data: allDevices } = useCachedQuery(
+    currentOrganization ? `devices:${currentOrganization._id}` : 'devices:none',
+    allDevicesLive
   );
 
   const isLoading = currentOrganization && (analytics === undefined || technicianPerformance === undefined || equipmentCriticality === undefined || osDistribution === undefined);
@@ -276,6 +359,41 @@ export function DashboardOverview() {
   }, [visibleSections]);
 
   const visibleStats = useMemo(() => stats.filter(stat => visibleStatNames.includes(stat.name)), [stats, visibleStatNames]);
+  const initialStatsLayouts = (() => {
+    const key = currentOrganization ? `overview-stats-layout:${currentOrganization._id}` : 'overview-stats-layout:none';
+    try {
+      const raw = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
+      if (raw) return normalizeStatLayouts(JSON.parse(raw) as { [key: string]: Layout[] });
+    } catch {}
+    const lg = [
+      { i: 'stat:Total Devices', x: 0, y: 0, w: 3, h: 3, minW: 3, minH: 3 },
+      { i: 'stat:Hospitals', x: 3, y: 0, w: 3, h: 3, minW: 3, minH: 3 },
+      { i: 'stat:Technicians', x: 6, y: 0, w: 3, h: 3, minW: 3, minH: 3 },
+      { i: 'stat:Network Connected', x: 9, y: 0, w: 3, h: 3, minW: 3, minH: 3 },
+      { i: 'stat:Critical Alerts', x: 0, y: 3, w: 3, h: 3, minW: 3, minH: 3 },
+      { i: 'stat:PHI Devices', x: 3, y: 3, w: 3, h: 3, minW: 3, minH: 3 },
+      { i: 'stat:Legacy OS Devices', x: 6, y: 3, w: 3, h: 3, minW: 3, minH: 3 },
+      { i: 'stat:Data Quality Score', x: 9, y: 3, w: 3, h: 3, minW: 3, minH: 3 },
+    ];
+    const copy = (arr: Layout[]) => arr.map(l => ({ ...l }));
+    return {
+      lg,
+      md: copy(lg),
+      sm: copy(lg),
+      xs: copy(lg),
+      xxs: copy(lg),
+    } as { [key: string]: Layout[] };
+  })();
+  const [statsLayouts, setStatsLayouts] = useState<{ [key: string]: Layout[] }>(initialStatsLayouts);
+  useEffect(() => {
+    const key = currentOrganization ? `overview-stats-layout:${currentOrganization._id}` : 'overview-stats-layout:none';
+    try {
+      if (typeof window !== 'undefined') localStorage.setItem(key, JSON.stringify(statsLayouts));
+    } catch {}
+  }, [statsLayouts, currentOrganization]);
+
+  const [statSheetOpen, setStatSheetOpen] = useState(false);
+  const [selectedStat, setSelectedStat] = useState<any | null>(null);
 
   // Fix: Show empty state when no organization is selected
   if (!currentOrganization) {
@@ -375,63 +493,246 @@ export function DashboardOverview() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        {visibleStats.map((stat, index) => (
-          <StatsCard key={index} stat={stat} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {visibleStats.map((stat) => (
+          <StatsCard key={`stat:${stat.name}`} stat={stat} onClick={() => { setSelectedStat(stat); setStatSheetOpen(true); }} />
         ))}
       </div>
 
-      {/* PHI Risk and Network Connectivity */}
-      {visibleSections.phiRisk || visibleSections.network ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-          {visibleSections.phiRisk && (
+      {selectedStat && (
+        <Dialog open={statSheetOpen} onOpenChange={(o) => { setStatSheetOpen(o); if (!o) setSelectedStat(null); }}>
+          <DialogContent className="sm:max-w-3xl max-w-[calc(100%-2rem)]">
+            <DialogHeader>
+              <DialogTitle>{selectedStat.name}</DialogTitle>
+              <DialogDescription>
+                {currentOrganization?.name || 'Organization'}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="px-2 sm:px-4 space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="rounded-lg border bg-muted/30 p-4">
+                  <div className="text-xs text-muted-foreground">Value</div>
+                  <div className="text-3xl font-bold tracking-tight">{selectedStat.value}</div>
+                </div>
+                <div className="rounded-lg border bg-muted/30 p-4">
+                  <div className="text-xs text-muted-foreground">Context</div>
+                  <div className="text-sm font-medium">
+                    {selectedStat.name === 'Network Connected' && `${analytics?.networkConnectedDevices ?? 0} of ${analytics?.totalDevices ?? 0} devices`}
+                    {selectedStat.name === 'Technicians' && `Avg Score: ${analytics?.avgTechnicianScore ?? 0}%`}
+                    {selectedStat.name === 'PHI Devices' && `${Math.round(((analytics?.phiDevices ?? 0) / (analytics?.totalDevices || 1)) * 100)}% of total`}
+                    {selectedStat.name === 'Data Quality Score' && ((analytics?.dataCollectionScore ?? 0) >= 80 ? 'Excellent' : 'Improving')}
+                    {selectedStat.name === 'Hospitals' && 'Active entities'}
+                    {selectedStat.name === 'Legacy OS Devices' && 'Security risk'}
+                    {selectedStat.name === 'Critical Alerts' && 'Live monitoring'}
+                    {selectedStat.name === 'Total Devices' && 'Real-time'}
+                  </div>
+                </div>
+                <div className="rounded-lg border bg-muted/30 p-4">
+                  <div className="text-xs text-muted-foreground">Action</div>
+                  <div className="flex gap-2 mt-2">
+                    <Button size="sm">Open Section</Button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="rounded-lg border bg-card p-4">
+                  <div className="text-sm font-semibold">Top Hospitals</div>
+                  <div className="mt-3 space-y-3">
+                    {(() => {
+                      const list = (allDevices || []).filter(d => {
+                        if (selectedStat?.name === 'Network Connected') return d.deviceOnNetwork;
+                        if (selectedStat?.name === 'Critical Alerts') return d.customerPHICategory?.toLowerCase().includes('critical') || d.hasPHI;
+                        if (selectedStat?.name === 'PHI Devices') return d.hasPHI;
+                        return true;
+                      });
+                      const map: Record<string, number> = {};
+                      list.forEach(d => { const k = d.entity || 'Unknown'; map[k] = (map[k] || 0) + 1; });
+                      const entries = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,6);
+                      return entries.map(([name, count]) => (
+                        <div key={name} className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="truncate mr-2 font-medium">{name}</span>
+                            <Badge variant="outline">{count}</Badge>
+                          </div>
+                          <Progress value={Math.min(100, Math.round((count / Math.max(1, list.length)) * 100))} />
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </div>
+                <div className="rounded-lg border bg-card p-4">
+                  <div className="text-sm font-semibold">Top Manufacturers</div>
+                  <div className="mt-3 space-y-3">
+                    {(() => {
+                      const list = (allDevices || []).filter(d => {
+                        if (selectedStat?.name === 'Network Connected') return d.deviceOnNetwork;
+                        if (selectedStat?.name === 'Critical Alerts') return d.customerPHICategory?.toLowerCase().includes('critical') || d.hasPHI;
+                        if (selectedStat?.name === 'PHI Devices') return d.hasPHI;
+                        return true;
+                      });
+                      const map: Record<string, number> = {};
+                      list.forEach(d => { const k = d.manufacturer || 'Unknown'; map[k] = (map[k] || 0) + 1; });
+                      const entries = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,6);
+                      return entries.map(([name, count]) => (
+                        <div key={name} className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="truncate mr-2 font-medium">{name}</span>
+                            <Badge variant="outline">{count}</Badge>
+                          </div>
+                          <Progress value={Math.min(100, Math.round((count / Math.max(1, list.length)) * 100))} />
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </div>
+                <div className="rounded-lg border bg-card p-4">
+                  <div className="text-sm font-semibold">Top Categories</div>
+                  <div className="mt-3 space-y-3">
+                    {(() => {
+                      const list = (allDevices || []).filter(d => {
+                        if (selectedStat?.name === 'Network Connected') return d.deviceOnNetwork;
+                        if (selectedStat?.name === 'Critical Alerts') return d.customerPHICategory?.toLowerCase().includes('critical') || d.hasPHI;
+                        if (selectedStat?.name === 'PHI Devices') return d.hasPHI;
+                        return true;
+                      });
+                      const map: Record<string, number> = {};
+                      list.forEach(d => { const k = d.category || 'Unknown'; map[k] = (map[k] || 0) + 1; });
+                      const entries = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,6);
+                      return entries.map(([name, count]) => (
+                        <div key={name} className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="truncate mr-2 font-medium">{name}</span>
+                            <Badge variant="outline">{count}</Badge>
+                          </div>
+                          <Progress value={Math.min(100, Math.round((count / Math.max(1, list.length)) * 100))} />
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      <div className="flex justify-end gap-2">
+        <Button variant={isEditMode ? 'default' : 'outline'} onClick={() => setIsEditMode(!isEditMode)}>
+          {isEditMode ? 'Exit Edit' : 'Edit Layout'}
+        </Button>
+        {isEditMode && (
+          <Button onClick={() => {
+            const keyA = currentOrganization ? `overview-layout:${currentOrganization._id}` : 'overview-layout:none';
+            const keyB = currentOrganization ? `overview-stats-layout:${currentOrganization._id}` : 'overview-stats-layout:none';
+            try {
+              if (typeof window !== 'undefined') {
+                localStorage.setItem(keyA, JSON.stringify(layouts));
+                localStorage.setItem(keyB, JSON.stringify(statsLayouts));
+              }
+            } catch {}
+            setIsEditMode(false);
+          }}>Save Layout</Button>
+        )}
+        {isEditMode && (
+          <Button variant="outline" onClick={() => {
+            const keyA = currentOrganization ? `overview-layout:${currentOrganization._id}` : 'overview-layout:none';
+            const keyB = currentOrganization ? `overview-stats-layout:${currentOrganization._id}` : 'overview-stats-layout:none';
+            try {
+              if (typeof window !== 'undefined') {
+                localStorage.removeItem(keyA);
+                localStorage.removeItem(keyB);
+              }
+            } catch {}
+            const resetLayouts = {
+              lg: [
+                { i: 'phi', x: 0, y: 0, w: 6, h: 6 },
+                { i: 'network', x: 6, y: 0, w: 6, h: 6 },
+                { i: 'tech', x: 0, y: 6, w: 6, h: 8 },
+                { i: 'os', x: 6, y: 6, w: 6, h: 8 },
+                { i: 'criticality', x: 0, y: 14, w: 12, h: 10 },
+                { i: 'distribution', x: 0, y: 24, w: 12, h: 10 },
+              ],
+            } as { [key: string]: Layout[] };
+            const resetStats = {
+              lg: [
+                { i: 'stat:Total Devices', x: 0, y: 0, w: 3, h: 2, minW: 3, minH: 2 },
+                { i: 'stat:Hospitals', x: 3, y: 0, w: 3, h: 2, minW: 3, minH: 2 },
+                { i: 'stat:Technicians', x: 6, y: 0, w: 3, h: 2, minW: 3, minH: 2 },
+                { i: 'stat:Network Connected', x: 9, y: 0, w: 3, h: 2, minW: 3, minH: 2 },
+                { i: 'stat:Critical Alerts', x: 0, y: 2, w: 3, h: 2, minW: 3, minH: 2 },
+                { i: 'stat:PHI Devices', x: 3, y: 2, w: 3, h: 2, minW: 3, minH: 2 },
+                { i: 'stat:Legacy OS Devices', x: 6, y: 2, w: 3, h: 2, minW: 3, minH: 2 },
+                { i: 'stat:Data Quality Score', x: 9, y: 2, w: 3, h: 2, minW: 3, minH: 2 },
+              ],
+            } as { [key: string]: Layout[] };
+            setLayouts(resetLayouts);
+            setStatsLayouts(resetStats);
+          }}>Reset Layout</Button>
+        )}
+      </div>
+
+      <ResponsiveGridLayout
+        className="layout"
+        layouts={layouts}
+        onLayoutChange={(layout, all) => setLayouts(normalizeSectionLayouts(all))}
+        breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+        cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
+        rowHeight={48}
+        compactType="vertical"
+        preventCollision={true}
+        isBounded
+        containerPadding={[16, 16]}
+        isDraggable={isEditMode}
+        isResizable={isEditMode}
+        margin={[16, 16]}
+      >
+        {visibleSections.phiRisk && (
+          <div key="phi" className="h-full">
             <PHIRiskDistributionChart data={phiRiskData} />
-          )}
-          {visibleSections.network && (
+          </div>
+        )}
+        {visibleSections.network && (
+          <div key="network" className="h-full">
             <NetworkConnectivityChart 
               connected={analytics?.networkConnectedDevices ?? 0}
               total={analytics?.totalDevices ?? 0}
               percentage={analytics?.networkConnectedPercentage ?? 0}
             />
-          )}
-        </div>
-      ) : null}
-
-      {/* Charts Grid */}
-      {visibleSections.tech || visibleSections.os ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-          {visibleSections.tech && (
+          </div>
+        )}
+        {visibleSections.tech && (
+          <div key="tech" className="h-full">
             <TechnicianPerformanceChart data={technicianChartData} />
-          )}
-          {visibleSections.os && (
+          </div>
+        )}
+        {visibleSections.os && (
+          <div key="os" className="h-full">
             <OSDistributionChart data={osChartData} colors={COLORS} />
-          )}
-        </div>
-      ) : null}
-
-      {/* Full Width Charts */}
-      {visibleSections.criticality || visibleSections.distribution ? (
-        <div className="grid grid-cols-1 gap-4 sm:gap-6">
-          {visibleSections.criticality && (
+          </div>
+        )}
+        {visibleSections.criticality && (
+          <div key="criticality" className="h-full">
             <CriticalityChart data={criticalityChartData} />
-          )}
-          {visibleSections.distribution && (
+          </div>
+        )}
+        {visibleSections.distribution && (
+          <div key="distribution" className="h-full">
             <DeviceDistribution 
               hospitalData={hospitalChartData}
               deviceTypes={deviceTypesData}
               osVersions={osVersionsData}
             />
-          )}
-        </div>
-      ) : null}
+          </div>
+        )}
+      </ResponsiveGridLayout>
     </div>
   );
 }
 
 // PHI Risk Distribution Chart
-const PHIRiskDistributionChart = memo(({ data }: { data: Array<{name: string, value: number, color: string}> }) => (
-  <Card>
+const PHIRiskDistributionChart = memo(({ data }: { data: Array<{ name: string, value: number, color: string }> }) => (
+  <Card className="h-full overflow-hidden">
     <CardHeader>
       <CardTitle className="flex items-center gap-2">
         <Shield className="h-5 w-5" />
@@ -441,8 +742,8 @@ const PHIRiskDistributionChart = memo(({ data }: { data: Array<{name: string, va
         Patient data security risk levels
       </CardDescription>
     </CardHeader>
-    <CardContent>
-      <div className="h-80">
+    <CardContent className="h-full">
+      <div className="h-full">
         <ResponsiveContainer width="100%" height="100%">
           <RechartsPieChart>
             <defs>
@@ -494,7 +795,7 @@ PHIRiskDistributionChart.displayName = 'PHIRiskDistributionChart';
 
 // Network Connectivity Chart
 const NetworkConnectivityChart = memo(({ connected, total, percentage }: { connected: number, total: number, percentage: number }) => (
-  <Card>
+  <Card className="h-full overflow-hidden">
     <CardHeader>
       <CardTitle className="flex items-center gap-2">
         <Network className="h-5 w-5" />
@@ -531,7 +832,7 @@ NetworkConnectivityChart.displayName = 'NetworkConnectivityChart';
 
 // Enhanced Technician Performance Chart with more detailed metrics
 const TechnicianPerformanceChart = memo(({ data }: { data: Array<{name: string, score: number, workload?: number, compliance?: number, riskMitigation?: number}> }) => (
-  <Card>
+  <Card className="h-full overflow-hidden">
     <CardHeader>
       <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
         <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -542,8 +843,8 @@ const TechnicianPerformanceChart = memo(({ data }: { data: Array<{name: string, 
         Comprehensive technician performance metrics with detailed breakdown
       </CardDescription>
     </CardHeader>
-    <CardContent>
-      <div className="h-64 sm:h-80">
+    <CardContent className="h-full">
+      <div className="h-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -627,7 +928,7 @@ const TechnicianPerformanceChart = memo(({ data }: { data: Array<{name: string, 
 TechnicianPerformanceChart.displayName = 'TechnicianPerformanceChart';
 
 const OSDistributionChart = memo(({ data, colors }: { data: Array<{name: string, count: number}>, colors: string[] }) => (
-  <Card>
+  <Card className="h-full overflow-hidden">
     <CardHeader>
       <CardTitle className="flex items-center gap-2">
         <PieChart className="h-5 w-5" />
@@ -637,8 +938,8 @@ const OSDistributionChart = memo(({ data, colors }: { data: Array<{name: string,
         Device count by OS manufacturer
       </CardDescription>
     </CardHeader>
-    <CardContent>
-      <div className="h-80">
+    <CardContent className="h-full">
+      <div className="h-full">
         <ResponsiveContainer width="100%" height="100%">
           <RechartsPieChart>
             <defs>
@@ -710,7 +1011,7 @@ const CriticalityChart = memo(({ data }: { data: Array<{name: string, Critical: 
   };
 
   return (
-    <Card>
+    <Card className="h-full overflow-hidden">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <AlertTriangle className="h-5 w-5" />
@@ -720,7 +1021,7 @@ const CriticalityChart = memo(({ data }: { data: Array<{name: string, Critical: 
           Risk distribution across healthcare entities
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="h-full">
         <div className="space-y-4">
           {/* Heatmap Grid */}
           <div className="overflow-x-auto">
@@ -796,10 +1097,17 @@ const CriticalityChart = memo(({ data }: { data: Array<{name: string, Critical: 
 });
 CriticalityChart.displayName = 'CriticalityChart';
 
-const StatsCard = memo(({ stat }: { stat: any }) => {
+const StatsCard = memo(({ stat, onClick }: { stat: any, onClick?: () => void }) => {
   const Icon = stat.icon;
   return (
-    <Card>
+    <Card 
+      className="h-full overflow-hidden cursor-pointer transition-all hover:shadow-md hover:bg-muted/50 border rounded-xl"
+      onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClick && onClick(); }}
+      aria-label={`View details for ${stat.name}`}
+    >
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div>

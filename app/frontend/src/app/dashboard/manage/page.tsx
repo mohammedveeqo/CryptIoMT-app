@@ -190,7 +190,7 @@ export default function ManageOrganizationPage() {
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         <Tabs defaultValue="settings" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 bg-white border border-gray-200 p-1 rounded-lg">
+          <TabsList className="sticky top-16 z-20 grid w/full grid-cols-3 bg-white/90 backdrop-blur-sm border border-gray-200 p-1 rounded-lg">
             <TabsTrigger 
               value="settings" 
               className="flex items-center gap-2 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 data-[state=active]:border-blue-200"

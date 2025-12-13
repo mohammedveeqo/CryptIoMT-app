@@ -308,7 +308,7 @@ const getOrganizationOwner = (organizationId: Id<"organizations">) => {
 
         {/* Tabs */}
         <Tabs defaultValue="organizations" className="space-y-6">
-          <TabsList>
+          <TabsList className="sticky top-16 z-20 bg-white/80 backdrop-blur-sm border-b border-gray-200/50">
             <TabsTrigger value="organizations">Organizations</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="system">System Settings</TabsTrigger>

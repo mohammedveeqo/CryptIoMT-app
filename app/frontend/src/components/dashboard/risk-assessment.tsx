@@ -2,7 +2,7 @@
 
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { useMemo, memo } from "react";
+import { useMemo, memo, useState } from "react";
 import {
   Shield,
   AlertTriangle,
@@ -20,8 +20,10 @@ import { useOrganization } from "@/contexts/organization-context";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Tooltip as UITooltip, TooltipTrigger as UITooltipTrigger, TooltipContent as UITooltipContent } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useCachedQuery } from "@/hooks/use-cached-query";
 import {
   BarChart,
@@ -48,6 +50,9 @@ const PHI_COLORS = ['#DC2626', '#EA580C', '#D97706', '#65A30D'];
 
 export function RiskAssessment() {
   const { currentOrganization } = useOrganization();
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [selectedHospital, setSelectedHospital] = useState<string | null>(null);
+  const [selectedLevel, setSelectedLevel] = useState<"critical"|"high"|"medium"|"low"|null>(null);
   const riskDataLive = useQuery(
     api.medicalDevices.getRiskAssessmentData,
     currentOrganization ? { organizationId: currentOrganization._id } : "skip"
@@ -64,6 +69,98 @@ export function RiskAssessment() {
     currentOrganization ? `legacy:${currentOrganization._id}` : "legacy:none",
     legacyDevicesLive
   );
+
+  const allDevicesLive = useQuery(
+    api.medicalDevices.getAllMedicalDevices,
+    currentOrganization ? { organizationId: currentOrganization._id } : "skip"
+  );
+  const { data: allDevices } = useCachedQuery(
+    currentOrganization ? `devices:${currentOrganization._id}` : "devices:none",
+    allDevicesLive
+  );
+
+  type RiskLevel = "low" | "medium" | "high" | "critical";
+  interface HospitalDeviceItem {
+    id: string;
+    name: string;
+    entity?: string;
+    manufacturer?: string;
+    model?: string;
+    osVersion: string;
+    hasPHI: boolean;
+    deviceOnNetwork: boolean;
+    riskLevel: RiskLevel;
+    reasons: string[];
+    remediation: string[];
+  }
+
+  const hospitalDetails = useMemo((): { hospital: string | null; items: HospitalDeviceItem[]; summary: Record<RiskLevel, number> } | undefined => {
+    if (!selectedHospital || !allDevices) return undefined as any;
+    const devices = (allDevices || []).filter((d: any) => (d.entity || "Unknown") === selectedHospital);
+    const items: HospitalDeviceItem[] = devices.map((d: any) => {
+      const osLower = (d.osVersion || "").toLowerCase();
+      const phiCat = (d.customerPHICategory || "").toLowerCase();
+      const hasLegacyOS = osLower.includes("xp") || osLower.includes("2000") || osLower.includes("vista") || osLower.includes("windows 7") || osLower.includes("windows 8");
+      const hasCriticalPHI = !!d.hasPHI && phiCat.includes("critical");
+      const hasHighPHI = !!d.hasPHI && phiCat.includes("high");
+      const isNetworkExposed = !!d.deviceOnNetwork && !!d.hasPHI;
+
+      let riskLevel: RiskLevel = "low";
+      if (hasLegacyOS || hasCriticalPHI || isNetworkExposed) {
+        riskLevel = "critical";
+      } else if (hasHighPHI || (d.deviceOnNetwork && !d.osVersion)) {
+        riskLevel = "high";
+      } else if (d.hasPHI || d.deviceOnNetwork) {
+        riskLevel = "medium";
+      }
+
+      const reasons: string[] = [];
+      if (hasLegacyOS) reasons.push("Legacy OS detected");
+      if (hasCriticalPHI) reasons.push("PHI marked Critical");
+      if (hasHighPHI && !hasCriticalPHI) reasons.push("PHI marked High");
+      if (isNetworkExposed) reasons.push("PHI device on network");
+      if (d.deviceOnNetwork && !d.hasPHI) reasons.push("Network exposure");
+      if (!d.osVersion) reasons.push("Unknown OS version");
+
+      const remediation: string[] = [];
+      if (hasLegacyOS) {
+        remediation.push("Plan upgrade to supported OS");
+        remediation.push("Isolate device on segmented network");
+      }
+      if (isNetworkExposed) {
+        remediation.push("Enable encryption for PHI");
+        remediation.push("Apply access controls and auditing");
+        remediation.push("Segment PHI devices from general network");
+      }
+      if (!d.osVersion) {
+        remediation.push("Inventory OS and apply latest patches");
+      }
+      if (riskLevel === "high" && !isNetworkExposed) {
+        remediation.push("Review PHI handling and minimize exposure");
+      }
+
+      return {
+        id: d._id,
+        name: d.name,
+        entity: d.entity,
+        manufacturer: d.manufacturer,
+        model: d.model,
+        osVersion: d.osVersion || "Unknown",
+        hasPHI: !!d.hasPHI,
+        deviceOnNetwork: !!d.deviceOnNetwork,
+        riskLevel,
+        reasons,
+        remediation
+      };
+    });
+
+    const summary = items.reduce((acc: Record<RiskLevel, number>, it: HospitalDeviceItem) => {
+      acc[it.riskLevel] = (acc[it.riskLevel] || 0) + 1;
+      return acc;
+    }, { low: 0, medium: 0, high: 0, critical: 0 });
+
+    return { hospital: selectedHospital, items, summary };
+  }, [selectedHospital, allDevices]);
 
   const phiChartData = useMemo(() => {
     if (!riskData?.phiRiskOverview) return [];
@@ -121,6 +218,39 @@ export function RiskAssessment() {
 
   return (
     <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5" />
+            Risk Levels Explained
+          </CardTitle>
+          <CardDescription>What Critical, High, Medium, Low mean and how we calculate them</CardDescription>
+        </CardHeader>
+        <CardContent className="text-sm grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Badge variant="destructive">Critical</Badge>
+              <span>Immediate action: legacy OS, PHI on network, or device marked critical by category</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary">High</Badge>
+              <span>High sensitivity or exposure: PHI present, high PHI category, key clinical categories</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge>Medium</Badge>
+              <span>Some exposure: PHI or network presence without high/critical markers</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline">Low</Badge>
+              <span>Minimal exposure: non-networked, no PHI, or routine categories</span>
+            </div>
+          </div>
+          <div className="space-y-2 text-muted-foreground">
+            <div>Derived from device fields like `customerPHICategory`, `hasPHI`, `deviceOnNetwork`, and OS version.</div>
+            <div>Examples: Windows XP devices are flagged critical; networked PHI devices are high/critical depending on category.</div>
+          </div>
+        </CardContent>
+      </Card>
       <div className="flex justify-end">
         <Button variant="outline" onClick={() => { invalidateRisk(); invalidateLegacy(); }}>
           Refresh Data
@@ -207,10 +337,22 @@ export function RiskAssessment() {
                 {/* Header Row */}
                 <div className="grid grid-cols-5 gap-1 mb-2">
                   <div className="text-xs font-medium text-gray-600 p-2">Hospital</div>
-                  <div className="text-xs font-medium text-gray-600 p-2 text-center">Critical</div>
-                  <div className="text-xs font-medium text-gray-600 p-2 text-center">High</div>
-                  <div className="text-xs font-medium text-gray-600 p-2 text-center">Medium</div>
-                  <div className="text-xs font-medium text-gray-600 p-2 text-center">Low</div>
+                  <UITooltip>
+                    <UITooltipTrigger className="text-xs font-medium text-gray-600 p-2 text-center">Critical</UITooltipTrigger>
+                    <UITooltipContent>Legacy OS, PHI on network, or life-critical categories</UITooltipContent>
+                  </UITooltip>
+                  <UITooltip>
+                    <UITooltipTrigger className="text-xs font-medium text-gray-600 p-2 text-center">High</UITooltipTrigger>
+                    <UITooltipContent>High PHI category, PHI present, imaging/monitoring devices</UITooltipContent>
+                  </UITooltip>
+                  <UITooltip>
+                    <UITooltipTrigger className="text-xs font-medium text-gray-600 p-2 text-center">Medium</UITooltipTrigger>
+                    <UITooltipContent>PHI or network presence without high/critical markers</UITooltipContent>
+                  </UITooltip>
+                  <UITooltip>
+                    <UITooltipTrigger className="text-xs font-medium text-gray-600 p-2 text-center">Low</UITooltipTrigger>
+                    <UITooltipContent>Minimal exposure, non-networked and no PHI</UITooltipContent>
+                  </UITooltip>
                 </div>
                 
                 {/* Heatmap Rows */}
@@ -234,6 +376,7 @@ export function RiskAssessment() {
                           backgroundColor: `rgba(220, 38, 38, ${Math.max(0.1, criticalIntensity / 100)})`,
                           color: criticalIntensity > 50 ? 'white' : '#DC2626'
                         }}
+                        onClick={() => { setSelectedHospital(hospital.hospital); setSelectedLevel("critical"); setDetailOpen(true); }}
                       >
                         {hospital.critical}
                       </div>
@@ -245,6 +388,7 @@ export function RiskAssessment() {
                           backgroundColor: `rgba(234, 88, 12, ${Math.max(0.1, highIntensity / 100)})`,
                           color: highIntensity > 50 ? 'white' : '#EA580C'
                         }}
+                        onClick={() => { setSelectedHospital(hospital.hospital); setSelectedLevel("high"); setDetailOpen(true); }}
                       >
                         {hospital.high}
                       </div>
@@ -256,6 +400,7 @@ export function RiskAssessment() {
                           backgroundColor: `rgba(217, 119, 6, ${Math.max(0.1, mediumIntensity / 100)})`,
                           color: mediumIntensity > 50 ? 'white' : '#D97706'
                         }}
+                        onClick={() => { setSelectedHospital(hospital.hospital); setSelectedLevel("medium"); setDetailOpen(true); }}
                       >
                         {hospital.medium}
                       </div>
@@ -267,6 +412,7 @@ export function RiskAssessment() {
                           backgroundColor: `rgba(101, 163, 13, ${Math.max(0.1, lowIntensity / 100)})`,
                           color: lowIntensity > 50 ? 'white' : '#65A30D'
                         }}
+                        onClick={() => { setSelectedHospital(hospital.hospital); setSelectedLevel("low"); setDetailOpen(true); }}
                       >
                         {hospital.low}
                       </div>
@@ -414,6 +560,76 @@ export function RiskAssessment() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {selectedHospital && (
+        <Dialog open={detailOpen} onOpenChange={(o) => { setDetailOpen(o); if (!o) { setSelectedHospital(null); setSelectedLevel(null); } }}>
+          <DialogContent className="sm:max-w-3xl max-w-[calc(100%-2rem)]">
+            <DialogHeader>
+              <DialogTitle>{selectedHospital}</DialogTitle>
+              <DialogDescription>
+                {selectedLevel ? `Showing ${selectedLevel.toUpperCase()} devices` : "Device risk details"}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                <div>
+                  <div className="text-muted-foreground">Critical</div>
+                  <div className="font-medium">{hospitalDetails?.summary?.critical ?? 0}</div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground">High</div>
+                  <div className="font-medium">{hospitalDetails?.summary?.high ?? 0}</div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground">Medium</div>
+                  <div className="font-medium">{hospitalDetails?.summary?.medium ?? 0}</div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground">Low</div>
+                  <div className="font-medium">{hospitalDetails?.summary?.low ?? 0}</div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="text-sm font-medium">Devices</div>
+                <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+                  {(hospitalDetails?.items || [])
+                    .filter((it: HospitalDeviceItem) => !selectedLevel || it.riskLevel === selectedLevel)
+                    .map((it: HospitalDeviceItem) => (
+                      <div key={it.id} className="p-3 rounded-lg border bg-white/60">
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium text-sm truncate">{it.name}</div>
+                          <Badge variant={it.riskLevel === "critical" ? "destructive" : it.riskLevel === "high" ? "secondary" : it.riskLevel === "medium" ? "default" : "outline"} className="text-xs">
+                            {it.riskLevel.toUpperCase()}
+                          </Badge>
+                        </div>
+                        <div className="text-xs text-gray-600 mt-1">{it.manufacturer || "Unknown"} • {it.model || "Unknown"} • {it.osVersion}</div>
+                        <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+                          <div>
+                            <div className="text-xs font-medium">Why flagged</div>
+                            <div className="flex flex-wrap gap-2 mt-1">
+                              {it.reasons.map((r: string, idx: number) => (
+                                <Badge key={idx} variant="outline" className="text-xs">{r}</Badge>
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-xs font-medium">Recommended actions</div>
+                            <ul className="text-xs text-gray-700 list-disc pl-5 mt-1">
+                              {it.remediation.map((r: string, idx: number) => (
+                                <li key={idx}>{r}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

@@ -1,22 +1,77 @@
 'use client'
 
+import * as React from 'react'
 import { useQuery } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Shield, Activity, AlertTriangle } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
+import { useCachedQuery } from '@/hooks/use-cached-query'
+import { useRouter } from 'next/navigation'
 import { useOrganization } from '@/contexts/organization-context'
 
 export function QuickStats() {
   const { currentOrganization } = useOrganization()
+  const router = useRouter()
+  const [detailsOpen, setDetailsOpen] = React.useState(false)
+  const [selectedMetric, setSelectedMetric] = React.useState<null | 'total' | 'online' | 'critical' | 'phi'>(null)
   
   const deviceStats = useQuery(
     api.medicalDevices.getDeviceStats,
     currentOrganization ? { organizationId: currentOrganization._id } : "skip"
   )
 
+  const allDevicesLive = useQuery(
+    api.medicalDevices.getAllMedicalDevices,
+    currentOrganization ? { organizationId: currentOrganization._id } : "skip"
+  )
+  const { data: allDevices } = useCachedQuery(
+    currentOrganization ? `devices:${currentOrganization._id}` : 'devices:none',
+    allDevicesLive
+  )
+
+  const filteredDevices = React.useMemo(() => {
+    const list = allDevices || []
+    if (selectedMetric === 'online') return list.filter(d => d.deviceOnNetwork)
+    if (selectedMetric === 'critical') return list.filter(d => d.classification === 'critical' || d.customerPHICategory?.toLowerCase().includes('critical') || d.hasPHI)
+    if (selectedMetric === 'phi') return list.filter(d => d.hasPHI)
+    return list
+  }, [allDevices, selectedMetric])
+
+  const hospitalBreakdown = React.useMemo(() => {
+    const map: Record<string, number> = {}
+    filteredDevices.forEach(d => {
+      const key = d.entity || 'Unknown'
+      map[key] = (map[key] || 0) + 1
+    })
+    return Object.entries(map).sort((a,b) => b[1]-a[1]).slice(0,6)
+  }, [filteredDevices])
+
+  const manufacturerBreakdown = React.useMemo(() => {
+    const map: Record<string, number> = {}
+    filteredDevices.forEach(d => {
+      const key = d.manufacturer || 'Unknown'
+      map[key] = (map[key] || 0) + 1
+    })
+    return Object.entries(map).sort((a,b) => b[1]-a[1]).slice(0,6)
+  }, [filteredDevices])
+
+  const categoryBreakdown = React.useMemo(() => {
+    const map: Record<string, number> = {}
+    filteredDevices.forEach(d => {
+      const key = d.category || 'Unknown'
+      map[key] = (map[key] || 0) + 1
+    })
+    return Object.entries(map).sort((a,b) => b[1]-a[1]).slice(0,6)
+  }, [filteredDevices])
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-      <Card className="bg-white/60 backdrop-blur-sm border-blue-200 hover:shadow-lg transition-all">
+    <>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <Card className="bg-card border rounded-xl hover:bg-muted/50 hover:shadow-md transition-all cursor-pointer" onClick={() => { setSelectedMetric('total'); setDetailsOpen(true) }} aria-label="View Total Devices details" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setSelectedMetric('total'); setDetailsOpen(true) } }}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Total Devices</CardTitle>
           <Shield className="h-4 w-4 text-muted-foreground" />
@@ -29,7 +84,7 @@ export function QuickStats() {
         </CardContent>
       </Card>
 
-      <Card className="bg-white/60 backdrop-blur-sm border-green-200 hover:shadow-lg transition-all">
+      <Card className="bg-card border rounded-xl hover:bg-muted/50 hover:shadow-md transition-all cursor-pointer" onClick={() => { setSelectedMetric('online'); setDetailsOpen(true) }} aria-label="View Online Devices details" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setSelectedMetric('online'); setDetailsOpen(true) } }}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Online Devices</CardTitle>
           <Activity className="h-4 w-4 text-muted-foreground" />
@@ -42,7 +97,7 @@ export function QuickStats() {
         </CardContent>
       </Card>
 
-      <Card className="bg-white/60 backdrop-blur-sm border-orange-200 hover:shadow-lg transition-all">
+      <Card className="bg-card border rounded-xl hover:bg-muted/50 hover:shadow-md transition-all cursor-pointer" onClick={() => { setSelectedMetric('critical'); setDetailsOpen(true) }} aria-label="View Critical Alerts details" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setSelectedMetric('critical'); setDetailsOpen(true) } }}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Critical Alerts</CardTitle>
           <AlertTriangle className="h-4 w-4 text-muted-foreground" />
@@ -55,7 +110,7 @@ export function QuickStats() {
         </CardContent>
       </Card>
 
-      <Card className="bg-white/60 backdrop-blur-sm border-purple-200 hover:shadow-lg transition-all">
+      <Card className="bg-card border rounded-xl hover:bg-muted/50 hover:shadow-md transition-all cursor-pointer" onClick={() => { setSelectedMetric('phi'); setDetailsOpen(true) }} aria-label="View PHI Devices details" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setSelectedMetric('phi'); setDetailsOpen(true) } }}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">PHI Devices</CardTitle>
           <Shield className="h-4 w-4 text-muted-foreground" />
@@ -68,5 +123,131 @@ export function QuickStats() {
         </CardContent>
       </Card>
     </div>
+    {selectedMetric && (
+      <Dialog open={detailsOpen} onOpenChange={(o) => { setDetailsOpen(o); if (!o) setSelectedMetric(null); }}>
+        <DialogContent className="sm:max-w-3xl max-w-[calc(100%-2rem)]">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedMetric === 'total' && 'Total Devices'}
+              {selectedMetric === 'online' && 'Online Devices'}
+              {selectedMetric === 'critical' && 'Critical Alerts'}
+              {selectedMetric === 'phi' && 'PHI Devices'}
+            </DialogTitle>
+            <DialogDescription>
+              {currentOrganization?.name || 'Organization'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="px-2 sm:px-4 space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="rounded-lg border bg-muted/30 p-4">
+                <div className="text-xs text-muted-foreground">Count</div>
+                <div className="text-3xl font-bold tracking-tight">
+                  {selectedMetric === 'total' && (deviceStats?.totalDevices || 0)}
+                  {selectedMetric === 'online' && (deviceStats?.onlineDevices || 0)}
+                  {selectedMetric === 'critical' && (deviceStats?.criticalDevices || 0)}
+                  {selectedMetric === 'phi' && (deviceStats?.devicesWithPHI || 0)}
+                </div>
+              </div>
+              <div className="rounded-lg border bg-muted/30 p-4">
+                <div className="text-xs text-muted-foreground">Context</div>
+                <div className="text-sm font-medium">
+                  {selectedMetric === 'total' && `${deviceStats?.networkStats?.percentage || 0}% connected`}
+                  {selectedMetric === 'online' && `${deviceStats?.networkStats?.percentage || 0}% connected`}
+                  {selectedMetric === 'critical' && 'Devices requiring attention'}
+                  {selectedMetric === 'phi' && `${deviceStats?.phiStats?.percentage || 0}% contain PHI`}
+                </div>
+              </div>
+              <div className="rounded-lg border bg-muted/30 p-4">
+                <div className="text-xs text-muted-foreground">Action</div>
+                <div className="flex gap-2 mt-2">
+                  {selectedMetric === 'critical' ? (
+                    <Button size="sm" onClick={() => router.push('/dashboard/risk')}>Open Risk</Button>
+                  ) : (
+                    <Button size="sm" onClick={() => router.push('/dashboard/equipment')}>Open Equipment</Button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="rounded-lg border bg-card p-4">
+                <div className="text-sm font-semibold">Top Hospitals</div>
+                <div className="mt-3 space-y-3">
+                  {hospitalBreakdown.map(([name, count]) => (
+                    <div key={name} className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="truncate mr-2 font-medium">{name}</span>
+                        <Badge variant="outline">{count}</Badge>
+                      </div>
+                      <Progress value={Math.min(100, Math.round((count / Math.max(1, filteredDevices.length)) * 100))} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="rounded-lg border bg-card p-4">
+                <div className="text-sm font-semibold">Top Manufacturers</div>
+                <div className="mt-3 space-y-3">
+                  {manufacturerBreakdown.map(([name, count]) => (
+                    <div key={name} className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="truncate mr-2 font-medium">{name}</span>
+                        <Badge variant="outline">{count}</Badge>
+                      </div>
+                      <Progress value={Math.min(100, Math.round((count / Math.max(1, filteredDevices.length)) * 100))} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="rounded-lg border bg-card p-4">
+                <div className="text-sm font-semibold">Top Categories</div>
+                <div className="mt-3 space-y-3">
+                  {categoryBreakdown.map(([name, count]) => (
+                    <div key={name} className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="truncate mr-2 font-medium">{name}</span>
+                        <Badge variant="outline">{count}</Badge>
+                      </div>
+                      <Progress value={Math.min(100, Math.round((count / Math.max(1, filteredDevices.length)) * 100))} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-lg border bg-card p-4">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-semibold">Preview</div>
+                <div className="text-xs text-muted-foreground">Showing up to 12 devices</div>
+              </div>
+              <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                {(allDevices || [])
+                  .filter(d => {
+                    if (selectedMetric === 'total') return true
+                    if (selectedMetric === 'online') return d.deviceOnNetwork
+                    if (selectedMetric === 'critical') return d.classification === 'critical' || d.hasPHI
+                    if (selectedMetric === 'phi') return d.hasPHI
+                    return false
+                  })
+                  .slice(0, 12)
+                  .map(d => (
+                    <div key={d._id} className="p-3 rounded-md border bg-muted/20">
+                      <div className="flex items-center justify-between">
+                        <div className="font-medium text-sm truncate">{d.name}</div>
+                        <Badge variant={d.deviceOnNetwork ? 'secondary' : 'outline'} className="text-xs">
+                          {d.deviceOnNetwork ? 'Connected' : 'Offline'}
+                        </Badge>
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {d.entity || 'Unknown'} • {d.ipAddress || 'N/A'} • {d.osVersion || 'Unknown OS'}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    )}
+    </>
   )
 }
