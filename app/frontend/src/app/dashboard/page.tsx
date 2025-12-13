@@ -10,6 +10,7 @@ import { useOrganization } from '@/contexts/organization-context'
 import { AdminControlPanel } from '@/components/dashboard/admin-control-panel'
 import { DeviceInventory } from '@/components/dashboard/device-inventory'
 import { DashboardOverview } from '@/components/dashboard/overview'
+import { QuickStats } from '@/components/dashboard/quick-stats'
 import { Shield } from 'lucide-react'
 import { NetworkTopology } from '@/components/dashboard/network-topology'
 import { RiskAssessment } from '@/components/dashboard/risk-assessment';
@@ -48,9 +49,9 @@ export default function Dashboard() {
       <div className="animate-in slide-in-from-bottom-4 duration-700">
         <Tabs defaultValue="overview" className="space-y-4 sm:space-y-6 lg:space-y-8">
           {/* Mobile: Dropdown Tabs */}
-          <div className="sm:hidden">
+          <div className="sm:hidden sticky top-16 z-30 bg-white/80 backdrop-blur-sm border-b border-gray-200/50 py-2">
             <Select defaultValue="overview">
-              <SelectTrigger className="w-full bg-white/80 backdrop-blur-sm shadow-lg border border-gray-200/50">
+              <SelectTrigger className="w/full bg-white/80 backdrop-blur-sm shadow-lg border border-gray-200/50">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -123,8 +124,9 @@ export default function Dashboard() {
             </TabsList>
           </div>
 
-          <TabsContent value="overview" className="animate-in fade-in-50 duration-500">
+          <TabsContent value="overview" className="animate-in fade-in-50 duration-500 space-y-6">
             <MemoizedDashboardOverview />
+            <QuickStats />
           </TabsContent>
 
           <TabsContent value="devices" className="animate-in fade-in-50 duration-500">
