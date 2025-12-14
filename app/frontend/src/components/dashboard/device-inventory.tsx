@@ -10,7 +10,9 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Search, Filter, X, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { useOrganization } from '@/contexts/organization-context'
+import { useSearchParams } from 'next/navigation'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { 
   createColumnHelper, 
   getCoreRowModel, 
@@ -44,8 +46,9 @@ type Device = {
 const columnHelper = createColumnHelper<Device>()
 
 // Memoized virtual row component
-const VirtualRow = memo(({ row, cells }: { row: any; cells: any[] }) => (
-  <div className="flex w-full border-b hover:bg-gray-50 hover:bg-opacity-75 transition-colors">
+const VirtualRow = memo(({ row, cells, onClick }: { row: any; cells: any[]; onClick?: () => void }) => (
+  <div className="flex w-full border-b hover:bg-gray-50 hover:bg-opacity-75 transition-colors cursor-pointer" onClick={onClick}
+  >
     {cells.map(cell => (
       <div
         key={cell.id}
@@ -61,8 +64,11 @@ VirtualRow.displayName = 'VirtualRow'
 
 export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: DeviceInventoryProps) {
   const { currentOrganization } = useOrganization()
+  const searchParams = useSearchParams()
   const [isPending, startTransition] = useTransition()
   const tableContainerRef = useRef<HTMLDivElement>(null)
+  const [selectedDevice, setSelectedDevice] = useState<any | null>(null)
+  const [detailsOpen, setDetailsOpen] = useState(false)
   
   // State management
   const [sorting, setSorting] = useState<SortingState>([])
@@ -74,6 +80,23 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
     network: 'all',
     phi: 'all'
   })
+
+  // Initialize filters from URL query params
+  const initializedFromUrlRef = useRef(false)
+  if (!initializedFromUrlRef.current) {
+    const qpClass = searchParams.get('classification')
+    const qpPhi = searchParams.get('phi')
+    const qpNetwork = searchParams.get('network')
+    const qpSearch = searchParams.get('search')
+    setFilters(prev => ({
+      ...prev,
+      classification: qpClass ? qpClass : prev.classification,
+      phi: qpPhi === 'yes' || qpPhi === 'no' ? qpPhi : prev.phi,
+      network: qpNetwork === 'connected' || qpNetwork === 'offline' ? qpNetwork : prev.network,
+      search: qpSearch || prev.search,
+    }))
+    initializedFromUrlRef.current = true
+  }
 
   // Fetch devices data
   const liveDevices = useQuery(
@@ -161,6 +184,18 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
           </Badge>
         ),
         size: 80,
+      }),
+      columnHelper.display({
+        id: 'details',
+        header: 'Details',
+        cell: ({ row }) => (
+          <Button variant="outline" size="sm" onClick={() => {
+            const dev = (row as any).original
+            setSelectedDevice(dev)
+            setDetailsOpen(true)
+          }}>View</Button>
+        ),
+        size: 100,
       }),
     ],
     []
@@ -292,7 +327,7 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
 
   if (!allDevices) {
     return (
-      <Card className="bg-white/60 backdrop-blur-sm h-full">
+      <Card className="h-full">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             Device Inventory
@@ -316,7 +351,8 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
   }
 
   return (
-    <Card className="bg-white/60 backdrop-blur-sm h-full flex flex-col">
+    <>
+    <Card className="h-full flex flex-col">
       <CardHeader className="flex-shrink-0">
         <CardTitle className="flex items-center gap-2">
           Device Inventory
@@ -447,10 +483,39 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
               <X className="h-4 w-4" />
               Clear
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const rows = filteredData.map(d => ({
+                  name: d.name,
+                  entity: d.entity,
+                  serialNumber: d.serialNumber,
+                  manufacturer: d.manufacturer,
+                  model: d.model,
+                  category: d.category,
+                  classification: d.classification,
+                  ipAddress: (d as any).ipAddress || '',
+                  onNetwork: d.deviceOnNetwork ? 'yes' : 'no',
+                  hasPHI: d.hasPHI ? 'yes' : 'no',
+                }))
+                const header = Object.keys(rows[0] || {name:'',entity:'',serialNumber:'',manufacturer:'',model:'',category:'',classification:'',ipAddress:'',onNetwork:'',hasPHI:''})
+                const csv = [header.join(','), ...rows.map(r => header.map(h => String((r as any)[h]).replace(/,/g,';')).join(','))].join('\n')
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = 'devices-filtered.csv'
+                a.click()
+                URL.revokeObjectURL(url)
+              }}
+              className="flex items-center gap-2"
+            >
+              Export CSV
+            </Button>
           </div>
 
           {/* Virtualized table */}
-{/* Virtualized table */}
 <div className="flex-1 min-h-0">
   {filteredData.length === 0 ? (
     <div className="flex flex-col items-center justify-center h-64 text-gray-500">
@@ -476,9 +541,9 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
       )}
     </div>
   ) : (
-    <div className="border rounded-lg overflow-hidden bg-white">
+    <div className="border rounded-lg overflow-hidden bg-card">
       {/* Sticky header */}
-      <div className="bg-gray-50 border-b sticky top-0 z-10">
+      <div className="bg-muted border-b sticky top-0 z-10">
         <div className="flex w-full">
           {table.getHeaderGroups().map(headerGroup => (
             headerGroup.headers.map(header => (
@@ -529,6 +594,11 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
                 <VirtualRow
                   row={row}
                   cells={row.getVisibleCells()}
+                  onClick={() => {
+                    const dev = row.original
+                    setSelectedDevice(dev)
+                    setDetailsOpen(true)
+                  }}
                 />
               </div>
             )
@@ -541,5 +611,58 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
         </div>
       </CardContent>
     </Card>
+    {selectedDevice && (
+      <Sheet open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <SheetContent side="right">
+          <SheetHeader>
+            <SheetTitle>{selectedDevice.name}</SheetTitle>
+            <SheetDescription>
+              {selectedDevice.entity || 'Unknown'}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="px-4 space-y-3">
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <div className="text-gray-600">Serial</div>
+                <div className="font-medium">{selectedDevice.serialNumber || 'N/A'}</div>
+              </div>
+              <div>
+                <div className="text-gray-600">Manufacturer</div>
+                <div className="font-medium">{selectedDevice.manufacturer || 'Unknown'}</div>
+              </div>
+              <div>
+                <div className="text-gray-600">Model</div>
+                <div className="font-medium">{selectedDevice.model || 'Unknown'}</div>
+              </div>
+              <div>
+                <div className="text-gray-600">Category</div>
+                <div className="font-medium">{selectedDevice.category || 'Unknown'}</div>
+              </div>
+              <div>
+                <div className="text-gray-600">IP Address</div>
+                <div className="font-medium">{selectedDevice.ipAddress || 'N/A'}</div>
+              </div>
+              <div>
+                <div className="text-gray-600">OS Version</div>
+                <div className="font-medium">{selectedDevice.osVersion || 'Unknown'}</div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="flex items-center gap-2">
+                <Badge variant={selectedDevice.deviceOnNetwork ? 'default' : 'destructive'}>
+                  {selectedDevice.deviceOnNetwork ? 'Connected' : 'Offline'}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant={selectedDevice.hasPHI ? 'destructive' : 'secondary'}>
+                  {selectedDevice.hasPHI ? 'PHI' : 'No PHI'}
+                </Badge>
+              </div>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+    )}
+    </>
   )
 }

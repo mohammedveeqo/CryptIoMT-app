@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import {
   BarChart,
   Bar,
@@ -60,6 +61,8 @@ const PERFORMANCE_COLORS = {
 export function StaffPerformance() {
   const { currentOrganization } = useOrganization();
   const [selectedModel, setSelectedModel] = useState<string>('balanced');
+  const [selectedTech, setSelectedTech] = useState<TechnicianScore | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   
   // Fetch technician performance data
   const technicianDataLive = useQuery(
@@ -69,6 +72,14 @@ export function StaffPerformance() {
   const { data: technicianData, invalidate } = useCachedQuery(
     currentOrganization ? `tech-metrics:${currentOrganization._id}` : 'tech-metrics:none',
     technicianDataLive
+  );
+  const allDevicesLive = useQuery(
+    api.medicalDevices.getAllMedicalDevices,
+    currentOrganization ? { organizationId: currentOrganization._id } : "skip"
+  );
+  const { data: allDevices } = useCachedQuery(
+    currentOrganization ? `devices:${currentOrganization._id}` : 'devices:none',
+    allDevicesLive
   );
   
   const isLoading = currentOrganization && technicianData === undefined;
@@ -241,20 +252,72 @@ export function StaffPerformance() {
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Leaderboard Chart */}
-        <TechnicianLeaderboard data={leaderboardData} />
+        <TechnicianLeaderboard data={leaderboardData} onSelect={(item) => {
+          const match = technicianScores.find(t => t.name === item.name);
+          if (match) { setSelectedTech(match); setDetailsOpen(true); }
+        }} />
         
         {/* Risk vs Workload Scatter */}
-        <RiskWorkloadMatrix data={scatterData} />
+        <RiskWorkloadMatrix data={scatterData} onSelect={(item) => {
+          const match = technicianScores.find(t => t.name === item.name);
+          if (match) { setSelectedTech(match); setDetailsOpen(true); }
+        }} />
       </div>
       
       {/* Detailed Performance Table */}
-      <PerformanceTable scores={technicianScores} />
+      <PerformanceTable scores={technicianScores} onSelect={(score) => { setSelectedTech(score); setDetailsOpen(true); }} />
+      {selectedTech && (
+        <Sheet open={detailsOpen} onOpenChange={setDetailsOpen}>
+          <SheetContent side="right">
+            <SheetHeader>
+              <SheetTitle>{selectedTech.name}</SheetTitle>
+              <SheetDescription>
+                Overall {selectedTech.overallScore}% • Rank #{selectedTech.rank}
+              </SheetDescription>
+            </SheetHeader>
+            <div className="px-4 space-y-4">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <div className="text-gray-600">Devices</div>
+                  <div className="font-medium">{selectedTech.metrics.deviceCount}</div>
+                </div>
+                <div>
+                  <div className="text-gray-600">Workload</div>
+                  <div className="font-medium">{selectedTech.workloadScore}%</div>
+                </div>
+                <div>
+                  <div className="text-gray-600">Compliance</div>
+                  <div className="font-medium">{selectedTech.complianceScore}%</div>
+                </div>
+                <div>
+                  <div className="text-gray-600">Risk Mitigation</div>
+                  <div className="font-medium">{selectedTech.riskMitigationScore}%</div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="text-sm font-medium">Devices assigned</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {(allDevices || []).filter(d => (d.technician || 'Unassigned') === selectedTech.name).slice(0, 20).map(d => (
+                    <div key={d._id} className="p-3 rounded-lg border bg-white/60">
+                      <div className="flex items-center justify-between">
+                        <div className="font-medium text-sm truncate">{d.name}</div>
+                        <Badge variant={d.deviceOnNetwork ? 'secondary' : 'outline'} className="text-xs">{d.deviceOnNetwork ? 'Connected' : 'Offline'}</Badge>
+                      </div>
+                      <div className="text-xs text-gray-600 mt-1">{d.entity || 'Unknown'} • {d.ipAddress || 'N/A'} • {d.osVersion || 'Unknown OS'}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
+      )}
     </div>
   );
 }
 
 // Technician Leaderboard Component
-const TechnicianLeaderboard = memo(({ data }: { data: any[] }) => (
+const TechnicianLeaderboard = memo(({ data, onSelect }: { data: any[]; onSelect?: (item: any) => void }) => (
   <Card>
     <CardHeader>
       <CardTitle className="flex items-center gap-2">
@@ -278,7 +341,7 @@ const TechnicianLeaderboard = memo(({ data }: { data: any[] }) => (
                 name === 'score' ? 'Overall Score' : name
               ]}
             />
-            <Bar dataKey="score" fill="#3B82F6" radius={[0, 4, 4, 0]} />
+            <Bar dataKey="score" fill="#3B82F6" radius={[0, 4, 4, 0]} onClick={(data) => onSelect && onSelect(data.payload)} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -288,7 +351,7 @@ const TechnicianLeaderboard = memo(({ data }: { data: any[] }) => (
 TechnicianLeaderboard.displayName = 'TechnicianLeaderboard';
 
 // Risk vs Workload Matrix Component
-const RiskWorkloadMatrix = memo(({ data }: { data: any[] }) => (
+const RiskWorkloadMatrix = memo(({ data, onSelect }: { data: any[]; onSelect?: (item: any) => void }) => (
   <Card>
     <CardHeader>
       <CardTitle className="flex items-center gap-2">
@@ -329,6 +392,7 @@ const RiskWorkloadMatrix = memo(({ data }: { data: any[] }) => (
               dataKey="risk" 
               fill="#8884d8"
               fillOpacity={0.7}
+              onClick={(data) => onSelect && onSelect(data.payload)}
             />
           </ScatterChart>
         </ResponsiveContainer>
@@ -339,7 +403,7 @@ const RiskWorkloadMatrix = memo(({ data }: { data: any[] }) => (
 RiskWorkloadMatrix.displayName = 'RiskWorkloadMatrix';
 
 // Performance Table Component
-const PerformanceTable = memo(({ scores }: { scores: TechnicianScore[] }) => (
+const PerformanceTable = memo(({ scores, onSelect }: { scores: TechnicianScore[]; onSelect?: (score: TechnicianScore) => void }) => (
   <Card>
     <CardHeader>
       <CardTitle className="flex items-center gap-2">
@@ -363,13 +427,14 @@ const PerformanceTable = memo(({ scores }: { scores: TechnicianScore[] }) => (
               <th className="text-left p-2">Risk Mitigation</th>
               <th className="text-left p-2">Devices</th>
               <th className="text-left p-2">Insights</th>
+              <th className="text-left p-2">Details</th>
             </tr>
           </thead>
           <tbody>
             {scores.map((score) => {
               const insights = getPerformanceInsights(score);
               return (
-                <tr key={score.technicianId} className="border-b hover:bg-gray-50">
+                <tr key={score.technicianId} className="border-b hover:bg-gray-50 cursor-pointer" onClick={() => onSelect && onSelect(score)}>
                   <td className="p-2">
                     <Badge variant={score.rank <= 3 ? "default" : "secondary"}>
                       #{score.rank}
@@ -394,6 +459,9 @@ const PerformanceTable = memo(({ scores }: { scores: TechnicianScore[] }) => (
                         </Badge>
                       ))}
                     </div>
+                  </td>
+                  <td className="p-2">
+                    <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); onSelect && onSelect(score); }}>View</Button>
                   </td>
                 </tr>
               );

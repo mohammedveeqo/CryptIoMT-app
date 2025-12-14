@@ -40,6 +40,10 @@ import {
   Cell,
   ResponsiveContainer
 } from "recharts";
+import { useRouter } from "next/navigation";
+import { Copy } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DeviceDistribution } from './charts/device-distribution';
 import { Responsive, WidthProvider, type Layout } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
@@ -77,6 +81,7 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'
 
 export function DashboardOverview() {
   const { currentOrganization } = useOrganization();
+  const router = useRouter();
   const ResponsiveGridLayout = WidthProvider(Responsive);
   const [isEditMode, setIsEditMode] = useState(false);
   const getSectionMin = (i: string) => {
@@ -291,6 +296,62 @@ export function DashboardOverview() {
     })) ?? [];
   }, [osDistribution]);
 
+  // Category risk filters
+  const [catFilters, setCatFilters] = useState({
+    category: 'all',
+    manufacturer: 'all',
+    classification: 'all',
+    network: 'all',
+    phi: 'all',
+    search: ''
+  });
+  const catOptions = useMemo(() => {
+    const devices = allDevices || [];
+    return {
+      categories: Array.from(new Set(devices.map((d: any) => d.category).filter(Boolean))).sort(),
+      manufacturers: Array.from(new Set(devices.map((d: any) => d.manufacturer).filter(Boolean))).sort(),
+      classifications: Array.from(new Set(devices.map((d: any) => d.classification).filter(Boolean))).sort(),
+    };
+  }, [allDevices]);
+  const filteredDevicesForCat = useMemo(() => {
+    const devices = (allDevices || []) as any[];
+    return devices.filter(d => {
+      if (catFilters.search) {
+        const s = catFilters.search.toLowerCase();
+        const matches = [d.name, d.entity, d.manufacturer, d.model, d.category, d.ipAddress].filter(Boolean).some((v: string) => v.toLowerCase().includes(s));
+        if (!matches) return false;
+      }
+      if (catFilters.category !== 'all' && d.category !== catFilters.category) return false;
+      if (catFilters.manufacturer !== 'all' && d.manufacturer !== catFilters.manufacturer) return false;
+      if (catFilters.classification !== 'all' && d.classification !== catFilters.classification) return false;
+      if (catFilters.network !== 'all') {
+        if (catFilters.network === 'connected' && !d.deviceOnNetwork) return false;
+        if (catFilters.network === 'offline' && d.deviceOnNetwork) return false;
+      }
+      if (catFilters.phi !== 'all') {
+        if (catFilters.phi === 'yes' && !d.hasPHI) return false;
+        if (catFilters.phi === 'no' && d.hasPHI) return false;
+      }
+      return true;
+    });
+  }, [allDevices, catFilters]);
+  const categoryRiskData = useMemo(() => {
+    const map: Record<string, { Critical: number; High: number; Medium: number; Low: number; 'Network Only': number; total: number }> = {};
+    filteredDevicesForCat.forEach(d => {
+      const key = d.category || 'Unknown';
+      if (!map[key]) map[key] = { Critical: 0, High: 0, Medium: 0, Low: 0, 'Network Only': 0, total: 0 };
+      const cat = (d.customerPHICategory || d.classification || '').toLowerCase();
+      if (cat.includes('critical')) map[key].Critical++;
+      else if (cat.includes('high')) map[key].High++;
+      else if (cat.includes('medium')) map[key].Medium++;
+      else if (cat.includes('low')) map[key].Low++;
+      else if (d.deviceOnNetwork && !d.hasPHI) map[key]['Network Only']++;
+      else map[key].Low++;
+      map[key].total++;
+    });
+    return Object.entries(map).map(([name, v]) => ({ name, Critical: v.Critical, High: v.High, Medium: v.Medium, Low: v.Low, 'Network Only': v['Network Only'] }));
+  }, [filteredDevicesForCat]);
+
   // PHI Risk Distribution Chart Data with null checking
   const phiRiskData = useMemo(() => {
     if (!analytics?.phiRiskDistribution) return [];
@@ -335,8 +396,8 @@ export function DashboardOverview() {
     network: true,
     tech: true,
     os: true,
-    criticality: true,
-    distribution: true,
+    criticality: false,
+    distribution: false,
   });
 
   useEffect(() => {
@@ -495,182 +556,23 @@ export function DashboardOverview() {
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {visibleStats.map((stat) => (
-          <StatsCard key={`stat:${stat.name}`} stat={stat} onClick={() => { setSelectedStat(stat); setStatSheetOpen(true); }} />
+          <StatsCard key={`stat:${stat.name}`} stat={stat} onClick={() => {
+            const qp = new URLSearchParams();
+            if (stat.name === 'Network Connected') { qp.set('tab','devices'); qp.set('network','connected'); }
+            else if (stat.name === 'PHI Devices') { qp.set('tab','risk'); }
+            else if (stat.name === 'Critical Alerts') { qp.set('tab','alerts'); }
+            else if (stat.name === 'Legacy OS Devices') { qp.set('tab','risk'); }
+            else if (stat.name === 'Total Devices') { qp.set('tab','devices'); }
+            else if (stat.name === 'Hospitals') { qp.set('tab','risk'); }
+            else { qp.set('tab','overview'); }
+            router.push(`/dashboard?${qp.toString()}`);
+          }} />
         ))}
       </div>
 
-      {selectedStat && (
-        <Dialog open={statSheetOpen} onOpenChange={(o) => { setStatSheetOpen(o); if (!o) setSelectedStat(null); }}>
-          <DialogContent className="sm:max-w-3xl max-w-[calc(100%-2rem)]">
-            <DialogHeader>
-              <DialogTitle>{selectedStat.name}</DialogTitle>
-              <DialogDescription>
-                {currentOrganization?.name || 'Organization'}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="px-2 sm:px-4 space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="rounded-lg border bg-muted/30 p-4">
-                  <div className="text-xs text-muted-foreground">Value</div>
-                  <div className="text-3xl font-bold tracking-tight">{selectedStat.value}</div>
-                </div>
-                <div className="rounded-lg border bg-muted/30 p-4">
-                  <div className="text-xs text-muted-foreground">Context</div>
-                  <div className="text-sm font-medium">
-                    {selectedStat.name === 'Network Connected' && `${analytics?.networkConnectedDevices ?? 0} of ${analytics?.totalDevices ?? 0} devices`}
-                    {selectedStat.name === 'Technicians' && `Avg Score: ${analytics?.avgTechnicianScore ?? 0}%`}
-                    {selectedStat.name === 'PHI Devices' && `${Math.round(((analytics?.phiDevices ?? 0) / (analytics?.totalDevices || 1)) * 100)}% of total`}
-                    {selectedStat.name === 'Data Quality Score' && ((analytics?.dataCollectionScore ?? 0) >= 80 ? 'Excellent' : 'Improving')}
-                    {selectedStat.name === 'Hospitals' && 'Active entities'}
-                    {selectedStat.name === 'Legacy OS Devices' && 'Security risk'}
-                    {selectedStat.name === 'Critical Alerts' && 'Live monitoring'}
-                    {selectedStat.name === 'Total Devices' && 'Real-time'}
-                  </div>
-                </div>
-                <div className="rounded-lg border bg-muted/30 p-4">
-                  <div className="text-xs text-muted-foreground">Action</div>
-                  <div className="flex gap-2 mt-2">
-                    <Button size="sm">Open Section</Button>
-                  </div>
-                </div>
-              </div>
+      
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="rounded-lg border bg-card p-4">
-                  <div className="text-sm font-semibold">Top Hospitals</div>
-                  <div className="mt-3 space-y-3">
-                    {(() => {
-                      const list = (allDevices || []).filter(d => {
-                        if (selectedStat?.name === 'Network Connected') return d.deviceOnNetwork;
-                        if (selectedStat?.name === 'Critical Alerts') return d.customerPHICategory?.toLowerCase().includes('critical') || d.hasPHI;
-                        if (selectedStat?.name === 'PHI Devices') return d.hasPHI;
-                        return true;
-                      });
-                      const map: Record<string, number> = {};
-                      list.forEach(d => { const k = d.entity || 'Unknown'; map[k] = (map[k] || 0) + 1; });
-                      const entries = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,6);
-                      return entries.map(([name, count]) => (
-                        <div key={name} className="space-y-2">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="truncate mr-2 font-medium">{name}</span>
-                            <Badge variant="outline">{count}</Badge>
-                          </div>
-                          <Progress value={Math.min(100, Math.round((count / Math.max(1, list.length)) * 100))} />
-                        </div>
-                      ));
-                    })()}
-                  </div>
-                </div>
-                <div className="rounded-lg border bg-card p-4">
-                  <div className="text-sm font-semibold">Top Manufacturers</div>
-                  <div className="mt-3 space-y-3">
-                    {(() => {
-                      const list = (allDevices || []).filter(d => {
-                        if (selectedStat?.name === 'Network Connected') return d.deviceOnNetwork;
-                        if (selectedStat?.name === 'Critical Alerts') return d.customerPHICategory?.toLowerCase().includes('critical') || d.hasPHI;
-                        if (selectedStat?.name === 'PHI Devices') return d.hasPHI;
-                        return true;
-                      });
-                      const map: Record<string, number> = {};
-                      list.forEach(d => { const k = d.manufacturer || 'Unknown'; map[k] = (map[k] || 0) + 1; });
-                      const entries = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,6);
-                      return entries.map(([name, count]) => (
-                        <div key={name} className="space-y-2">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="truncate mr-2 font-medium">{name}</span>
-                            <Badge variant="outline">{count}</Badge>
-                          </div>
-                          <Progress value={Math.min(100, Math.round((count / Math.max(1, list.length)) * 100))} />
-                        </div>
-                      ));
-                    })()}
-                  </div>
-                </div>
-                <div className="rounded-lg border bg-card p-4">
-                  <div className="text-sm font-semibold">Top Categories</div>
-                  <div className="mt-3 space-y-3">
-                    {(() => {
-                      const list = (allDevices || []).filter(d => {
-                        if (selectedStat?.name === 'Network Connected') return d.deviceOnNetwork;
-                        if (selectedStat?.name === 'Critical Alerts') return d.customerPHICategory?.toLowerCase().includes('critical') || d.hasPHI;
-                        if (selectedStat?.name === 'PHI Devices') return d.hasPHI;
-                        return true;
-                      });
-                      const map: Record<string, number> = {};
-                      list.forEach(d => { const k = d.category || 'Unknown'; map[k] = (map[k] || 0) + 1; });
-                      const entries = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,6);
-                      return entries.map(([name, count]) => (
-                        <div key={name} className="space-y-2">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="truncate mr-2 font-medium">{name}</span>
-                            <Badge variant="outline">{count}</Badge>
-                          </div>
-                          <Progress value={Math.min(100, Math.round((count / Math.max(1, list.length)) * 100))} />
-                        </div>
-                      ));
-                    })()}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      <div className="flex justify-end gap-2">
-        <Button variant={isEditMode ? 'default' : 'outline'} onClick={() => setIsEditMode(!isEditMode)}>
-          {isEditMode ? 'Exit Edit' : 'Edit Layout'}
-        </Button>
-        {isEditMode && (
-          <Button onClick={() => {
-            const keyA = currentOrganization ? `overview-layout:${currentOrganization._id}` : 'overview-layout:none';
-            const keyB = currentOrganization ? `overview-stats-layout:${currentOrganization._id}` : 'overview-stats-layout:none';
-            try {
-              if (typeof window !== 'undefined') {
-                localStorage.setItem(keyA, JSON.stringify(layouts));
-                localStorage.setItem(keyB, JSON.stringify(statsLayouts));
-              }
-            } catch {}
-            setIsEditMode(false);
-          }}>Save Layout</Button>
-        )}
-        {isEditMode && (
-          <Button variant="outline" onClick={() => {
-            const keyA = currentOrganization ? `overview-layout:${currentOrganization._id}` : 'overview-layout:none';
-            const keyB = currentOrganization ? `overview-stats-layout:${currentOrganization._id}` : 'overview-stats-layout:none';
-            try {
-              if (typeof window !== 'undefined') {
-                localStorage.removeItem(keyA);
-                localStorage.removeItem(keyB);
-              }
-            } catch {}
-            const resetLayouts = {
-              lg: [
-                { i: 'phi', x: 0, y: 0, w: 6, h: 6 },
-                { i: 'network', x: 6, y: 0, w: 6, h: 6 },
-                { i: 'tech', x: 0, y: 6, w: 6, h: 8 },
-                { i: 'os', x: 6, y: 6, w: 6, h: 8 },
-                { i: 'criticality', x: 0, y: 14, w: 12, h: 10 },
-                { i: 'distribution', x: 0, y: 24, w: 12, h: 10 },
-              ],
-            } as { [key: string]: Layout[] };
-            const resetStats = {
-              lg: [
-                { i: 'stat:Total Devices', x: 0, y: 0, w: 3, h: 2, minW: 3, minH: 2 },
-                { i: 'stat:Hospitals', x: 3, y: 0, w: 3, h: 2, minW: 3, minH: 2 },
-                { i: 'stat:Technicians', x: 6, y: 0, w: 3, h: 2, minW: 3, minH: 2 },
-                { i: 'stat:Network Connected', x: 9, y: 0, w: 3, h: 2, minW: 3, minH: 2 },
-                { i: 'stat:Critical Alerts', x: 0, y: 2, w: 3, h: 2, minW: 3, minH: 2 },
-                { i: 'stat:PHI Devices', x: 3, y: 2, w: 3, h: 2, minW: 3, minH: 2 },
-                { i: 'stat:Legacy OS Devices', x: 6, y: 2, w: 3, h: 2, minW: 3, minH: 2 },
-                { i: 'stat:Data Quality Score', x: 9, y: 2, w: 3, h: 2, minW: 3, minH: 2 },
-              ],
-            } as { [key: string]: Layout[] };
-            setLayouts(resetLayouts);
-            setStatsLayouts(resetStats);
-          }}>Reset Layout</Button>
-        )}
-      </div>
+      {/* Rigid layout: editing controls removed */}
 
       <ResponsiveGridLayout
         className="layout"
@@ -683,8 +585,8 @@ export function DashboardOverview() {
         preventCollision={true}
         isBounded
         containerPadding={[16, 16]}
-        isDraggable={isEditMode}
-        isResizable={isEditMode}
+        isDraggable={false}
+        isResizable={false}
         margin={[16, 16]}
       >
         {visibleSections.phiRisk && (
@@ -726,13 +628,17 @@ export function DashboardOverview() {
           </div>
         )}
       </ResponsiveGridLayout>
+
+      
     </div>
   );
 }
 
 // PHI Risk Distribution Chart
-const PHIRiskDistributionChart = memo(({ data }: { data: Array<{ name: string, value: number, color: string }> }) => (
-  <Card className="h-full overflow-hidden">
+const PHIRiskDistributionChart = memo(({ data }: { data: Array<{ name: string, value: number, color: string }> }) => {
+  const router = useRouter();
+  return (
+  <Card className="h-full overflow-hidden cursor-pointer" onClick={() => router.push('/dashboard?tab=risk')}>
     <CardHeader>
       <CardTitle className="flex items-center gap-2">
         <Shield className="h-5 w-5" />
@@ -790,12 +696,19 @@ const PHIRiskDistributionChart = memo(({ data }: { data: Array<{ name: string, v
       </div>
     </CardContent>
   </Card>
-));
+)});
 PHIRiskDistributionChart.displayName = 'PHIRiskDistributionChart';
 
 // Network Connectivity Chart
-const NetworkConnectivityChart = memo(({ connected, total, percentage }: { connected: number, total: number, percentage: number }) => (
-  <Card className="h-full overflow-hidden">
+const NetworkConnectivityChart = memo(({ connected, total, percentage }: { connected: number, total: number, percentage: number }) => {
+  const router = useRouter();
+  return (
+  <Card className="h-full overflow-hidden cursor-pointer" onClick={() => {
+    const qp = new URLSearchParams();
+    qp.set('tab','devices');
+    qp.set('network','connected');
+    router.push(`/dashboard?${qp.toString()}`);
+  }}>
     <CardHeader>
       <CardTitle className="flex items-center gap-2">
         <Network className="h-5 w-5" />
@@ -827,7 +740,7 @@ const NetworkConnectivityChart = memo(({ connected, total, percentage }: { conne
       </div>
     </CardContent>
   </Card>
-));
+)});
 NetworkConnectivityChart.displayName = 'NetworkConnectivityChart';
 
 // Enhanced Technician Performance Chart with more detailed metrics

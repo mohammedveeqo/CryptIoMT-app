@@ -7,11 +7,11 @@ import { api } from '../../../convex/_generated/api'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useOrganization } from '@/contexts/organization-context'
-import { AdminControlPanel } from '@/components/dashboard/admin-control-panel'
 import { DeviceInventory } from '@/components/dashboard/device-inventory'
 import { DashboardOverview } from '@/components/dashboard/overview'
 import { QuickStats } from '@/components/dashboard/quick-stats'
 import { Shield } from 'lucide-react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { NetworkTopology } from '@/components/dashboard/network-topology'
 import { RiskAssessment } from '@/components/dashboard/risk-assessment';
 import AlertsAndThreats from "@/components/dashboard/alerts-and-threats";
@@ -27,6 +27,9 @@ export default function Dashboard() {
   const { user } = useUser();
   const { currentOrganization } = useOrganization();
   const [activeTab, setActiveTab] = useState("overview");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const tab = searchParams.get('tab') || 'overview';
 
   // Memoize organization ID to prevent unnecessary re-renders
   const organizationId = useMemo(() => currentOrganization?._id, [currentOrganization?._id]);
@@ -38,19 +41,12 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-4 sm:space-y-6 lg:space-y-8">
-      {/* Admin Controls */}
-      {isAdmin && (
-        <div className="animate-in slide-in-from-top-4 duration-500">
-          <AdminControlPanel userRole={userRole} />
-        </div>
-      )}
-
       {/* Main Dashboard Tabs */}
       <div className="animate-in slide-in-from-bottom-4 duration-700">
-        <Tabs defaultValue="overview" className="space-y-4 sm:space-y-6 lg:space-y-8">
+        <Tabs value={tab} onValueChange={(v) => router.replace(`/dashboard?tab=${v}`)} className="space-y-4 sm:space-y-6 lg:space-y-8">
           {/* Mobile: Dropdown Tabs */}
           <div className="sm:hidden sticky top-16 z-30 bg-white/80 backdrop-blur-sm border-b border-gray-200/50 py-2">
-            <Select defaultValue="overview">
+            <Select value={tab} onValueChange={(v) => router.replace(`/dashboard?tab=${v}`)}>
               <SelectTrigger className="w/full bg-white/80 backdrop-blur-sm shadow-lg border border-gray-200/50">
                 <SelectValue />
               </SelectTrigger>
@@ -60,8 +56,7 @@ export default function Dashboard() {
                 <SelectItem value="risk">Risk Assessment</SelectItem>
                 <SelectItem value="network">Network Topology</SelectItem>
                 <SelectItem value="alerts">Alerts & Threats</SelectItem>
-                {isAdmin && <SelectItem value="import">Data Import</SelectItem>}
-                {isAdmin && <SelectItem value="customers">Customer Management</SelectItem>}
+                
               </SelectContent>
             </Select>
           </div>
@@ -103,24 +98,7 @@ export default function Dashboard() {
                 <span className="hidden sm:inline">Alerts & Threats</span>
                 <span className="sm:hidden">Alerts</span>
               </TabsTrigger>
-              {isAdmin && (
-                <TabsTrigger 
-                  value="import"
-                  className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 rounded-lg px-3 sm:px-4 lg:px-6 py-2.5 font-medium text-sm"
-                >
-                  <span className="hidden lg:inline">Data Import</span>
-                  <span className="lg:hidden">Import</span>
-                </TabsTrigger>
-              )}
-              {isAdmin && (
-                <TabsTrigger 
-                  value="customers"
-                  className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 rounded-lg px-3 sm:px-4 lg:px-6 py-2.5 font-medium text-sm"
-                >
-                  <span className="hidden lg:inline">Customer Management</span>
-                  <span className="lg:hidden">Customers</span>
-                </TabsTrigger>
-              )}
+              
             </TabsList>
           </div>
 
@@ -158,33 +136,7 @@ export default function Dashboard() {
             )}
           </TabsContent>
 
-          {isAdmin && (
-            <TabsContent value="import" className="animate-in fade-in-50 duration-500">
-              <div className="bg-gradient-to-br from-white to-gray-50 backdrop-blur-sm rounded-2xl p-12 text-center shadow-lg border border-gray-200/50">
-                <div className="max-w-md mx-auto">
-                  <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                    <Shield className="h-8 w-8 text-blue-600" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-3">Data Import Center</h3>
-                  <p className="text-gray-600 leading-relaxed">Bulk data import functionality for medical device inventories and security assessments is coming soon.</p>
-                </div>
-              </div>
-            </TabsContent>
-          )}
-
-          {isAdmin && (
-            <TabsContent value="customers" className="animate-in fade-in-50 duration-500">
-              <div className="bg-gradient-to-br from-white to-gray-50 backdrop-blur-sm rounded-2xl p-12 text-center shadow-lg border border-gray-200/50">
-                <div className="max-w-md mx-auto">
-                  <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-purple-200 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                    <Shield className="h-8 w-8 text-purple-600" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-3">Customer Management</h3>
-                  <p className="text-gray-600 leading-relaxed">Comprehensive customer management interface for handling multiple healthcare organizations and their security needs.</p>
-                </div>
-              </div>
-            </TabsContent>
-          )}
+          
         </Tabs>
       </div>
     </div>

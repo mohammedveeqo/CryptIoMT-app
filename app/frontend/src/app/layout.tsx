@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import { ClerkProvider } from '@clerk/nextjs';
 import { ConvexClientProvider } from './providers/convex-provider';
 import ImpersonationBanner from '../components/impersonation-banner';
@@ -27,7 +28,24 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning={true}>
-      <body className="bg-gray-950 text-gray-100 antialiased">
+      <head>
+        <Script id="theme-init" strategy="beforeInteractive">
+          {`
+            try {
+              const storageTheme = localStorage.getItem('theme');
+              const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+              const shouldDark = storageTheme ? storageTheme === 'dark' : systemPrefersDark;
+              const el = document.documentElement;
+              if (shouldDark) {
+                el.classList.add('dark');
+              } else {
+                el.classList.remove('dark');
+              }
+            } catch (_) {}
+          `}
+        </Script>
+      </head>
+      <body className="bg-background text-foreground antialiased">
         <ClerkProvider>
           <ConvexClientProvider>
             {children}

@@ -685,6 +685,82 @@ export const getLegacyOSDevices = query({
   },
 });
 
+export const getHospitalRiskDetails = query({
+  args: { organizationId: v.id("organizations"), hospital: v.string() },
+  handler: async (ctx, { organizationId, hospital }) => {
+    const devices = await ctx.db
+      .query("medicalDevices")
+      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+      .collect();
+
+    const list = devices.filter(d => (d.entity || "Unknown") === hospital);
+
+    const items = list.map(d => {
+      const osLower = (d.osVersion || "").toLowerCase();
+      const phiCat = (d.customerPHICategory || "").toLowerCase();
+      const hasLegacyOS = osLower.includes("xp") || osLower.includes("2000") || osLower.includes("vista") || osLower.includes("windows 7") || osLower.includes("windows 8");
+      const hasCriticalPHI = !!d.hasPHI && phiCat.includes("critical");
+      const hasHighPHI = !!d.hasPHI && phiCat.includes("high");
+      const isNetworkExposed = !!d.deviceOnNetwork && !!d.hasPHI;
+
+      let riskLevel: "low" | "medium" | "high" | "critical" = "low";
+      if (hasLegacyOS || hasCriticalPHI || isNetworkExposed) {
+        riskLevel = "critical";
+      } else if (hasHighPHI || (d.deviceOnNetwork && !d.osVersion)) {
+        riskLevel = "high";
+      } else if (d.hasPHI || d.deviceOnNetwork) {
+        riskLevel = "medium";
+      }
+
+      const reasons: string[] = [];
+      if (hasLegacyOS) reasons.push("Legacy OS detected");
+      if (hasCriticalPHI) reasons.push("PHI marked Critical");
+      if (hasHighPHI && !hasCriticalPHI) reasons.push("PHI marked High");
+      if (isNetworkExposed) reasons.push("PHI device on network");
+      if (d.deviceOnNetwork && !d.hasPHI) reasons.push("Network exposure");
+      if (!d.osVersion) reasons.push("Unknown OS version");
+
+      const remediation: string[] = [];
+      if (hasLegacyOS) {
+        remediation.push("Plan upgrade to supported OS");
+        remediation.push("Isolate device on segmented network");
+      }
+      if (isNetworkExposed) {
+        remediation.push("Enable encryption for PHI");
+        remediation.push("Apply access controls and auditing");
+        remediation.push("Segment PHI devices from general network");
+      }
+      if (!d.osVersion) {
+        remediation.push("Inventory OS and apply latest patches");
+      }
+      if (riskLevel === "high" && !isNetworkExposed) {
+        remediation.push("Review PHI handling and minimize exposure");
+      }
+
+      return {
+        id: d._id,
+        name: d.name,
+        entity: d.entity,
+        manufacturer: d.manufacturer,
+        model: d.model,
+        osVersion: d.osVersion || "Unknown",
+        hasPHI: !!d.hasPHI,
+        deviceOnNetwork: !!d.deviceOnNetwork,
+        riskLevel,
+        reasons,
+        remediation
+      };
+    });
+
+    const summary = items.reduce((acc, it) => {
+      acc[it.riskLevel] = (acc[it.riskLevel] || 0) + 1;
+      return acc;
+    }, { low: 0, medium: 0, high: 0, critical: 0 } as Record<"low"|"medium"|"high"|"critical", number>);
+
+    return { hospital, items, summary };
+  },
+});
+
 // Add this to your existing medicalDevices.ts file
 
 export const getTechnicianMetrics = query({

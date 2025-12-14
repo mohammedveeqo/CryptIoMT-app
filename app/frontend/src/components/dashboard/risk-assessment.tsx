@@ -25,6 +25,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useCachedQuery } from "@/hooks/use-cached-query";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   BarChart,
   Bar,
@@ -161,6 +163,79 @@ export function RiskAssessment() {
 
     return { hospital: selectedHospital, items, summary };
   }, [selectedHospital, allDevices]);
+
+  // Filters for Device Category Risk Scoring
+  const [catFilters, setCatFilters] = useState({
+    category: 'all',
+    manufacturer: 'all',
+    classification: 'all',
+    network: 'all',
+    phi: 'all',
+    search: ''
+  });
+  const catOptions = useMemo(() => {
+    const devices = (allDevices || []) as any[];
+    return {
+      categories: (() => {
+        const preferred = ['Workstations', 'Digital Radiography', 'Mammographic'];
+        const discovered = Array.from(new Set(devices.map(d => d.category).filter(Boolean))).sort();
+        return [...preferred, ...discovered.filter(c => !preferred.includes(c))];
+      })(),
+      manufacturers: Array.from(new Set(devices.map(d => d.manufacturer).filter(Boolean))).sort(),
+      classifications: Array.from(new Set(devices.map(d => d.classification).filter(Boolean))).sort(),
+    };
+  }, [allDevices]);
+  const filteredDevicesForCat = useMemo(() => {
+    const devices = (allDevices || []) as any[];
+    return devices.filter(d => {
+      if (catFilters.search) {
+        const s = catFilters.search.toLowerCase();
+        const matches = [d.name, d.entity, d.manufacturer, d.model, d.category, d.ipAddress].filter(Boolean).some((v: string) => (v as string).toLowerCase().includes(s));
+        if (!matches) return false;
+      }
+      if (catFilters.category !== 'all' && d.category !== catFilters.category) return false;
+      if (catFilters.manufacturer !== 'all' && d.manufacturer !== catFilters.manufacturer) return false;
+      if (catFilters.classification !== 'all' && d.classification !== catFilters.classification) return false;
+      if (catFilters.network !== 'all') {
+        if (catFilters.network === 'connected' && !d.deviceOnNetwork) return false;
+        if (catFilters.network === 'offline' && d.deviceOnNetwork) return false;
+      }
+      if (catFilters.phi !== 'all') {
+        if (catFilters.phi === 'yes' && !d.hasPHI) return false;
+        if (catFilters.phi === 'no' && d.hasPHI) return false;
+      }
+      return true;
+    });
+  }, [allDevices, catFilters]);
+  const categoryRiskData = useMemo(() => {
+    const map: Record<string, { total: number; critical: number; high: number; medium: number; low: number; phi: number; network: number; legacy: number }> = {};
+    filteredDevicesForCat.forEach(d => {
+      const key = d.category || 'Unknown';
+      if (!map[key]) map[key] = { total: 0, critical: 0, high: 0, medium: 0, low: 0, phi: 0, network: 0, legacy: 0 };
+      const cat = (d.customerPHICategory || d.classification || '').toLowerCase();
+      if (cat.includes('critical')) map[key].critical++;
+      else if (cat.includes('high')) map[key].high++;
+      else if (cat.includes('medium')) map[key].medium++;
+      else map[key].low++;
+      if (d.hasPHI) map[key].phi++;
+      if (d.deviceOnNetwork) map[key].network++;
+      const osLower = (d.osVersion || '').toLowerCase();
+      const isLegacy = osLower.includes('xp') || osLower.includes('2000') || osLower.includes('vista') || osLower.includes('windows 7') || osLower.includes('windows 8');
+      if (isLegacy) map[key].legacy++;
+      map[key].total++;
+    });
+    return Object.entries(map).map(([category, v]) => {
+      const score = v.total > 0 ? Math.round(((v.critical*100) + (v.high*75) + (v.medium*50) + (v.low*25)) / v.total) : 0;
+      return {
+        category,
+        avgRiskScore: score,
+        count: v.total,
+        phiPercentage: v.total > 0 ? Math.round((v.phi / v.total) * 100) : 0,
+        networkPercentage: v.total > 0 ? Math.round((v.network / v.total) * 100) : 0,
+        legacyPercentage: v.total > 0 ? Math.round((v.legacy / v.total) * 100) : 0,
+      };
+    }).sort((a, b) => b.avgRiskScore - a.avgRiskScore);
+  }, [filteredDevicesForCat]);
 
   const phiChartData = useMemo(() => {
     if (!riskData?.phiRiskOverview) return [];
@@ -451,7 +526,7 @@ export function RiskAssessment() {
         <OSRiskProfileChart data={riskData?.osRiskProfile || []} />
       </div>
 
-      {/* Device Category Risk Scoring */}
+      {/* Device Category Risk Scoring with filters and export */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -459,12 +534,77 @@ export function RiskAssessment() {
             Device Category Risk Scoring
           </CardTitle>
           <CardDescription>
-            Risk assessment by medical device categories
+            Risk assessment by medical device categories with filters
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {riskData?.deviceCategoryRisk?.map((category, index) => (
+            <div className="flex flex-wrap gap-3 items-center">
+              <div className="relative">
+                <Input placeholder="Search devices..." value={catFilters.search} onChange={(e) => setCatFilters(f => ({ ...f, search: e.target.value }))} className="w-56" />
+              </div>
+              <Select value={catFilters.category} onValueChange={(v) => setCatFilters(f => ({ ...f, category: v }))}>
+                <SelectTrigger className="w-40"><SelectValue placeholder="Device Type" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Device Types</SelectItem>
+                  {catOptions.categories.map(c => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
+                </SelectContent>
+              </Select>
+              <Select value={catFilters.manufacturer} onValueChange={(v) => setCatFilters(f => ({ ...f, manufacturer: v }))}>
+                <SelectTrigger className="w-40"><SelectValue placeholder="Brand" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Brands</SelectItem>
+                  {catOptions.manufacturers.map(m => (<SelectItem key={m} value={m}>{m}</SelectItem>))}
+                </SelectContent>
+              </Select>
+              <Select value={catFilters.classification} onValueChange={(v) => setCatFilters(f => ({ ...f, classification: v }))}>
+                <SelectTrigger className="w-40"><SelectValue placeholder="Risk Level" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Risk Levels</SelectItem>
+                  {catOptions.classifications.map(c => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
+                </SelectContent>
+              </Select>
+              <Select value={catFilters.network} onValueChange={(v) => setCatFilters(f => ({ ...f, network: v }))}>
+                <SelectTrigger className="w-32"><SelectValue placeholder="Status" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Any Status</SelectItem>
+                  <SelectItem value="connected">Connected</SelectItem>
+                  <SelectItem value="offline">Offline</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={catFilters.phi} onValueChange={(v) => setCatFilters(f => ({ ...f, phi: v }))}>
+                <SelectTrigger className="w-32"><SelectValue placeholder="PHI" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Any PHI</SelectItem>
+                  <SelectItem value="yes">Has PHI</SelectItem>
+                  <SelectItem value="no">No PHI</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="outline" size="sm" onClick={() => setCatFilters({ category: 'all', manufacturer: 'all', classification: 'all', network: 'all', phi: 'all', search: '' })}>Clear</Button>
+              <Button size="sm" variant="outline" onClick={() => {
+                const rows = filteredDevicesForCat.map(d => ({
+                  name: d.name,
+                  entity: d.entity || '',
+                  manufacturer: d.manufacturer || '',
+                  model: d.model || '',
+                  category: d.category || '',
+                  classification: d.classification || '',
+                  ipAddress: d.ipAddress || '',
+                  onNetwork: d.deviceOnNetwork ? 'yes' : 'no',
+                  hasPHI: d.hasPHI ? 'yes' : 'no',
+                }));
+                const header = Object.keys(rows[0] || {name:'',entity:'',manufacturer:'',model:'',category:'',classification:'',ipAddress:'',onNetwork:'',hasPHI:''});
+                const csv = [header.join(','), ...rows.map(r => header.map(h => String((r as any)[h]).replace(/,/g,';')).join(','))].join('\n');
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `devices-filtered.csv`;
+                a.click();
+                URL.revokeObjectURL(url);
+              }}>Export CSV</Button>
+            </div>
+            {categoryRiskData.map((category, index) => (
               <div key={index} className="border rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="font-semibold">{category.category}</h4>
@@ -564,7 +704,7 @@ export function RiskAssessment() {
 
       {selectedHospital && (
         <Dialog open={detailOpen} onOpenChange={(o) => { setDetailOpen(o); if (!o) { setSelectedHospital(null); setSelectedLevel(null); } }}>
-          <DialogContent className="sm:max-w-3xl max-w-[calc(100%-2rem)]">
+        <DialogContent className="sm:max-w-3xl max-w-[calc(100%-2rem)] sm:max-h-[calc(100vh-6rem)] my-6 overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{selectedHospital}</DialogTitle>
               <DialogDescription>
@@ -598,11 +738,18 @@ export function RiskAssessment() {
                     .filter((it: HospitalDeviceItem) => !selectedLevel || it.riskLevel === selectedLevel)
                     .map((it: HospitalDeviceItem) => (
                       <div key={it.id} className="p-3 rounded-lg border bg-white/60">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between gap-2">
                           <div className="font-medium text-sm truncate">{it.name}</div>
-                          <Badge variant={it.riskLevel === "critical" ? "destructive" : it.riskLevel === "high" ? "secondary" : it.riskLevel === "medium" ? "default" : "outline"} className="text-xs">
-                            {it.riskLevel.toUpperCase()}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={it.riskLevel === "critical" ? "destructive" : it.riskLevel === "high" ? "secondary" : it.riskLevel === "medium" ? "default" : "outline"} className="text-xs">
+                              {it.riskLevel.toUpperCase()}
+                            </Badge>
+                            {it.hasPHI ? (
+                              <Badge variant="secondary" className="text-xs">PHI</Badge>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">No PHI</span>
+                            )}
+                          </div>
                         </div>
                         <div className="text-xs text-gray-600 mt-1">{it.manufacturer || "Unknown"} • {it.model || "Unknown"} • {it.osVersion}</div>
                         <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">

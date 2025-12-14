@@ -60,7 +60,7 @@ interface SubnetInfo {
 }
 
 interface TopologyFilters {
-  view: 'overview' | 'subnet'
+  view: 'overview' | 'subnet' | 'tree' | 'treemap'
   phiLevel: 'all' | 'high' | 'medium' | 'low' | 'none'
   networkStatus: 'all' | 'connected' | 'offline'
   manufacturer: string
@@ -84,6 +84,13 @@ export function NetworkTopology() {
   const [selectedSubnet, setSelectedSubnet] = useState<SubnetInfo | null>(null)
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 })
   const svgRef = useRef<SVGSVGElement>(null)
+  const treeSvgRef = useRef<SVGSVGElement>(null)
+  const treemapSvgRef = useRef<SVGSVGElement>(null)
+  const [drillLevel, setDrillLevel] = useState<0 | 1 | 2>(0)
+  const [selectedHospitalName, setSelectedHospitalName] = useState<string | null>(null)
+  const [selectedSubnetName, setSelectedSubnetName] = useState<string | null>(null)
+  const [showAllSubnets, setShowAllSubnets] = useState(false)
+  const [showAllDevices, setShowAllDevices] = useState(false)
 
   const allDevicesLive = useQuery(
     api.medicalDevices.getAllMedicalDevices,
@@ -93,6 +100,35 @@ export function NetworkTopology() {
     currentOrganization ? `devices:${currentOrganization._id}` : 'devices:none',
     allDevicesLive
   )
+
+  const riskDataLive = useQuery(
+    api.medicalDevices.getRiskAssessmentData,
+    currentOrganization ? { organizationId: currentOrganization._id } : "skip"
+  )
+  const { data: riskData } = useCachedQuery(
+    currentOrganization ? `risk:${currentOrganization._id}` : 'risk:none',
+    riskDataLive
+  )
+
+  const RISK_COLORS = {
+    critical: '#DC2626',
+    high: '#EA580C',
+    medium: '#D97706',
+    low: '#65A30D'
+  }
+
+  const getDeviceRiskLevel = (device: any): 'critical' | 'high' | 'medium' | 'low' => {
+    const os = device.osVersion?.toLowerCase() || ''
+    const hasLegacyOS = os.includes('xp') || os.includes('2000') || os.includes('vista') || os.includes('windows 7') || os.includes('windows 8')
+    const phi = device.customerPHICategory?.toLowerCase() || ''
+    const hasCriticalPHI = device.hasPHI && phi.includes('critical')
+    const hasHighPHI = device.hasPHI && phi.includes('high')
+    const isNetworkExposed = device.deviceOnNetwork && device.hasPHI
+    if (hasLegacyOS || hasCriticalPHI || isNetworkExposed) return 'critical'
+    if (hasHighPHI || (device.deviceOnNetwork && !device.osVersion)) return 'high'
+    if (device.hasPHI || device.deviceOnNetwork) return 'medium'
+    return 'low'
+  }
 
   // Enhanced subnet analysis with DHCP detection
   const subnetAnalysis = useMemo(() => {
@@ -255,6 +291,85 @@ export function NetworkTopology() {
     return { nodes, links }
   }, [filteredDevices, filters.view, subnetAnalysis])
 
+  type TreeDatum = {
+    name: string
+    type: 'root' | 'entity' | 'subnet' | 'device'
+    node?: NetworkNode
+    children?: TreeDatum[]
+  }
+
+  const treeDatum = useMemo<TreeDatum | null>(() => {
+    if (!filteredDevices || filteredDevices.length === 0) return null
+
+    const root: TreeDatum = { name: 'Organization', type: 'root', children: [] }
+    const byEntity = new Map<string, Map<string, NetworkNode[]>>()
+
+    filteredDevices.forEach(device => {
+      const entity = device.entity || 'Unknown'
+      const ipParts = device.ipAddress ? device.ipAddress.split('.') : []
+      const subnet = ipParts.length === 4 ? `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.0/24` : 'No Network'
+      const lastOctet = ipParts.length === 4 ? parseInt(ipParts[3]) : NaN
+      const isDHCP = ipParts.length === 4 && (
+        (lastOctet >= 100 && lastOctet <= 199) ||
+        (lastOctet >= 20 && lastOctet <= 99) ||
+        device.ipAddress!.includes('dhcp') ||
+        (lastOctet > 50 && lastOctet < 200 && lastOctet !== 1 && lastOctet !== 254)
+      )
+
+      if (!byEntity.has(entity)) byEntity.set(entity, new Map())
+      const subnetsMap = byEntity.get(entity)!
+      if (!subnetsMap.has(subnet)) subnetsMap.set(subnet, [])
+
+      const node: NetworkNode = {
+        id: device._id,
+        name: device.name,
+        group: subnet,
+        size: isDHCP ? 8 : 6,
+        color: isDHCP ? '#3B82F6' : '#EF4444',
+        entity: entity,
+        manufacturer: device.manufacturer || 'Unknown',
+        model: device.model || 'Unknown',
+        category: device.category || 'Unknown',
+        classification: device.classification || 'Unknown',
+        ipAddress: device.ipAddress,
+        macAddress: device.macAddress,
+        osManufacturer: device.osManufacturer,
+        osVersion: device.osVersion,
+        deviceOnNetwork: device.deviceOnNetwork || false,
+        hasPHI: device.hasPHI || false,
+        customerPHICategory: device.customerPHICategory,
+        subnet,
+        isDHCP
+      }
+
+      subnetsMap.get(subnet)!.push(node)
+    })
+
+    byEntity.forEach((subnetsMap, entity) => {
+      const entityNode: TreeDatum = { name: entity, type: 'entity', children: [] }
+      subnetsMap.forEach((nodes, subnet) => {
+        const subnetNode: TreeDatum = { name: subnet, type: 'subnet', children: [] }
+        nodes.forEach(n => {
+          subnetNode.children!.push({ name: n.name, type: 'device', node: n })
+        })
+        entityNode.children!.push(subnetNode)
+      })
+      root.children!.push(entityNode)
+    })
+
+    return root
+  }, [filteredDevices])
+
+  const treeStats = useMemo(() => {
+    const entities = new Set(filteredDevices.map(d => d.entity || 'Unknown')).size
+    const subnets = new Set(filteredDevices.map(d => {
+      const ipParts = d.ipAddress ? d.ipAddress.split('.') : []
+      return ipParts.length === 4 ? `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.0/24` : 'No Network'
+    })).size
+    const devices = filteredDevices.length
+    return { entities, subnets, devices }
+  }, [filteredDevices])
+
   // Get unique values for filter dropdowns
   const filterOptions = useMemo(() => {
     if (!allDevices) return { manufacturers: [], categories: [], entities: [], subnets: [] }
@@ -266,6 +381,61 @@ export function NetworkTopology() {
 
     return { manufacturers, categories, entities, subnets }
   }, [allDevices, subnetAnalysis])
+
+  const hospitalBoxes = useMemo(() => {
+    const list = (riskData?.hospitalRiskHeatmap || []).map(h => {
+      const worst = h.critical > 0 ? 'critical' : h.high > 0 ? 'high' : h.medium > 0 ? 'medium' : 'low'
+      return {
+        hospital: h.hospital,
+        total: h.total,
+        critical: h.critical,
+        high: h.high,
+        medium: h.medium,
+        low: h.low,
+        worst: worst as 'critical' | 'high' | 'medium' | 'low'
+      }
+    })
+    const severityOrder: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1 }
+    return list
+      .sort((a, b) => severityOrder[b.worst] - severityOrder[a.worst] || b.total - a.total)
+      .slice(0, 5)
+  }, [riskData?.hospitalRiskHeatmap])
+
+  const subnetBoxes = useMemo(() => {
+    if (!selectedHospitalName || !allDevices) return [] as Array<{ subnet: string, count: number, worst: 'critical' | 'high' | 'medium' | 'low', critical: number, high: number, medium: number, low: number }>
+    const groups = new Map<string, { count: number, critical: number, high: number, medium: number, low: number }>()
+    allDevices.forEach(d => {
+      if ((d.entity || 'Unknown') !== selectedHospitalName) return
+      const ipParts = d.ipAddress ? d.ipAddress.split('.') : []
+      const subnet = ipParts.length === 4 ? `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.0/24` : 'No Network'
+      if (!groups.has(subnet)) groups.set(subnet, { count: 0, critical: 0, high: 0, medium: 0, low: 0 })
+      const g = groups.get(subnet)!
+      g.count++
+      const lvl = getDeviceRiskLevel(d)
+      g[lvl]++
+    })
+    const arr = Array.from(groups.entries()).map(([subnet, g]) => {
+      const worst = g.critical > 0 ? 'critical' : g.high > 0 ? 'high' : g.medium > 0 ? 'medium' : 'low'
+      return { subnet, count: g.count, worst, critical: g.critical, high: g.high, medium: g.medium, low: g.low }
+    })
+    const severityOrder: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1 }
+    const sorted = arr.sort((a, b) => severityOrder[b.worst] - severityOrder[a.worst] || b.count - a.count)
+    return showAllSubnets ? sorted : sorted.slice(0, 50)
+  }, [allDevices, selectedHospitalName, showAllSubnets])
+
+  const devicesInSelectedSubnet = useMemo(() => {
+    if (!selectedHospitalName || !selectedSubnetName || !allDevices) return [] as any[]
+    const list = allDevices.filter(d => {
+      const entity = d.entity || 'Unknown'
+      if (entity !== selectedHospitalName) return false
+      const ipParts = d.ipAddress ? d.ipAddress.split('.') : []
+      const subnet = ipParts.length === 4 ? `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.0/24` : 'No Network'
+      return subnet === selectedSubnetName
+    })
+    const severityOrder: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1 }
+    const sorted = list.sort((a, b) => severityOrder[getDeviceRiskLevel(b)] - severityOrder[getDeviceRiskLevel(a)])
+    return showAllDevices ? sorted : sorted.slice(0, 50)
+  }, [allDevices, selectedHospitalName, selectedSubnetName, showAllDevices])
 
   // D3 visualization effect (only in subnet view)
   useEffect(() => {
@@ -375,6 +545,139 @@ export function NetworkTopology() {
     }
   }, [networkData, dimensions, subnetAnalysis, filters.view])
 
+  useEffect(() => {
+    if (filters.view !== 'treemap') return
+    if (!treemapSvgRef.current) return
+
+    const svg = d3.select(treemapSvgRef.current)
+    svg.selectAll('*').remove()
+
+    const width = dimensions.width
+    const height = dimensions.height
+
+    if (drillLevel === 0) {
+      const data = { name: 'root', children: hospitalBoxes.map(h => ({ name: h.hospital, value: h.total, worst: h.worst })) }
+      const root = d3.hierarchy<any>(data).sum((d: any) => d.value)
+      d3.treemap<any>().size([width, height]).padding(6)(root)
+      const nodes = root.leaves()
+      const g = svg.append('g')
+      nodes.forEach((n: any) => {
+        const color = (n.data.worst && RISK_COLORS[n.data.worst as keyof typeof RISK_COLORS]) || 'var(--card)'
+        const group = g.append('g').attr('transform', `translate(${n.x0},${n.y0})`).style('cursor', 'pointer')
+        group.append('rect').attr('width', n.x1 - n.x0).attr('height', n.y1 - n.y0).attr('fill', color).attr('rx', 8).attr('ry', 8)
+        group.append('text').attr('x', 10).attr('y', 18).attr('fill', 'white').attr('font-size', '12px').text(n.data.name)
+        group.on('click', () => {
+          setSelectedHospitalName(n.data.name)
+          setDrillLevel(1)
+          setSelectedSubnetName(null)
+          setSelectedSubnet(null)
+          setSelectedNode(null)
+        })
+      })
+    } else if (drillLevel === 1 && selectedHospitalName) {
+      const data = { name: selectedHospitalName, children: subnetBoxes.map(s => ({ name: s.subnet, value: s.count, worst: s.worst })) }
+      const root = d3.hierarchy<any>(data).sum((d: any) => d.value)
+      d3.treemap<any>().size([width, height]).padding(4)(root)
+      const nodes = root.leaves()
+      const g = svg.append('g')
+      nodes.forEach((n: any) => {
+        const color = (n.data.worst && RISK_COLORS[n.data.worst as keyof typeof RISK_COLORS]) || 'var(--card)'
+        const group = g.append('g').attr('transform', `translate(${n.x0},${n.y0})`).style('cursor', 'pointer')
+        group.append('rect').attr('width', n.x1 - n.x0).attr('height', n.y1 - n.y0).attr('fill', color).attr('rx', 6).attr('ry', 6)
+        group.append('text').attr('x', 8).attr('y', 16).attr('fill', 'white').attr('font-size', '11px').text(n.data.name)
+        group.on('click', () => {
+          setSelectedSubnetName(n.data.name)
+          setDrillLevel(2)
+          const info = subnetAnalysis.subnets.get(n.data.name)
+          if (info) setSelectedSubnet(info)
+          else setSelectedSubnet(null)
+          setSelectedNode(null)
+        })
+      })
+    }
+  }, [filters.view, drillLevel, hospitalBoxes, subnetBoxes, dimensions, selectedHospitalName, subnetAnalysis])
+
+  useEffect(() => {
+    if (filters.view !== 'tree') return
+    if (!treeSvgRef.current || !treeDatum) return
+
+    const svg = d3.select(treeSvgRef.current)
+    svg.selectAll('*').remove()
+
+    const margin = { top: 20, right: 40, bottom: 20, left: 60 }
+    const width = dimensions.width
+    const height = dimensions.height
+
+    const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`)
+
+    const root = d3.hierarchy(treeDatum)
+    const treeLayout = d3.tree<TreeDatum>().size([height - margin.top - margin.bottom, width - margin.left - margin.right])
+    treeLayout(root)
+
+    g.selectAll('path')
+      .data(root.links())
+      .enter()
+      .append('path')
+      .attr('fill', 'none')
+      .attr('stroke', 'var(--border)')
+      .attr('stroke-width', 1.5)
+      .attr('d', d3.linkHorizontal<any, any>()
+        .x((d: any) => d.y)
+        .y((d: any) => d.x))
+
+    const nodeG = g.selectAll('g')
+      .data(root.descendants())
+      .enter()
+      .append('g')
+      .attr('transform', (d: any) => `translate(${d.y},${d.x})`)
+      .style('cursor', 'pointer')
+      .on('click', (event: any, d: any) => {
+        const data = d.data as TreeDatum
+        if (data.type === 'device' && data.node) {
+          setSelectedNode(data.node)
+          setSelectedSubnet(null)
+        } else if (data.type === 'subnet') {
+          const s = subnetAnalysis.subnets.get(data.name)
+          setSelectedSubnet(s || null)
+          setSelectedNode(null)
+        } else {
+          setSelectedNode(null)
+          setSelectedSubnet(null)
+        }
+      })
+
+    nodeG.append('circle')
+      .attr('r', (d: any) => {
+        const t = (d.data as TreeDatum).type
+        if (t === 'entity') return 8
+        if (t === 'subnet') return 7
+        if (t === 'device') return 5
+        return 9
+      })
+      .attr('fill', (d: any) => {
+        const data = d.data as TreeDatum
+        if (data.type === 'device' && data.node) return data.node.color
+        if (data.type === 'subnet') return '#10B981'
+        if (data.type === 'entity') return '#6366F1'
+        return 'var(--card)'
+      })
+      .attr('stroke', 'var(--card)')
+      .attr('stroke-width', 2)
+
+    nodeG.append('text')
+      .text((d: any) => {
+        const n = d.data as TreeDatum
+        const label = n.type === 'device' ? n.name : n.name
+        return label.length > 18 ? label.substring(0, 18) + '…' : label
+      })
+      .attr('font-size', '10px')
+      .attr('font-family', 'Arial')
+      .attr('text-anchor', 'start')
+      .attr('dx', 10)
+      .attr('dy', 3)
+      .attr('fill', 'var(--muted-foreground)')
+  }, [treeDatum, dimensions, filters.view, subnetAnalysis])
+
   if (!allDevices) {
     return (
       <Card className="bg-white/60 backdrop-blur-sm h-full">
@@ -474,13 +777,18 @@ export function NetworkTopology() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
             <div className="space-y-2">
               <Label>View Type</Label>
-              <Select value={filters.view} onValueChange={(value: 'overview' | 'subnet') => setFilters(prev => ({ ...prev, view: value }))}>
+              <Select value={filters.view} onValueChange={(value: 'overview' | 'subnet' | 'tree' | 'treemap') => {
+                setFilters(prev => ({ ...prev, view: value }))
+                if (value === 'treemap') { setDrillLevel(0); setSelectedHospitalName(null); setSelectedSubnetName(null); setSelectedSubnet(null); setSelectedNode(null); setShowAllSubnets(false); setShowAllDevices(false) }
+              }}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="overview">Overview</SelectItem>
                   <SelectItem value="subnet">Subnet Graph</SelectItem>
+                  <SelectItem value="tree">Tree View</SelectItem>
+                  <SelectItem value="treemap">Risk Treemap</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -602,10 +910,10 @@ export function NetworkTopology() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Network className="h-5 w-5" />
-              {filters.view === 'subnet' ? 'Network Topology - Subnet Graph' : 'Connectivity Overview'}
+              {filters.view === 'subnet' ? 'Network Topology - Subnet Graph' : filters.view === 'tree' ? 'Network Topology - Tree' : filters.view === 'treemap' ? (drillLevel === 0 ? 'Risk Treemap - Hospitals' : drillLevel === 1 ? 'Risk Treemap - Subnets' : 'Devices in Subnet') : 'Connectivity Overview'}
             </CardTitle>
             <CardDescription>
-              {filters.view === 'subnet' ? `${networkData.nodes.length} nodes, ${networkData.links.length} connections` : 'Aggregated connectivity by subnet'}
+              {filters.view === 'subnet' ? `${networkData.nodes.length} nodes, ${networkData.links.length} connections` : filters.view === 'tree' ? `${treeStats.devices} devices • ${treeStats.entities} hospitals • ${treeStats.subnets} subnets` : filters.view === 'treemap' ? (drillLevel === 0 ? `${hospitalBoxes.length} hospitals` : drillLevel === 1 ? `${subnetBoxes.length} subnets` : `${devicesInSelectedSubnet.length} devices`) : 'Aggregated connectivity by subnet'}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -618,6 +926,108 @@ export function NetworkTopology() {
                   viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
                   style={{ background: '#f9fafb', display: 'block', width: '100%', height: 'auto' }}
                 />
+              </div>
+            ) : filters.view === 'tree' ? (
+              <div className="border rounded-lg overflow-hidden bg-gray-50 w-full">
+                <svg
+                  ref={treeSvgRef}
+                  width={dimensions.width}
+                  height={dimensions.height}
+                  viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
+                  style={{ background: '#f9fafb', display: 'block', width: '100%', height: 'auto' }}
+                />
+              </div>
+            ) : filters.view === 'treemap' ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-600">
+                    {currentOrganization?.name || 'Organization'}
+                    {selectedHospitalName ? ` > ${selectedHospitalName}` : ''}
+                    {selectedSubnetName ? ` > ${selectedSubnetName}` : ''}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {drillLevel > 0 && (
+                      <Button size="sm" variant="outline" onClick={() => {
+                        if (drillLevel === 2) { setDrillLevel(1); setSelectedNode(null); }
+                        else { setDrillLevel(0); setSelectedHospitalName(null); setSelectedSubnetName(null); setSelectedSubnet(null); setSelectedNode(null); setShowAllSubnets(false); }
+                      }}>Back</Button>
+                    )}
+                  </div>
+                </div>
+                {drillLevel < 2 ? (
+                  <div className="border rounded-lg overflow-hidden bg-gray-50 w-full">
+                    <svg
+                      ref={treemapSvgRef}
+                      width={dimensions.width}
+                      height={dimensions.height}
+                      viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
+                      style={{ background: '#f9fafb', display: 'block', width: '100%', height: 'auto' }}
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-medium">Devices in {selectedSubnetName}</div>
+                      <div className="flex items-center gap-2">
+                        <Button size="sm" variant="outline" onClick={() => setShowAllDevices(v => !v)}>
+                          {showAllDevices ? 'Show Top 50' : 'Show All'}
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {devicesInSelectedSubnet.map((d: any) => (
+                        <div key={d._id} className="p-3 rounded-lg border bg-white/60 hover:bg-white cursor-pointer" onClick={() => {
+                          const ipParts = d.ipAddress ? d.ipAddress.split('.') : []
+                          const subnet = ipParts.length === 4 ? `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.0/24` : 'No Network'
+                          const isDHCP = (() => {
+                            const lastOctet = ipParts.length === 4 ? parseInt(ipParts[3]) : NaN
+                            return ipParts.length === 4 && (
+                              (lastOctet >= 100 && lastOctet <= 199) ||
+                              (lastOctet >= 20 && lastOctet <= 99) ||
+                              d.ipAddress!.includes('dhcp') ||
+                              (lastOctet > 50 && lastOctet < 200 && lastOctet !== 1 && lastOctet !== 254)
+                            )
+                          })()
+                          const node: NetworkNode = {
+                            id: d._id,
+                            name: d.name,
+                            group: subnet,
+                            size: 8,
+                            color: RISK_COLORS[getDeviceRiskLevel(d)],
+                            entity: d.entity || 'Unknown',
+                            manufacturer: d.manufacturer || 'Unknown',
+                            model: d.model || 'Unknown',
+                            category: d.category || 'Unknown',
+                            classification: d.classification || 'Unknown',
+                            ipAddress: d.ipAddress,
+                            macAddress: d.macAddress,
+                            osManufacturer: d.osManufacturer,
+                            osVersion: d.osVersion,
+                            deviceOnNetwork: d.deviceOnNetwork || false,
+                            hasPHI: d.hasPHI || false,
+                            customerPHICategory: d.customerPHICategory,
+                            subnet,
+                            isDHCP
+                          }
+                          setSelectedNode(node)
+                        }}>
+                          <div className="flex items-center justify-between">
+                            <div className="font-medium text-sm truncate">{d.name}</div>
+                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: RISK_COLORS[getDeviceRiskLevel(d)] }}></div>
+                          </div>
+                          <div className="text-xs text-gray-600 mt-1">{d.ipAddress || 'N/A'} • {d.osVersion || 'Unknown OS'}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {drillLevel === 1 && (
+                  <div className="flex items-center justify-end mt-2">
+                    <Button size="sm" variant="outline" onClick={() => setShowAllSubnets(v => !v)}>
+                      {showAllSubnets ? 'Show Top 50' : 'Show All'}
+                    </Button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="h-96">
