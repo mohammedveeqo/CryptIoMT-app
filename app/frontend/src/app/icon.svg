@@ -1,4 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
   <rect x="0" y="0" width="256" height="256" rx="64" fill="#2563eb"/>
-  <circle cx="128" cy="128" r="76" fill="none" stroke="#ffffff" stroke-width="56" stroke-linecap="round" stroke-dasharray="330 140" transform="rotate(-90 128 128)"/>
+  <circle cx="128" cy="128" r="76" fill="none" stroke="#ffffff" stroke-width="52" stroke-linecap="round" stroke-dasharray="360 140"/>
+  <circle cx="128" cy="128" r="12" fill="#ffffff"/>
+  <line x1="128" y1="128" x2="176" y2="128" stroke="#ffffff" stroke-width="10" stroke-linecap="round"/>
+  <line x1="128" y1="128" x2="80" y2="128" stroke="#ffffff" stroke-width="10" stroke-linecap="round"/>
+  <line x1="128" y1="128" x2="128" y2="80" stroke="#ffffff" stroke-width="10" stroke-linecap="round"/>
+  <line x1="128" y1="128" x2="128" y2="176" stroke="#ffffff" stroke-width="10" stroke-linecap="round"/>
+  <line x1="128" y1="128" x2="160" y2="96" stroke="#ffffff" stroke-width="10" stroke-linecap="round"/>
+  <line x1="128" y1="128" x2="96" y2="160" stroke="#ffffff" stroke-width="10" stroke-linecap="round"/>
+  <line x1="128" y1="128" x2="96" y2="96" stroke="#ffffff" stroke-width="10" stroke-linecap="round"/>
+  <line x1="128" y1="128" x2="160" y2="160" stroke="#ffffff" stroke-width="10" stroke-linecap="round"/>
 </svg>

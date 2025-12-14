@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback, useRef, useTransition, memo } from 'react'
+import { useState, useMemo, useCallback, useRef, useTransition, memo, useEffect } from 'react'
 import { useQuery } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -8,7 +8,17 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Search, Filter, X, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import { Search, Filter, X, ArrowUpDown, ArrowUp, ArrowDown, SlidersHorizontal } from 'lucide-react'
+import { 
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuCheckboxItem
+} from '@/components/ui/dropdown-menu'
 import { useOrganization } from '@/contexts/organization-context'
 import { useSearchParams } from 'next/navigation'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -46,13 +56,12 @@ type Device = {
 const columnHelper = createColumnHelper<Device>()
 
 // Memoized virtual row component
-const VirtualRow = memo(({ row, cells, onClick }: { row: any; cells: any[]; onClick?: () => void }) => (
-  <div className="flex w-full border-b hover:bg-gray-50 hover:bg-opacity-75 transition-colors cursor-pointer" onClick={onClick}
-  >
+const VirtualRow = memo(({ row, cells, onClick, density }: { row: any; cells: any[]; onClick?: () => void; density: 'comfortable' | 'compact' }) => (
+  <div className="flex w-full border-b hover:bg-gray-50 hover:bg-opacity-75 transition-colors cursor-pointer" onClick={onClick}>
     {cells.map(cell => (
       <div
         key={cell.id}
-        className="p-3 flex items-center truncate"
+        className={density === 'compact' ? 'p-1 flex items-center truncate' : 'p-3 flex items-center truncate'}
         style={{ width: cell.column.getSize() }}
       >
         {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -72,6 +81,8 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
   
   // State management
   const [sorting, setSorting] = useState<SortingState>([])
+  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({})
+  const [rowDensity, setRowDensity] = useState<'comfortable' | 'compact'>('comfortable')
   const [filters, setFilters] = useState({
     search: '',
     category: 'all',
@@ -292,8 +303,9 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
     columns,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    state: { sorting },
+    state: { sorting, columnVisibility },
     onSortingChange: setSorting,
+    onColumnVisibilityChange: setColumnVisibility,
   })
 
   const { rows } = table.getRowModel()
@@ -301,7 +313,7 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => tableContainerRef.current,
-    estimateSize: () => 53,
+    estimateSize: () => rowDensity === 'compact' ? 36 : 53,
     overscan: 10,
   })
 
@@ -324,6 +336,33 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
       phi: 'all'
     })
   }, [])
+
+  useEffect(() => {
+    const orgId = currentOrganization ? currentOrganization._id : 'none'
+    const persisted = typeof window !== 'undefined' ? window.localStorage.getItem(`deviceInventory:${orgId}:state`) : null
+    if (persisted) {
+      try {
+        const parsed = JSON.parse(persisted)
+        if (parsed.filters) setFilters(parsed.filters)
+        if (parsed.columnVisibility) setColumnVisibility(parsed.columnVisibility)
+        if (parsed.rowDensity) setRowDensity(parsed.rowDensity)
+      } catch {}
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentOrganization])
+
+  useEffect(() => {
+    const orgId = currentOrganization ? currentOrganization._id : 'none'
+    const payload = { filters, columnVisibility, rowDensity }
+    const id = setTimeout(() => {
+      try {
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem(`deviceInventory:${orgId}:state`, JSON.stringify(payload))
+        }
+      } catch {}
+    }, 400)
+    return () => clearTimeout(id)
+  }, [filters, columnVisibility, rowDensity, currentOrganization])
 
   if (!allDevices) {
     return (
@@ -352,7 +391,7 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
 
   return (
     <>
-    <Card className="h-full flex flex-col">
+    <Card className="min-h-[75vh] h-full flex flex-col">
       <CardHeader className="flex-shrink-0">
         <CardTitle className="flex items-center gap-2">
           Device Inventory
@@ -483,6 +522,32 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
               <X className="h-4 w-4" />
               Clear
             </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  <SlidersHorizontal className="h-4 w-4" />
+                  Layout
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuLabel>Row density</DropdownMenuLabel>
+                <DropdownMenuRadioGroup value={rowDensity} onValueChange={(v) => setRowDensity(v as any)}>
+                  <DropdownMenuRadioItem value="comfortable">Comfortable</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="compact">Compact</DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Columns</DropdownMenuLabel>
+                {table.getAllLeafColumns().map(col => (
+                  <DropdownMenuCheckboxItem
+                    key={col.id}
+                    checked={col.getIsVisible()}
+                    onCheckedChange={(checked) => col.toggleVisibility(!!checked)}
+                  >
+                    {col.id}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button
               variant="outline"
               size="sm"
@@ -501,7 +566,7 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
                 }))
                 const header = Object.keys(rows[0] || {name:'',entity:'',serialNumber:'',manufacturer:'',model:'',category:'',classification:'',ipAddress:'',onNetwork:'',hasPHI:''})
                 const csv = [header.join(','), ...rows.map(r => header.map(h => String((r as any)[h]).replace(/,/g,';')).join(','))].join('\n')
-                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+                const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
                 const url = URL.createObjectURL(blob)
                 const a = document.createElement('a')
                 a.href = url
@@ -567,8 +632,7 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
       {/* Virtualized rows */}
       <div
         ref={tableContainerRef}
-        className="overflow-auto"
-        style={{ height: '400px' }}
+        className="overflow-auto h-[70vh]"
       >
         <div
           style={{
@@ -594,6 +658,7 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
                 <VirtualRow
                   row={row}
                   cells={row.getVisibleCells()}
+                  density={rowDensity}
                   onClick={() => {
                     const dev = row.original
                     setSelectedDevice(dev)
