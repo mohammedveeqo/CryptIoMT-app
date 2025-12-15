@@ -588,6 +588,7 @@ export function DashboardOverview() {
         isDraggable={false}
         isResizable={false}
         margin={[16, 16]}
+        useCSSTransforms={false}
       >
         {visibleSections.phiRisk && (
           <div key="phi" className="h-full">
@@ -681,8 +682,7 @@ const PHIRiskDistributionChart = memo(({ data }: { data: Array<{ name: string, v
               paddingAngle={3}
               stroke="var(--card)"
               strokeWidth={2}
-              isAnimationActive
-              animationDuration={600}
+              isAnimationActive={false}
               dataKey="value"
             >
               {data.map((entry, index) => (
@@ -726,15 +726,15 @@ const NetworkConnectivityChart = memo(({ connected, total, percentage }: { conne
         </div>
         <Progress value={percentage} className="w-full" />
         <div className="grid grid-cols-2 gap-4 mt-4">
-          <div className="text-center p-4 bg-green-50 rounded-lg">
+          <div className="text-center p-4 rounded-xl border bg-card/60">
             <Wifi className="h-8 w-8 text-green-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-green-900">{connected}</p>
-            <p className="text-sm text-green-600">Connected</p>
+            <p className="text-2xl font-bold text-foreground">{connected}</p>
+            <p className="text-sm text-muted-foreground">Connected</p>
           </div>
-          <div className="text-center p-4 bg-gray-50 rounded-lg">
+          <div className="text-center p-4 rounded-xl border bg-card/60">
             <WifiOff className="h-8 w-8 text-gray-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900">{total - connected}</p>
-            <p className="text-sm text-gray-600">Offline</p>
+            <p className="text-2xl font-bold text-foreground">{total - connected}</p>
+            <p className="text-sm text-muted-foreground">Offline</p>
           </div>
         </div>
       </div>
@@ -802,10 +802,10 @@ const TechnicianPerformanceChart = memo(({ data }: { data: Array<{name: string, 
                 <stop offset="100%" stopColor="#EF4444" stopOpacity={0.6} />
               </linearGradient>
             </defs>
-            <Bar dataKey="score" name="Overall Score" fill="url(#perf-overall)" radius={[10, 10, 10, 10]} barSize={26} />
-            <Bar dataKey="workload" name="Workload" fill="url(#perf-workload)" radius={[10, 10, 10, 10]} barSize={26} />
-            <Bar dataKey="compliance" name="Compliance" fill="url(#perf-compliance)" radius={[10, 10, 10, 10]} barSize={26} />
-            <Bar dataKey="riskMitigation" name="Risk Mitigation" fill="url(#perf-risk)" radius={[10, 10, 10, 10]} barSize={26} />
+            <Bar dataKey="score" name="Overall Score" isAnimationActive={false} fill="url(#perf-overall)" radius={[10, 10, 10, 10]} barSize={26} />
+            <Bar dataKey="workload" name="Workload" isAnimationActive={false} fill="url(#perf-workload)" radius={[10, 10, 10, 10]} barSize={26} />
+            <Bar dataKey="compliance" name="Compliance" isAnimationActive={false} fill="url(#perf-compliance)" radius={[10, 10, 10, 10]} barSize={26} />
+            <Bar dataKey="riskMitigation" name="Risk Mitigation" isAnimationActive={false} fill="url(#perf-risk)" radius={[10, 10, 10, 10]} barSize={26} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -873,6 +873,7 @@ const OSDistributionChart = memo(({ data, colors }: { data: Array<{name: string,
               outerRadius={90}
               stroke="var(--card)"
               strokeWidth={2}
+              isAnimationActive={false}
               dataKey="count"
             >
               {data.map((entry, index) => (
@@ -1014,7 +1015,7 @@ const StatsCard = memo(({ stat, onClick }: { stat: any, onClick?: () => void }) 
   const Icon = stat.icon;
   return (
     <Card 
-      className="h-full overflow-hidden cursor-pointer transition-all hover:shadow-md hover:bg-muted/50 border rounded-xl"
+      className="h-full overflow-hidden cursor-pointer hover:shadow-md hover:bg-muted/50 border rounded-xl"
       onClick={onClick}
       role="button"
       tabIndex={0}

@@ -145,3 +145,10 @@
     color: var(--primary-foreground);
   }
 }
+
+@layer components {
+  /* Disable layout animations on react-grid-layout items to avoid jarring tile movement */
+  .react-grid-item { transition: none !important; }
+  .react-grid-item.cssTransforms { transition: none !important; }
+  .react-grid-item.react-draggable { transition: none !important; }
+}

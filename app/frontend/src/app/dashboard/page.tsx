@@ -71,45 +71,45 @@ export default function Dashboard() {
           </div>
 
           {/* Desktop: Horizontal Tabs */}
-          <div className="hidden sm:flex justify-center sticky top-16 z-30 bg-card/80 backdrop-blur-sm border-b border-border py-2">
-            <TabsList className="bg-card/80 backdrop-blur-sm shadow-lg border border-border p-1.5 rounded-xl flex-wrap gap-1">
+          <div className="hidden sm:flex justify-center sticky top-16 z-30 bg-card/80 backdrop-blur-md border-b border-border py-3">
+            <TabsList className="bg-card/90 backdrop-blur-md shadow-xl border border-border p-2 rounded-2xl flex-wrap gap-2">
               <TabsTrigger 
                 value="overview" 
-                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 rounded-lg px-3 sm:px-4 lg:px-6 py-2.5 font-medium text-sm"
+                className="text-foreground hover:bg-muted hover:text-foreground border border-border data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:border-transparent data-[state=active]:shadow-lg data-[state=active]:ring-2 data-[state=active]:ring-blue-300 transition-all duration-200 rounded-xl px-3 sm:px-5 lg:px-7 py-2.5 font-semibold text-sm"
               >
                 Overview
               </TabsTrigger>
               <TabsTrigger 
                 value="devices"
-                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 rounded-lg px-3 sm:px-4 lg:px-6 py-2.5 font-medium text-sm"
+                className="text-foreground hover:bg-muted hover:text-foreground border border-border data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:border-transparent data-[state=active]:shadow-lg data-[state=active]:ring-2 data-[state=active]:ring-blue-300 transition-all duration-200 rounded-xl px-3 sm:px-5 lg:px-7 py-2.5 font-semibold text-sm"
               >
                 <span className="hidden sm:inline">Device Inventory</span>
                 <span className="sm:hidden">Devices</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="risk"
-                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 rounded-lg px-3 sm:px-4 lg:px-6 py-2.5 font-medium text-sm"
+                className="text-foreground hover:bg-muted hover:text-foreground border border-border data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:border-transparent data-[state=active]:shadow-lg data-[state=active]:ring-2 data-[state=active]:ring-blue-300 transition-all duration-200 rounded-xl px-3 sm:px-5 lg:px-7 py-2.5 font-semibold text-sm"
               >
                 <span className="hidden sm:inline">Risk Assessment</span>
                 <span className="sm:hidden">Risk</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="network"
-                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 rounded-lg px-3 sm:px-4 lg:px-6 py-2.5 font-medium text-sm"
+                className="text-foreground hover:bg-muted hover:text-foreground border border-border data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:border-transparent data-[state=active]:shadow-lg data-[state=active]:ring-2 data-[state=active]:ring-blue-300 transition-all duration-200 rounded-xl px-3 sm:px-5 lg:px-7 py-2.5 font-semibold text-sm"
               >
                 <span className="hidden sm:inline">Network Topology</span>
                 <span className="sm:hidden">Network</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="alerts"
-                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 rounded-lg px-3 sm:px-4 lg:px-6 py-2.5 font-medium text-sm"
+                className="text-foreground hover:bg-muted hover:text-foreground border border-border data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:border-transparent data-[state=active]:shadow-lg data-[state=active]:ring-2 data-[state=active]:ring-blue-300 transition-all duration-200 rounded-xl px-3 sm:px-5 lg:px-7 py-2.5 font-semibold text-sm"
               >
                 <span className="hidden sm:inline">Alerts & Threats</span>
                 <span className="sm:hidden">Alerts</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="reports"
-                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 rounded-lg px-3 sm:px-4 lg:px-6 py-2.5 font-medium text-sm"
+                className="text-foreground hover:bg-muted hover:text-foreground border border-border data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:border-transparent data-[state=active]:shadow-lg data-[state=active]:ring-2 data-[state=active]:ring-blue-300 transition-all duration-200 rounded-xl px-3 sm:px-5 lg:px-7 py-2.5 font-semibold text-sm"
               >
                 Reports
               </TabsTrigger>
