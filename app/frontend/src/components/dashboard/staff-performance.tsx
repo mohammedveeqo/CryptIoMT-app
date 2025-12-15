@@ -278,19 +278,19 @@ export function StaffPerformance() {
             <div className="px-4 space-y-4">
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <div className="text-gray-600">Devices</div>
+                  <div className="text-muted-foreground">Devices</div>
                   <div className="font-medium">{selectedTech.metrics.deviceCount}</div>
                 </div>
                 <div>
-                  <div className="text-gray-600">Workload</div>
+                  <div className="text-muted-foreground">Workload</div>
                   <div className="font-medium">{selectedTech.workloadScore}%</div>
                 </div>
                 <div>
-                  <div className="text-gray-600">Compliance</div>
+                  <div className="text-muted-foreground">Compliance</div>
                   <div className="font-medium">{selectedTech.complianceScore}%</div>
                 </div>
                 <div>
-                  <div className="text-gray-600">Risk Mitigation</div>
+                  <div className="text-muted-foreground">Risk Mitigation</div>
                   <div className="font-medium">{selectedTech.riskMitigationScore}%</div>
                 </div>
               </div>
@@ -298,12 +298,12 @@ export function StaffPerformance() {
                 <div className="text-sm font-medium">Devices assigned</div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {(allDevices || []).filter(d => (d.technician || 'Unassigned') === selectedTech.name).slice(0, 20).map(d => (
-                    <div key={d._id} className="p-3 rounded-lg border bg-white/60">
+                    <div key={d._id} className="p-3 rounded-lg border bg-card/60">
                       <div className="flex items-center justify-between">
                         <div className="font-medium text-sm truncate">{d.name}</div>
                         <Badge variant={d.deviceOnNetwork ? 'secondary' : 'outline'} className="text-xs">{d.deviceOnNetwork ? 'Connected' : 'Offline'}</Badge>
                       </div>
-                      <div className="text-xs text-gray-600 mt-1">{d.entity || 'Unknown'} • {d.ipAddress || 'N/A'} • {d.osVersion || 'Unknown OS'}</div>
+                      <div className="text-xs text-muted-foreground mt-1">{d.entity || 'Unknown'} • {d.ipAddress || 'N/A'} • {d.osVersion || 'Unknown OS'}</div>
                     </div>
                   ))}
                 </div>
@@ -434,7 +434,7 @@ const PerformanceTable = memo(({ scores, onSelect }: { scores: TechnicianScore[]
             {scores.map((score) => {
               const insights = getPerformanceInsights(score);
               return (
-                <tr key={score.technicianId} className="border-b hover:bg-gray-50 cursor-pointer" onClick={() => onSelect && onSelect(score)}>
+                <tr key={score.technicianId} className="border-b hover:bg-muted cursor-pointer" onClick={() => onSelect && onSelect(score)}>
                   <td className="p-2">
                     <Badge variant={score.rank <= 3 ? "default" : "secondary"}>
                       #{score.rank}

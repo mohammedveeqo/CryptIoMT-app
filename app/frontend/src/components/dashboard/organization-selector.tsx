@@ -167,28 +167,28 @@ export function OrganizationSelector() {
           </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle className="text-gray-900 font-semibold">Create New Organization</DialogTitle>
-              <DialogDescription className="text-gray-700">
+              <DialogTitle className="text-foreground font-semibold">Create New Organization</DialogTitle>
+              <DialogDescription className="text-muted-foreground">
                 Set up a new organization to manage medical devices and security.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="create-name" className="text-gray-800 font-medium">Organization Name *</Label>
+                <Label htmlFor="create-name" className="text-muted-foreground font-medium">Organization Name *</Label>
                 <Input
                   id="create-name"
                   value={orgData.name}
                   onChange={(e) => setOrgData({ ...orgData, name: e.target.value })}
                   placeholder="Enter organization name"
-                  className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  className="mt-1 border-border focus:border-blue-500 focus:ring-blue-500"
                   required
                 />
               </div>
               
               <div>
-                <Label htmlFor="create-type" className="text-gray-800 font-medium">Organization Type *</Label>
+                <Label htmlFor="create-type" className="text-muted-foreground font-medium">Organization Type *</Label>
                 <Select value={orgData.type} onValueChange={(value) => setOrgData({ ...orgData, type: value })}>
-                  <SelectTrigger className="mt-1 border-gray-300 focus:border-blue-500">
+                  <SelectTrigger className="mt-1 border-border focus:border-blue-500">
                     <SelectValue placeholder="Select organization type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -202,38 +202,38 @@ export function OrganizationSelector() {
               </div>
               
               <div>
-                <Label htmlFor="create-email" className="text-gray-800 font-medium">Contact Email *</Label>
+                <Label htmlFor="create-email" className="text-muted-foreground font-medium">Contact Email *</Label>
                 <Input
                   id="create-email"
                   type="email"
                   value={orgData.email}
                   onChange={(e) => setOrgData({ ...orgData, email: e.target.value })}
                   placeholder="Enter contact email"
-                  className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  className="mt-1 border-border focus:border-blue-500 focus:ring-blue-500"
                   required
                 />
               </div>
               
               <div>
-                <Label htmlFor="create-phone" className="text-gray-800 font-medium">Phone Number</Label>
+                <Label htmlFor="create-phone" className="text-muted-foreground font-medium">Phone Number</Label>
                 <Input
                   id="create-phone"
                   value={orgData.phone}
                   onChange={(e) => setOrgData({ ...orgData, phone: e.target.value })}
                   placeholder="Enter phone number"
-                  className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  className="mt-1 border-border focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
               
               <div>
-                <Label htmlFor="create-address" className="text-gray-800 font-medium">Address</Label>
+                <Label htmlFor="create-address" className="text-muted-foreground font-medium">Address</Label>
                 <Textarea
                   id="create-address"
                   value={orgData.address}
                   onChange={(e) => setOrgData({ ...orgData, address: e.target.value })}
                   placeholder="Enter organization address"
                   rows={3}
-                  className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  className="mt-1 border-border focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
               
@@ -257,27 +257,27 @@ export function OrganizationSelector() {
         
         <Dialog open={joinDialogOpen} onOpenChange={setJoinDialogOpen}>
           <DialogTrigger asChild>
-            <Button variant="outline" size="sm" className="border-gray-300 hover:bg-gray-50 text-gray-800 font-medium">
+            <Button variant="outline" size="sm" className="border-border hover:bg-muted text-foreground font-medium">
               <Plus className="h-4 w-4 mr-2" />
               Join Organization
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle className="text-gray-900 font-semibold">Join an Organization</DialogTitle>
-              <DialogDescription className="text-gray-700">
+              <DialogTitle className="text-foreground font-semibold">Join an Organization</DialogTitle>
+              <DialogDescription className="text-muted-foreground">
                 Enter the organization ID or ask your administrator for an invitation.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="orgCode" className="text-gray-800 font-medium">Organization ID</Label>
+                <Label htmlFor="orgCode" className="text-muted-foreground font-medium">Organization ID</Label>
                 <Input
                   id="orgCode"
                   value={organizationCode}
                   onChange={(e) => setOrganizationCode(e.target.value)}
                   placeholder="Enter organization ID..."
-                  className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  className="mt-1 border-border focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
               <Button 
@@ -305,21 +305,21 @@ export function OrganizationSelector() {
     <div className="flex items-center space-x-2 w-full">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" className="flex items-center space-x-2 border-gray-300 hover:bg-gray-50 w-full justify-between min-w-0">
+          <Button variant="outline" className="flex items-center space-x-2 border-border hover:bg-muted w-full justify-between min-w-0">
             <div className="flex items-center space-x-2 min-w-0 flex-1">
               <Building2 className="h-4 w-4 text-blue-600 flex-shrink-0" />
-              <span className="text-gray-900 font-medium truncate">
+              <span className="text-foreground font-medium truncate">
                 {currentOrganization?.name || 'Select Organization'}
               </span>
               <Badge variant="secondary" className="text-xs flex-shrink-0 hidden sm:inline-flex">
                 {currentOrganization?.type || 'None'}
               </Badge>
             </div>
-            <ChevronDown className="h-4 w-4 text-gray-500 flex-shrink-0" />
+            <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-80 max-w-[calc(100vw-2rem)]">
-          <DropdownMenuLabel className="text-gray-900 font-semibold">
+          <DropdownMenuLabel className="text-foreground font-semibold">
             Organizations
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
@@ -328,12 +328,12 @@ export function OrganizationSelector() {
             <DropdownMenuItem
               key={org._id}
               onClick={() => setCurrentOrganization(org)}
-              className="hover:bg-blue-50 cursor-pointer"
+              className="hover:bg-muted cursor-pointer"
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-2">
                   <Building2 className="h-4 w-4 text-blue-600" />
-                  <span className="text-gray-900 font-medium">{org.name}</span>
+                  <span className="text-foreground font-medium">{org.name}</span>
                   <Badge variant="outline" className="text-xs">{org.type}</Badge>
                 </div>
                 {currentOrganization?._id === org._id && (
@@ -349,44 +349,44 @@ export function OrganizationSelector() {
             <>
               <DropdownMenuItem
                 onClick={() => router.push('/dashboard/manage')}
-                className="hover:bg-blue-50 cursor-pointer"
+                className="hover:bg-muted cursor-pointer"
               >
                 <Settings className="h-4 w-4 mr-2 text-blue-600" />
-                <span className="text-gray-900 font-medium">Manage Organization</span>
+                <span className="text-foreground font-medium">Manage Organization</span>
               </DropdownMenuItem>
               
               <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
                 <DialogTrigger asChild>
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="hover:bg-blue-50 cursor-pointer">
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="hover:bg-muted cursor-pointer">
                     <UserPlus className="h-4 w-4 mr-2 text-blue-600" />
-                    <span className="text-gray-900 font-medium">Invite Member</span>
+                    <span className="text-foreground font-medium">Invite Member</span>
                   </DropdownMenuItem>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle className="text-gray-900 font-semibold">Invite User to Organization</DialogTitle>
-                    <DialogDescription className="text-gray-700">
+                    <DialogTitle className="text-foreground font-semibold">Invite User to Organization</DialogTitle>
+                    <DialogDescription className="text-muted-foreground">
                       Send an invitation to join {currentOrganization.name}.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="invite-email" className="text-gray-800 font-medium">Email Address *</Label>
+                      <Label htmlFor="invite-email" className="text-muted-foreground font-medium">Email Address *</Label>
                       <Input
                         id="invite-email"
                         type="email"
                         value={inviteEmail}
                         onChange={(e) => setInviteEmail(e.target.value)}
                         placeholder="Enter user's email address"
-                        className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                        className="mt-1 border-border focus:border-blue-500 focus:ring-blue-500"
                         required
                       />
                     </div>
                     
                     <div>
-                      <Label htmlFor="invite-role" className="text-gray-800 font-medium">Role</Label>
+                      <Label htmlFor="invite-role" className="text-muted-foreground font-medium">Role</Label>
                       <Select value={inviteRole} onValueChange={(value: 'member' | 'admin') => setInviteRole(value)}>
-                        <SelectTrigger className="mt-1 border-gray-300 focus:border-blue-500">
+                        <SelectTrigger className="mt-1 border-border focus:border-blue-500">
                           <SelectValue placeholder="Select role" />
                         </SelectTrigger>
                         <SelectContent>

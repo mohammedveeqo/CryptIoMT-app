@@ -53,9 +53,9 @@ export default function Dashboard() {
       <div className="animate-in slide-in-from-bottom-4 duration-700">
         <Tabs value={tab} onValueChange={(v) => router.replace(`/dashboard?tab=${v}`)} className="space-y-4 sm:space-y-6 lg:space-y-8">
           {/* Mobile: Dropdown Tabs */}
-          <div className="sm:hidden sticky top-16 z-30 bg-white/80 backdrop-blur-sm border-b border-gray-200/50 py-2">
+          <div className="sm:hidden sticky top-16 z-30 bg-card/80 backdrop-blur-sm border-b border-border py-2">
             <Select value={tab} onValueChange={(v) => router.replace(`/dashboard?tab=${v}`)}>
-              <SelectTrigger className="w/full bg-white/80 backdrop-blur-sm shadow-lg border border-gray-200/50">
+            <SelectTrigger className="w/full bg-card/80 backdrop-blur-sm shadow-lg border border-border">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -71,8 +71,8 @@ export default function Dashboard() {
           </div>
 
           {/* Desktop: Horizontal Tabs */}
-          <div className="hidden sm:flex justify-center sticky top-16 z-30 bg-white/80 backdrop-blur-sm border-b border-gray-200/50 py-2">
-            <TabsList className="bg-white/80 backdrop-blur-sm shadow-lg border border-gray-200/50 p-1.5 rounded-xl flex-wrap gap-1">
+          <div className="hidden sm:flex justify-center sticky top-16 z-30 bg-card/80 backdrop-blur-sm border-b border-border py-2">
+            <TabsList className="bg-card/80 backdrop-blur-sm shadow-lg border border-border p-1.5 rounded-xl flex-wrap gap-1">
               <TabsTrigger 
                 value="overview" 
                 className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 rounded-lg px-3 sm:px-4 lg:px-6 py-2.5 font-medium text-sm"
@@ -145,7 +145,7 @@ export default function Dashboard() {
               </React.Suspense>
             ) : (
               <div className="flex items-center justify-center h-64">
-                <div className="text-gray-500">Please select an organization to view alerts</div>
+                <div className="text-muted-foreground">Please select an organization to view alerts</div>
               </div>
             )}
           </TabsContent>
@@ -250,7 +250,7 @@ export default function Dashboard() {
                           </CardHeader>
                           <CardContent>
                             <div className="text-2xl font-bold">{totalDevices}</div>
-                            <p className="text-xs text-gray-600">From latest upload</p>
+                            <p className="text-xs text-muted-foreground">From latest upload</p>
                           </CardContent>
                         </Card>
                         <Card>
@@ -259,7 +259,7 @@ export default function Dashboard() {
                           </CardHeader>
                           <CardContent>
                             <div className="text-2xl font-bold">{phiDevices}</div>
-                            <p className="text-xs text-gray-600">Contain patient data</p>
+                            <p className="text-xs text-muted-foreground">Contain patient data</p>
                           </CardContent>
                         </Card>
                         <Card>
@@ -268,7 +268,7 @@ export default function Dashboard() {
                           </CardHeader>
                           <CardContent>
                             <div className="text-2xl font-bold">{connectedDevices}</div>
-                            <p className="text-xs text-gray-600">On network</p>
+                            <p className="text-xs text-muted-foreground">On network</p>
                           </CardContent>
                         </Card>
                         <Card>
@@ -277,7 +277,7 @@ export default function Dashboard() {
                           </CardHeader>
                           <CardContent>
                             <div className="text-2xl font-bold">{offlineDevices}</div>
-                            <p className="text-xs text-gray-600">Not networked</p>
+                            <p className="text-xs text-muted-foreground">Not networked</p>
                           </CardContent>
                         </Card>
                       </div>

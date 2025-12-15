@@ -41,6 +41,45 @@ export const clearOrganizationDevices = mutation({
   },
 });
 
+export const bulkUpdateDeviceStatus = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    deviceIds: v.array(v.id("medicalDevices")),
+    status: v.union(
+      v.literal("active"),
+      v.literal("inactive"),
+      v.literal("maintenance"),
+      v.literal("retired")
+    )
+  },
+  handler: async (ctx, { organizationId, deviceIds, status }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+
+    if (!user) throw new Error("User not found");
+
+    const isAdmin = ["admin", "super_admin", "analyst"].includes(user.role);
+    if (!isAdmin) throw new Error("Admin access required");
+
+    // Verify devices belong to organization and update status
+    let updated = 0;
+    for (const id of deviceIds) {
+      const dev = await ctx.db.get(id);
+      if (!dev) continue;
+      if (dev.organizationId !== organizationId) continue;
+      await ctx.db.patch(id, { status, updatedAt: Date.now() });
+      updated++;
+    }
+
+    return { updated };
+  }
+});
+
 export const importMedicalDevices = mutation({
   args: {
     organizationId: v.id("organizations"),

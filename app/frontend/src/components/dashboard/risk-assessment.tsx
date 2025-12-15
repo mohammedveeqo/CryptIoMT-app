@@ -255,8 +255,8 @@ export function RiskAssessment() {
           <div className="w-16 h-16 bg-gradient-to-br from-orange-100 to-orange-200 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <Shield className="h-8 w-8 text-orange-600" />
           </div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-3">Select Organization</h3>
-          <p className="text-gray-600 leading-relaxed">Please select an organization to view risk assessment data.</p>
+          <h3 className="text-2xl font-bold text-foreground mb-3">Select Organization</h3>
+          <p className="text-muted-foreground leading-relaxed">Please select an organization to view risk assessment data.</p>
         </div>
       </div>
     );
@@ -411,21 +411,21 @@ export function RiskAssessment() {
               <div className="min-w-full">
                 {/* Header Row */}
                 <div className="grid grid-cols-5 gap-1 mb-2">
-                  <div className="text-xs font-medium text-gray-600 p-2">Hospital</div>
+                  <div className="text-xs font-medium text-muted-foreground p-2">Hospital</div>
                   <UITooltip>
-                    <UITooltipTrigger className="text-xs font-medium text-gray-600 p-2 text-center">Critical</UITooltipTrigger>
+                    <UITooltipTrigger className="text-xs font-medium text-muted-foreground p-2 text-center">Critical</UITooltipTrigger>
                     <UITooltipContent>Legacy OS, PHI on network, or life-critical categories</UITooltipContent>
                   </UITooltip>
                   <UITooltip>
-                    <UITooltipTrigger className="text-xs font-medium text-gray-600 p-2 text-center">High</UITooltipTrigger>
+                    <UITooltipTrigger className="text-xs font-medium text-muted-foreground p-2 text-center">High</UITooltipTrigger>
                     <UITooltipContent>High PHI category, PHI present, imaging/monitoring devices</UITooltipContent>
                   </UITooltip>
                   <UITooltip>
-                    <UITooltipTrigger className="text-xs font-medium text-gray-600 p-2 text-center">Medium</UITooltipTrigger>
+                    <UITooltipTrigger className="text-xs font-medium text-muted-foreground p-2 text-center">Medium</UITooltipTrigger>
                     <UITooltipContent>PHI or network presence without high/critical markers</UITooltipContent>
                   </UITooltip>
                   <UITooltip>
-                    <UITooltipTrigger className="text-xs font-medium text-gray-600 p-2 text-center">Low</UITooltipTrigger>
+                    <UITooltipTrigger className="text-xs font-medium text-muted-foreground p-2 text-center">Low</UITooltipTrigger>
                     <UITooltipContent>Minimal exposure, non-networked and no PHI</UITooltipContent>
                   </UITooltip>
                 </div>
@@ -501,19 +501,19 @@ export function RiskAssessment() {
             <div className="flex items-center justify-center space-x-6 pt-4 border-t">
               <div className="flex items-center space-x-2">
                 <div className="w-4 h-4 rounded" style={{ backgroundColor: RISK_COLORS.critical }}></div>
-                <span className="text-xs text-gray-600">Critical</span>
+                <span className="text-xs text-muted-foreground">Critical</span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-4 h-4 rounded" style={{ backgroundColor: RISK_COLORS.high }}></div>
-                <span className="text-xs text-gray-600">High</span>
+                <span className="text-xs text-muted-foreground">High</span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-4 h-4 rounded" style={{ backgroundColor: RISK_COLORS.medium }}></div>
-                <span className="text-xs text-gray-600">Medium</span>
+                <span className="text-xs text-muted-foreground">Medium</span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-4 h-4 rounded" style={{ backgroundColor: RISK_COLORS.low }}></div>
-                <span className="text-xs text-gray-600">Low</span>
+                <span className="text-xs text-muted-foreground">Low</span>
               </div>
             </div>
           </div>
@@ -614,19 +614,19 @@ export function RiskAssessment() {
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div>
-                    <span className="text-gray-600">Total Devices:</span>
+                    <span className="text-muted-foreground">Total Devices:</span>
                     <span className="font-medium ml-2">{category.count}</span>
                   </div>
                   <div>
-                    <span className="text-gray-600">PHI Devices:</span>
+                    <span className="text-muted-foreground">PHI Devices:</span>
                     <span className="font-medium ml-2">{category.phiPercentage}%</span>
                   </div>
                   <div>
-                    <span className="text-gray-600">Network Connected:</span>
+                    <span className="text-muted-foreground">Network Connected:</span>
                     <span className="font-medium ml-2">{category.networkPercentage}%</span>
                   </div>
                   <div>
-                    <span className="text-gray-600">Legacy OS:</span>
+                    <span className="text-muted-foreground">Legacy OS:</span>
                     <span className="font-medium ml-2 text-red-600">{category.legacyPercentage}%</span>
                   </div>
                 </div>
@@ -665,7 +665,7 @@ export function RiskAssessment() {
                 </thead>
                 <tbody>
                   {legacyDevices.map((device, index) => (
-                    <tr key={index} className="border-b hover:bg-gray-50">
+                    <tr key={index} className="border-b hover:bg-muted">
                       <td className="p-2 font-medium">{device.name}</td>
                       <td className="p-2">{device.entity}</td>
                       <td className="p-2">
@@ -678,14 +678,14 @@ export function RiskAssessment() {
                         {device.hasPHI ? (
                           <Badge variant="secondary" className="text-xs">Yes</Badge>
                         ) : (
-                          <span className="text-gray-400">No</span>
+                          <span className="text-muted-foreground">No</span>
                         )}
                       </td>
                       <td className="p-2">
                         {device.deviceOnNetwork ? (
                           <Badge variant="secondary" className="text-xs">Connected</Badge>
                         ) : (
-                          <span className="text-gray-400">Offline</span>
+                          <span className="text-muted-foreground">Offline</span>
                         )}
                       </td>
                       <td className="p-2">
@@ -737,7 +737,7 @@ export function RiskAssessment() {
                   {(hospitalDetails?.items || [])
                     .filter((it: HospitalDeviceItem) => !selectedLevel || it.riskLevel === selectedLevel)
                     .map((it: HospitalDeviceItem) => (
-                      <div key={it.id} className="p-3 rounded-lg border bg-white/60">
+                      <div key={it.id} className="p-3 rounded-lg border bg-card/60">
                         <div className="flex items-center justify-between gap-2">
                           <div className="font-medium text-sm truncate">{it.name}</div>
                           <div className="flex items-center gap-2">
@@ -751,7 +751,7 @@ export function RiskAssessment() {
                             )}
                           </div>
                         </div>
-                        <div className="text-xs text-gray-600 mt-1">{it.manufacturer || "Unknown"} • {it.model || "Unknown"} • {it.osVersion}</div>
+                        <div className="text-xs text-muted-foreground mt-1">{it.manufacturer || "Unknown"} • {it.model || "Unknown"} • {it.osVersion}</div>
                         <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
                           <div>
                             <div className="text-xs font-medium">Why flagged</div>
@@ -763,7 +763,7 @@ export function RiskAssessment() {
                           </div>
                           <div>
                             <div className="text-xs font-medium">Recommended actions</div>
-                            <ul className="text-xs text-gray-700 list-disc pl-5 mt-1">
+                            <ul className="text-xs text-muted-foreground list-disc pl-5 mt-1">
                               {it.remediation.map((r: string, idx: number) => (
                                 <li key={idx}>{r}</li>
                               ))}
@@ -847,7 +847,7 @@ const OSRiskProfileChart = memo(({ data }: { data: Array<{os: string, count: num
                   </Badge>
                 )}
               </div>
-              <div className="text-xs text-gray-600 mt-1">
+              <div className="text-xs text-muted-foreground mt-1">
                 {os.count} devices • {os.vulnerabilities} vulnerabilities
               </div>
             </div>

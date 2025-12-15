@@ -18,14 +18,22 @@ const csp = [
 
 const nextConfig: NextConfig = {
   eslint: {
-    // Warning: This allows production builds to successfully complete even if
-    // your project has ESLint errors.
-    // your project has ESLint errors.
-        // your project has ESLint errors.
-
+    // Warning: This allows production builds to successfully complete even if your project has ESLint errors.
     ignoreDuringBuilds: true,
   },
   async headers() {
+    if (isDev) {
+      return [
+        {
+          source: '/(.*)',
+          headers: [
+            { key: 'Referrer-Policy', value: 'no-referrer' },
+            { key: 'X-Content-Type-Options', value: 'nosniff' },
+            { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+          ],
+        },
+      ]
+    }
     return [
       {
         source: '/(.*)',

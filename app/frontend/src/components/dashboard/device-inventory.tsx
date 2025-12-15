@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useCallback, useRef, useTransition, memo, useEffect } from 'react'
-import { useQuery } from 'convex/react'
+import { useQuery, useMutation } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -17,10 +17,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
-  DropdownMenuCheckboxItem
+  DropdownMenuCheckboxItem,
+  DropdownMenuItem
 } from '@/components/ui/dropdown-menu'
 import { useOrganization } from '@/contexts/organization-context'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { 
@@ -57,7 +58,7 @@ const columnHelper = createColumnHelper<Device>()
 
 // Memoized virtual row component
 const VirtualRow = memo(({ row, cells, onClick, density }: { row: any; cells: any[]; onClick?: () => void; density: 'comfortable' | 'compact' }) => (
-  <div className="flex w-full border-b hover:bg-gray-50 hover:bg-opacity-75 transition-colors cursor-pointer" onClick={onClick}>
+  <div className="flex w-full border-b hover:bg-muted/70 transition-colors cursor-pointer" onClick={onClick}>
     {cells.map(cell => (
       <div
         key={cell.id}
@@ -74,16 +75,36 @@ VirtualRow.displayName = 'VirtualRow'
 export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: DeviceInventoryProps) {
   const { currentOrganization } = useOrganization()
   const searchParams = useSearchParams()
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const tableContainerRef = useRef<HTMLDivElement>(null)
   const [selectedDevice, setSelectedDevice] = useState<any | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
+  const bulkUpdateStatus = useMutation(api.medicalDevices.bulkUpdateDeviceStatus)
   
   // State management
   const [sorting, setSorting] = useState<SortingState>([])
+  const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({})
   const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({})
   const [rowDensity, setRowDensity] = useState<'comfortable' | 'compact'>('comfortable')
-  const [filters, setFilters] = useState({
+  const [columnOrder, setColumnOrder] = useState<string[]>([])
+  type DeviceFilters = { 
+    search: string;
+    category: string;
+    manufacturer: string;
+    classification: string;
+    network: string;
+    phi: string;
+  }
+  type SavedView = {
+    name: string;
+    filters: DeviceFilters;
+    columnVisibility: Record<string, boolean>;
+    rowDensity: 'comfortable' | 'compact';
+    columnOrder: string[];
+  }
+  const [savedViews, setSavedViews] = useState<SavedView[]>([])
+  const [filters, setFilters] = useState<DeviceFilters>({
     search: '',
     category: 'all',
     manufacturer: 'all',
@@ -123,6 +144,28 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
   // Memoized column definitions
   const columns = useMemo<ColumnDef<Device, any>[]>(
     () => [
+      columnHelper.display({
+        id: 'select',
+        header: ({ table }) => (
+          <input
+            type="checkbox"
+            aria-label="Select all"
+            checked={table.getIsAllRowsSelected() || (table.getIsSomeRowsSelected() ? true : false)}
+            onChange={(e) => table.toggleAllRowsSelected(!!e.target.checked)}
+            className="h-4 w-4"
+          />
+        ),
+        cell: ({ row }) => (
+          <input
+            type="checkbox"
+            aria-label="Select row"
+            checked={row.getIsSelected()}
+            onChange={(e) => row.toggleSelected(!!e.target.checked)}
+            className="h-4 w-4"
+          />
+        ),
+        size: 40,
+      }),
       columnHelper.accessor('name', {
         header: ({ column }) => (
           <Button
@@ -303,9 +346,12 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
     columns,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    state: { sorting, columnVisibility },
+    state: { sorting, columnVisibility, rowSelection, columnOrder },
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
+    onRowSelectionChange: setRowSelection,
+    onColumnOrderChange: setColumnOrder,
+    enableRowSelection: true,
   })
 
   const { rows } = table.getRowModel()
@@ -346,6 +392,13 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
         if (parsed.filters) setFilters(parsed.filters)
         if (parsed.columnVisibility) setColumnVisibility(parsed.columnVisibility)
         if (parsed.rowDensity) setRowDensity(parsed.rowDensity)
+        if (parsed.columnOrder) setColumnOrder(parsed.columnOrder)
+      } catch {}
+    }
+    const viewsRaw = typeof window !== 'undefined' ? window.localStorage.getItem(`deviceInventory:${orgId}:views`) : null
+    if (viewsRaw) {
+      try {
+        setSavedViews(JSON.parse(viewsRaw))
       } catch {}
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -357,12 +410,76 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
     const id = setTimeout(() => {
       try {
         if (typeof window !== 'undefined') {
-          window.localStorage.setItem(`deviceInventory:${orgId}:state`, JSON.stringify(payload))
+          window.localStorage.setItem(`deviceInventory:${orgId}:state`, JSON.stringify({ ...payload, columnOrder }))
         }
       } catch {}
     }, 400)
     return () => clearTimeout(id)
-  }, [filters, columnVisibility, rowDensity, currentOrganization])
+  }, [filters, columnVisibility, rowDensity, columnOrder, currentOrganization])
+
+  useEffect(() => {
+    const currentTab = searchParams.get('tab') || 'overview'
+    if (currentTab !== 'devices') return
+    const qp = new URLSearchParams(Array.from(searchParams.entries()))
+    if (filters.search) qp.set('search', filters.search); else qp.delete('search')
+    if (filters.classification !== 'all') qp.set('classification', filters.classification); else qp.delete('classification')
+    if (filters.phi === 'yes' || filters.phi === 'no') qp.set('phi', filters.phi); else qp.delete('phi')
+    if (filters.network === 'connected' || filters.network === 'offline') qp.set('network', filters.network); else qp.delete('network')
+    const qs = qp.toString()
+    router.replace(qs ? `?${qs}` : `?tab=devices`)
+  }, [filters, router, searchParams])
+
+  useEffect(() => {
+    if (columnOrder.length === 0) {
+      const order = table.getAllLeafColumns().map(c => c.id)
+      setColumnOrder(order)
+    }
+  }, [table, columnOrder.length])
+
+  const saveCurrentView = useCallback(() => {
+    const name = typeof window !== 'undefined' ? window.prompt('Name this view') : undefined
+    if (!name) return
+    const view: SavedView = { name, filters, columnVisibility, rowDensity, columnOrder }
+    const next = [...savedViews.filter((v) => v.name !== name), view]
+    setSavedViews(next)
+    const orgId = currentOrganization ? currentOrganization._id : 'none'
+    try {
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(`deviceInventory:${orgId}:views`, JSON.stringify(next))
+      }
+    } catch {}
+  }, [filters, columnVisibility, rowDensity, columnOrder, savedViews, currentOrganization])
+
+  const applyView = useCallback((name: string) => {
+    const v = savedViews.find((sv) => sv.name === name)
+    if (!v) return
+    setFilters(v.filters)
+    setColumnVisibility(v.columnVisibility)
+    setRowDensity(v.rowDensity)
+    setColumnOrder(v.columnOrder)
+  }, [savedViews])
+
+  const deleteView = useCallback((name: string) => {
+    const next = savedViews.filter(v => v.name !== name)
+    setSavedViews(next)
+    const orgId = currentOrganization ? currentOrganization._id : 'none'
+    try {
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(`deviceInventory:${orgId}:views`, JSON.stringify(next))
+      }
+    } catch {}
+  }, [savedViews, currentOrganization])
+
+  const moveColumn = useCallback((id: string, dir: 'left'|'right') => {
+    const idx = columnOrder.indexOf(id)
+    if (idx < 0) return
+    const target = dir === 'left' ? idx - 1 : idx + 1
+    if (target < 0 || target >= columnOrder.length) return
+    const next = [...columnOrder]
+    const [item] = next.splice(idx, 1)
+    next.splice(target, 0, item)
+    setColumnOrder(next)
+  }, [columnOrder])
 
   if (!allDevices) {
     return (
@@ -411,7 +528,7 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
         <div className="space-y-4 flex-1 flex flex-col min-h-0">
           {/* Search input */}
           <div className="relative flex-shrink-0">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               placeholder="Search devices..."
               value={filters.search}
@@ -546,8 +663,127 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
                     {col.id}
                   </DropdownMenuCheckboxItem>
                 ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Reorder</DropdownMenuLabel>
+                {columnOrder.map(id => (
+                  <DropdownMenuItem key={`order-${id}`} className="flex items-center justify-between gap-2">
+                    <span className="text-sm">{id}</span>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => moveColumn(id, 'left')}>↑</Button>
+                      <Button variant="outline" size="sm" onClick={() => moveColumn(id, 'right')}>↓</Button>
+                    </div>
+                  </DropdownMenuItem>
+                ))}
               </DropdownMenuContent>
             </DropdownMenu>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  Saved Views
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem onClick={saveCurrentView}>Save current view</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {savedViews.length === 0 && (
+                  <DropdownMenuItem disabled>No saved views</DropdownMenuItem>
+                )}
+                {savedViews.map(v => (
+                  <DropdownMenuItem key={`apply-${v.name}`} onClick={() => applyView(v.name)}>
+                    {v.name}
+                  </DropdownMenuItem>
+                ))}
+                {savedViews.length > 0 && <DropdownMenuSeparator />}
+                {savedViews.length > 0 && <DropdownMenuLabel>Delete Views</DropdownMenuLabel>}
+                {savedViews.map(v => (
+                  <DropdownMenuItem key={`delete-${v.name}`} onClick={() => deleteView(v.name)}>
+                    Delete {v.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            {Object.keys(rowSelection).length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Selected {Object.keys(rowSelection).length}</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const selectedRows = table.getSelectedRowModel().rows
+                    const ids = selectedRows.map(r => (r.original as any)._id)
+                    if (!currentOrganization || ids.length === 0) return
+                    bulkUpdateStatus({ organizationId: currentOrganization._id, deviceIds: ids, status: 'maintenance' })
+                      .then(() => invalidate())
+                      .catch(() => {})
+                  }}
+                  className="flex items-center gap-1"
+                >
+                  Mark Maintenance
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const selectedRows = table.getSelectedRowModel().rows
+                    const ids = selectedRows.map(r => (r.original as any)._id)
+                    if (!currentOrganization || ids.length === 0) return
+                    bulkUpdateStatus({ organizationId: currentOrganization._id, deviceIds: ids, status: 'inactive' })
+                      .then(() => invalidate())
+                      .catch(() => {})
+                  }}
+                >
+                  Mark Inactive
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const selectedRows = table.getSelectedRowModel().rows
+                    const ids = selectedRows.map(r => (r.original as any)._id)
+                    if (!currentOrganization || ids.length === 0) return
+                    bulkUpdateStatus({ organizationId: currentOrganization._id, deviceIds: ids, status: 'active' })
+                      .then(() => invalidate())
+                      .catch(() => {})
+                  }}
+                >
+                  Mark Active
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const selectedRows = table.getSelectedRowModel().rows
+                    const header = ['name','entity','serialNumber','manufacturer','model','category','classification','ipAddress','onNetwork','hasPHI']
+                    const rows = selectedRows.map(r => {
+                      const d = r.original as any
+                      return {
+                        name: d.name,
+                        entity: d.entity,
+                        serialNumber: d.serialNumber,
+                        manufacturer: d.manufacturer,
+                        model: d.model,
+                        category: d.category,
+                        classification: d.classification,
+                        ipAddress: d.ipAddress || '',
+                        onNetwork: d.deviceOnNetwork ? 'yes' : 'no',
+                        hasPHI: d.hasPHI ? 'yes' : 'no',
+                      }
+                    })
+                    const quote = (val: string) => '"' + String(val).replace(/"/g,'""') + '"'
+                    const csv = [header.join(','), ...rows.map(r => header.map(h => quote((r as any)[h] ?? '')).join(','))].join('\n')
+                    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+                    const url = URL.createObjectURL(blob)
+                    const a = document.createElement('a')
+                    a.href = url
+                    a.download = 'devices-selected.csv'
+                    a.click()
+                    URL.revokeObjectURL(url)
+                  }}
+                >
+                  Export Selected
+                </Button>
+              </div>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -565,7 +801,8 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
                   hasPHI: d.hasPHI ? 'yes' : 'no',
                 }))
                 const header = Object.keys(rows[0] || {name:'',entity:'',serialNumber:'',manufacturer:'',model:'',category:'',classification:'',ipAddress:'',onNetwork:'',hasPHI:''})
-                const csv = [header.join(','), ...rows.map(r => header.map(h => String((r as any)[h]).replace(/,/g,';')).join(','))].join('\n')
+                const quote = (val: string) => '"' + String(val).replace(/"/g,'""') + '"'
+                const csv = [header.join(','), ...rows.map(r => header.map(h => quote((r as any)[h] ?? '')).join(','))].join('\n')
                 const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
                 const url = URL.createObjectURL(blob)
                 const a = document.createElement('a')
@@ -583,8 +820,8 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
           {/* Virtualized table */}
 <div className="flex-1 min-h-0">
   {filteredData.length === 0 ? (
-    <div className="flex flex-col items-center justify-center h-64 text-gray-500">
-      <Filter className="h-12 w-12 mb-4 text-gray-300" />
+            <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+              <Filter className="h-12 w-12 mb-4 text-muted-foreground" />
       <h3 className="text-lg font-medium mb-2">No devices found</h3>
       <p className="text-sm text-center max-w-md">
         {filters.search || filters.category !== 'all' || filters.manufacturer !== 'all' || 
@@ -614,7 +851,7 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
             headerGroup.headers.map(header => (
               <div
                 key={header.id}
-                className="p-3 text-left text-sm font-medium text-gray-700 border-r last:border-r-0"
+                className="p-3 text-left text-sm font-medium text-foreground border-r last:border-r-0"
                 style={{ width: header.getSize() }}
               >
                 {header.isPlaceholder
@@ -688,27 +925,27 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
           <div className="px-4 space-y-3">
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
-                <div className="text-gray-600">Serial</div>
+                <div className="text-muted-foreground">Serial</div>
                 <div className="font-medium">{selectedDevice.serialNumber || 'N/A'}</div>
               </div>
               <div>
-                <div className="text-gray-600">Manufacturer</div>
+                <div className="text-muted-foreground">Manufacturer</div>
                 <div className="font-medium">{selectedDevice.manufacturer || 'Unknown'}</div>
               </div>
               <div>
-                <div className="text-gray-600">Model</div>
+                <div className="text-muted-foreground">Model</div>
                 <div className="font-medium">{selectedDevice.model || 'Unknown'}</div>
               </div>
               <div>
-                <div className="text-gray-600">Category</div>
+                <div className="text-muted-foreground">Category</div>
                 <div className="font-medium">{selectedDevice.category || 'Unknown'}</div>
               </div>
               <div>
-                <div className="text-gray-600">IP Address</div>
+                <div className="text-muted-foreground">IP Address</div>
                 <div className="font-medium">{selectedDevice.ipAddress || 'N/A'}</div>
               </div>
               <div>
-                <div className="text-gray-600">OS Version</div>
+                <div className="text-muted-foreground">OS Version</div>
                 <div className="font-medium">{selectedDevice.osVersion || 'Unknown'}</div>
               </div>
             </div>

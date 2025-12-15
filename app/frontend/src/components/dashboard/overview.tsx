@@ -460,7 +460,7 @@ export function DashboardOverview() {
   if (!currentOrganization) {
     return (
       <div className="space-y-6">
-        <div className="bg-white overflow-hidden shadow rounded-lg">
+        <div className="bg-card overflow-hidden shadow rounded-lg">
           <div className="px-4 py-5 sm:p-6 text-center">
             <Building2 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg leading-6 font-medium text-gray-900 mb-2">

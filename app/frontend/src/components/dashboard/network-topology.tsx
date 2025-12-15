@@ -680,7 +680,7 @@ export function NetworkTopology() {
 
   if (!allDevices) {
     return (
-      <Card className="bg-white/60 backdrop-blur-sm h-full">
+      <Card className="bg-card/60 backdrop-blur-sm h-full">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Network className="h-5 w-5" />
@@ -708,8 +708,8 @@ export function NetworkTopology() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Subnets</p>
-                <p className="text-2xl font-bold text-gray-900">{subnetAnalysis.subnets.size}</p>
+                <p className="text-sm font-medium text-muted-foreground">Total Subnets</p>
+                <p className="text-2xl font-bold text-foreground">{subnetAnalysis.subnets.size}</p>
               </div>
               <Router className="h-8 w-8 text-blue-600" />
             </div>
@@ -720,14 +720,14 @@ export function NetworkTopology() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">DHCP Devices</p>
-                <p className="text-2xl font-bold text-gray-900">{subnetAnalysis.totalDHCP}</p>
+                <p className="text-sm font-medium text-muted-foreground">DHCP Devices</p>
+                <p className="text-2xl font-bold text-foreground">{subnetAnalysis.totalDHCP}</p>
               </div>
               <Wifi className="h-8 w-8 text-green-600" />
             </div>
             <div className="mt-2">
               <Progress value={subnetAnalysis.dhcpPercentage} className="w-full" />
-              <p className="text-xs text-gray-500 mt-1">{subnetAnalysis.dhcpPercentage.toFixed(1)}% of total</p>
+              <p className="text-xs text-muted-foreground mt-1">{subnetAnalysis.dhcpPercentage.toFixed(1)}% of total</p>
             </div>
           </CardContent>
         </Card>
@@ -736,14 +736,14 @@ export function NetworkTopology() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Static IP Devices</p>
-                <p className="text-2xl font-bold text-gray-900">{subnetAnalysis.totalStatic}</p>
+                <p className="text-sm font-medium text-muted-foreground">Static IP Devices</p>
+                <p className="text-2xl font-bold text-foreground">{subnetAnalysis.totalStatic}</p>
               </div>
               <Database className="h-8 w-8 text-red-600" />
             </div>
             <div className="mt-2">
               <Progress value={100 - subnetAnalysis.dhcpPercentage} className="w-full" />
-              <p className="text-xs text-gray-500 mt-1">{(100 - subnetAnalysis.dhcpPercentage).toFixed(1)}% of total</p>
+              <p className="text-xs text-muted-foreground mt-1">{(100 - subnetAnalysis.dhcpPercentage).toFixed(1)}% of total</p>
             </div>
           </CardContent>
         </Card>
@@ -752,8 +752,8 @@ export function NetworkTopology() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Avg Devices/Subnet</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-sm font-medium text-muted-foreground">Avg Devices/Subnet</p>
+                <p className="text-2xl font-bold text-foreground">
                   {subnetAnalysis.subnets.size > 0 ? 
                     Math.round((subnetAnalysis.totalDHCP + subnetAnalysis.totalStatic) / subnetAnalysis.subnets.size) : 0
                   }
@@ -766,7 +766,7 @@ export function NetworkTopology() {
       </div>
 
       {/* Filters */}
-      <Card className="bg-white/60 backdrop-blur-sm">
+      <Card className="bg-card/60 backdrop-blur-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="h-5 w-5" />
@@ -906,7 +906,7 @@ export function NetworkTopology() {
 
       {/* Main Topology Visualization */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <Card className="lg:col-span-3 bg-white/60 backdrop-blur-sm">
+        <Card className="lg:col-span-3 bg-card/60 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Network className="h-5 w-5" />
@@ -940,7 +940,7 @@ export function NetworkTopology() {
             ) : filters.view === 'treemap' ? (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-muted-foreground">
                     {currentOrganization?.name || 'Organization'}
                     {selectedHospitalName ? ` > ${selectedHospitalName}` : ''}
                     {selectedSubnetName ? ` > ${selectedSubnetName}` : ''}
@@ -976,7 +976,7 @@ export function NetworkTopology() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                       {devicesInSelectedSubnet.map((d: any) => (
-                        <div key={d._id} className="p-3 rounded-lg border bg-white/60 hover:bg-white cursor-pointer" onClick={() => {
+                        <div key={d._id} className="p-3 rounded-lg border bg-card/60 hover:bg-accent cursor-pointer" onClick={() => {
                           const ipParts = d.ipAddress ? d.ipAddress.split('.') : []
                           const subnet = ipParts.length === 4 ? `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.0/24` : 'No Network'
                           const isDHCP = (() => {
@@ -1015,7 +1015,7 @@ export function NetworkTopology() {
                             <div className="font-medium text-sm truncate">{d.name}</div>
                             <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: RISK_COLORS[getDeviceRiskLevel(d)] }}></div>
                           </div>
-                          <div className="text-xs text-gray-600 mt-1">{d.ipAddress || 'N/A'} • {d.osVersion || 'Unknown OS'}</div>
+                          <div className="text-xs text-muted-foreground mt-1">{d.ipAddress || 'N/A'} • {d.osVersion || 'Unknown OS'}</div>
                         </div>
                       ))}
                     </div>
@@ -1052,7 +1052,7 @@ export function NetworkTopology() {
         </Card>
 
         {/* Details Panel */}
-        <Card className="bg-white/60 backdrop-blur-sm">
+        <Card className="bg-card/60 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5" />
@@ -1064,19 +1064,19 @@ export function NetworkTopology() {
               <div className="space-y-4">
                 <div>
                   <h3 className="font-semibold text-lg">{selectedSubnet.subnet}</h3>
-                  <p className="text-sm text-gray-600">{selectedSubnet.hospitals.size} hospitals</p>
+                  <p className="text-sm text-muted-foreground">{selectedSubnet.hospitals.size} hospitals</p>
                 </div>
                 
                 <Separator />
                 
                 <div className="space-y-3">
                   <div>
-                    <Label className="text-xs font-medium text-gray-500">TOTAL DEVICES</Label>
+                    <Label className="text-xs font-medium text-muted-foreground">TOTAL DEVICES</Label>
                     <p className="text-sm font-bold">{selectedSubnet.deviceCount}</p>
                   </div>
                   
                   <div>
-                    <Label className="text-xs font-medium text-gray-500">DHCP DEVICES</Label>
+                    <Label className="text-xs font-medium text-muted-foreground">DHCP DEVICES</Label>
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-bold text-blue-600">{selectedSubnet.dhcpCount}</p>
                       <Badge variant="secondary" className="text-xs">
@@ -1086,7 +1086,7 @@ export function NetworkTopology() {
                   </div>
                   
                   <div>
-                    <Label className="text-xs font-medium text-gray-500">STATIC IP DEVICES</Label>
+                    <Label className="text-xs font-medium text-muted-foreground">STATIC IP DEVICES</Label>
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-bold text-red-600">{selectedSubnet.staticCount}</p>
                       <Badge variant="outline" className="text-xs">
@@ -1096,7 +1096,7 @@ export function NetworkTopology() {
                   </div>
                   
                   <div>
-                    <Label className="text-xs font-medium text-gray-500">HOSPITALS</Label>
+                    <Label className="text-xs font-medium text-muted-foreground">HOSPITALS</Label>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {Array.from(selectedSubnet.hospitals).map(hospital => (
                         <Badge key={hospital} variant="outline" className="text-xs">
@@ -1111,14 +1111,14 @@ export function NetworkTopology() {
               <div className="space-y-4">
                 <div>
                   <h3 className="font-semibold text-lg">{selectedNode.name}</h3>
-                  <p className="text-sm text-gray-600">{selectedNode.entity}</p>
+                  <p className="text-sm text-muted-foreground">{selectedNode.entity}</p>
                 </div>
                 
                 <Separator />
                 
                 <div className="space-y-3">
                   <div>
-                    <Label className="text-xs font-medium text-gray-500">IP ADDRESS</Label>
+                    <Label className="text-xs font-medium text-muted-foreground">IP ADDRESS</Label>
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-mono">{selectedNode.ipAddress}</p>
                       <Badge variant={selectedNode.isDHCP ? "default" : "destructive"} className="text-xs">
@@ -1128,27 +1128,27 @@ export function NetworkTopology() {
                   </div>
                   
                   <div>
-                    <Label className="text-xs font-medium text-gray-500">SUBNET</Label>
+                    <Label className="text-xs font-medium text-muted-foreground">SUBNET</Label>
                     <p className="text-sm">{selectedNode.subnet}</p>
                   </div>
                   
                   <div>
-                    <Label className="text-xs font-medium text-gray-500">MAC ADDRESS</Label>
+                    <Label className="text-xs font-medium text-muted-foreground">MAC ADDRESS</Label>
                     <p className="text-sm font-mono">{selectedNode.macAddress || 'N/A'}</p>
                   </div>
                   
                   <div>
-                    <Label className="text-xs font-medium text-gray-500">MANUFACTURER</Label>
+                    <Label className="text-xs font-medium text-muted-foreground">MANUFACTURER</Label>
                     <p className="text-sm">{selectedNode.manufacturer}</p>
                   </div>
                   
                   <div>
-                    <Label className="text-xs font-medium text-gray-500">MODEL</Label>
+                    <Label className="text-xs font-medium text-muted-foreground">MODEL</Label>
                     <p className="text-sm">{selectedNode.model}</p>
                   </div>
                   
                   <div>
-                    <Label className="text-xs font-medium text-gray-500">NETWORK STATUS</Label>
+                    <Label className="text-xs font-medium text-muted-foreground">NETWORK STATUS</Label>
                     <div className="flex items-center gap-2 mt-1">
                       {selectedNode.deviceOnNetwork ? (
                         <><Wifi className="h-4 w-4 text-green-600" /><span className="text-sm text-green-600">Connected</span></>
@@ -1159,7 +1159,7 @@ export function NetworkTopology() {
                   </div>
                   
                   <div>
-                    <Label className="text-xs font-medium text-gray-500">PHI STATUS</Label>
+                    <Label className="text-xs font-medium text-muted-foreground">PHI STATUS</Label>
                     <div className="flex items-center gap-2 mt-1">
                       {selectedNode.hasPHI ? (
                         <>
@@ -1179,7 +1179,7 @@ export function NetworkTopology() {
                 </div>
               </div>
             ) : (
-              <div className="text-center text-gray-500 py-8">
+              <div className="text-center text-muted-foreground py-8">
                 <Network className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p className="text-sm">Click on a subnet or device node to view details</p>
               </div>
@@ -1189,7 +1189,7 @@ export function NetworkTopology() {
       </div>
 
       {/* Subnet Analysis Table */}
-      <Card className="bg-white/60 backdrop-blur-sm">
+      <Card className="bg-card/60 backdrop-blur-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Database className="h-5 w-5" />
@@ -1216,7 +1216,7 @@ export function NetworkTopology() {
                 {Array.from(subnetAnalysis.subnets.entries())
                   .sort(([,a], [,b]) => b.deviceCount - a.deviceCount)
                   .map(([subnet, info]) => (
-                    <tr key={subnet} className="border-b hover:bg-gray-50 cursor-pointer" 
+                    <tr key={subnet} className="border-b hover:bg-muted cursor-pointer" 
                         onClick={() => setSelectedSubnet(info)}>
                       <td className="p-2 font-mono text-xs">{subnet}</td>
                       <td className="text-center p-2 font-bold">{info.deviceCount}</td>
@@ -1251,7 +1251,7 @@ export function NetworkTopology() {
       </Card>
 
       {/* Legend */}
-      <Card className="bg-white/60 backdrop-blur-sm">
+      <Card className="bg-card/60 backdrop-blur-sm">
         <CardHeader>
           <CardTitle className="text-lg">Legend</CardTitle>
         </CardHeader>
@@ -1277,7 +1277,7 @@ export function NetworkTopology() {
             
             <div>
               <h4 className="font-medium mb-2">IP Assignment</h4>
-              <div className="space-y-2 text-sm text-gray-600">
+              <div className="space-y-2 text-sm text-muted-foreground">
                 <p>• DHCP: Dynamic IP assignment</p>
                 <p>• Static: Fixed IP configuration</p>
                 <p>• Subnet: Network segment (first 3 octets)</p>
@@ -1287,7 +1287,7 @@ export function NetworkTopology() {
             
             <div>
               <h4 className="font-medium mb-2">Interactions</h4>
-              <div className="space-y-2 text-sm text-gray-600">
+              <div className="space-y-2 text-sm text-muted-foreground">
                 <p>• Click subnets for network details</p>
                 <p>• Click devices for device info</p>
                 <p>• Click table rows for subnet analysis</p>
