@@ -545,12 +545,13 @@ export const getRiskAssessmentData = query({
       const hasCriticalPHI = device.hasPHI && device.customerPHICategory?.toLowerCase().includes("critical");
       const hasHighPHI = device.hasPHI && device.customerPHICategory?.toLowerCase().includes("high");
       const isNetworkExposed = device.deviceOnNetwork && device.hasPHI;
+      const hasCVEs = (device as any).cveCount && (device as any).cveCount > 0;
       
       if (hasLegacyOS || hasCriticalPHI || isNetworkExposed) {
         riskLevel = "critical";
-      } else if (hasHighPHI || (device.deviceOnNetwork && !device.osVersion)) {
+      } else if (hasHighPHI || (device.deviceOnNetwork && !device.osVersion) || (hasCVEs && (device.hasPHI || device.deviceOnNetwork))) {
         riskLevel = "high";
-      } else if (device.hasPHI || device.deviceOnNetwork) {
+      } else if (device.hasPHI || device.deviceOnNetwork || hasCVEs) {
         riskLevel = "medium";
       }
       
@@ -643,7 +644,8 @@ export const getRiskAssessmentData = query({
           riskScore: 0, 
           phiDevices: 0, 
           networkDevices: 0,
-          legacyDevices: 0
+          legacyDevices: 0,
+          vulnDevices: 0
         };
       }
       
@@ -668,17 +670,24 @@ export const getRiskAssessmentData = query({
         acc[category].legacyDevices++;
         deviceRisk += 3;
       }
+
+      const cveCount = (device as any).cveCount || 0;
+      if (cveCount > 0) {
+        acc[category].vulnDevices++;
+        deviceRisk += Math.min(3, cveCount);
+      }
       
       acc[category].riskScore += deviceRisk;
       return acc;
-    }, {} as Record<string, { category: string; count: number; riskScore: number; phiDevices: number; networkDevices: number; legacyDevices: number }>);
+    }, {} as Record<string, { category: string; count: number; riskScore: number; phiDevices: number; networkDevices: number; legacyDevices: number; vulnDevices: number }>);
 
     const deviceCategoryRisk = Object.values(categoryRiskMap).map(cat => ({
       ...cat,
       avgRiskScore: Math.round((cat.riskScore / cat.count) * 20), // Scale to 0-100
       phiPercentage: Math.round((cat.phiDevices / cat.count) * 100),
       networkPercentage: Math.round((cat.networkDevices / cat.count) * 100),
-      legacyPercentage: Math.round((cat.legacyDevices / cat.count) * 100)
+      legacyPercentage: Math.round((cat.legacyDevices / cat.count) * 100),
+      vulnerabilityPercentage: Math.round((cat.vulnDevices / cat.count) * 100)
     })).sort((a, b) => b.avgRiskScore - a.avgRiskScore);
 
     // Calculate overall risk score

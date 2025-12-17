@@ -135,6 +135,7 @@ export default defineSchema({
     createdAt: v.number(),                     // Timestamp of creation
     updatedAt: v.number(),                     // Timestamp of last update
     importedBy: v.optional(v.id("users")),     // Admin who imported the device
+    cveCount: v.optional(v.number()),          // Number of active CVEs
   }).index("by_organization", ["organizationId"])
     .index("by_serial_number", ["serialNumber"])
     .index("by_manufacturer_model", ["manufacturer", "model"])
@@ -178,6 +179,32 @@ export default defineSchema({
     .index("by_mac_address", ["macAddress"])
     .index("by_network_status", ["networkStatus"])
     .index("by_os_manufacturer", ["osManufacturer"]),
+
+  // CVEs collection - Known security vulnerabilities from NVD
+  cves: defineTable({
+    cveId: v.string(),                         // CVE ID (e.g., "CVE-2024-1234")
+    description: v.string(),                   // Vulnerability description
+    published: v.string(),                     // Published date (ISO 8601)
+    lastModified: v.string(),                  // Last modified date (ISO 8601)
+    cvssScore: v.optional(v.number()),         // CVSS score (0-10)
+    severity: v.optional(v.string()),          // Severity level (CRITICAL, HIGH, MEDIUM, LOW)
+    vendors: v.array(v.string()),              // Affected vendors/manufacturers
+    products: v.array(v.string()),             // Affected products/models
+    references: v.optional(v.array(v.string())), // Reference links
+    cisaExploited: v.optional(v.boolean()),    // Whether it's actively exploited
+  }).index("by_cve_id", ["cveId"])
+    .index("by_published", ["published"]),
+
+  // Device-CVE Junction table - Links devices to their specific vulnerabilities
+  deviceCves: defineTable({
+    deviceId: v.id("medicalDevices"),          // Reference to medical device
+    cveId: v.id("cves"),                       // Reference to CVE
+    cveCode: v.string(),                       // CVE ID string for easier querying
+    status: v.string(),                        // Status (e.g., "active", "mitigated", "patched")
+    detectedAt: v.number(),                    // When this vulnerability was matched to the device
+  }).index("by_device", ["deviceId"])
+    .index("by_cve", ["cveId"])
+    .index("by_device_cve", ["deviceId", "cveId"]),
 
   // Risk Assessments collection - Security risk assessments for devices
   riskAssessments: defineTable({

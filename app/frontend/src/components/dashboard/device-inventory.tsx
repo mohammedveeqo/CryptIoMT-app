@@ -35,6 +35,8 @@ import {
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useCachedQuery } from '@/hooks/use-cached-query'
+import { DeviceCVEDetails } from './device-cve-details'
+import { ErrorBoundary } from 'react-error-boundary'
 
 interface DeviceInventoryProps {
   isAdmin?: boolean
@@ -52,6 +54,7 @@ type Device = {
   classification: string
   deviceOnNetwork: boolean
   hasPHI: boolean
+  cveCount?: number
 }
 
 const columnHelper = createColumnHelper<Device>()
@@ -237,6 +240,21 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
             {getValue() ? "Yes" : "No"}
           </Badge>
         ),
+        size: 80,
+      }),
+      columnHelper.accessor('cveCount', {
+        header: 'Vulns',
+        cell: ({ getValue }) => {
+          const count = getValue() || 0;
+          return (
+             <Badge 
+                variant={count > 0 ? "destructive" : "secondary"} 
+                className={count > 0 ? "bg-red-600" : "bg-green-600"}
+             >
+              {count}
+            </Badge>
+          )
+        },
         size: 80,
       }),
       columnHelper.display({
@@ -753,7 +771,7 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
                   size="sm"
                   onClick={() => {
                     const selectedRows = table.getSelectedRowModel().rows
-                    const header = ['name','entity','serialNumber','manufacturer','model','category','classification','ipAddress','onNetwork','hasPHI']
+                    const header = ['name','entity','serialNumber','manufacturer','model','category','classification','ipAddress','onNetwork','hasPHI','cveCount']
                     const rows = selectedRows.map(r => {
                       const d = r.original as any
                       return {
@@ -767,6 +785,7 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
                         ipAddress: d.ipAddress || '',
                         onNetwork: d.deviceOnNetwork ? 'yes' : 'no',
                         hasPHI: d.hasPHI ? 'yes' : 'no',
+                        cveCount: d.cveCount || 0,
                       }
                     })
                     const quote = (val: string) => '"' + String(val).replace(/"/g,'""') + '"'
@@ -799,8 +818,9 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
                   ipAddress: (d as any).ipAddress || '',
                   onNetwork: d.deviceOnNetwork ? 'yes' : 'no',
                   hasPHI: d.hasPHI ? 'yes' : 'no',
+                  cveCount: d.cveCount || 0,
                 }))
-                const header = Object.keys(rows[0] || {name:'',entity:'',serialNumber:'',manufacturer:'',model:'',category:'',classification:'',ipAddress:'',onNetwork:'',hasPHI:''})
+                const header = Object.keys(rows[0] || {name:'',entity:'',serialNumber:'',manufacturer:'',model:'',category:'',classification:'',ipAddress:'',onNetwork:'',hasPHI:'',cveCount:''})
                 const quote = (val: string) => '"' + String(val).replace(/"/g,'""') + '"'
                 const csv = [header.join(','), ...rows.map(r => header.map(h => quote((r as any)[h] ?? '')).join(','))].join('\n')
                 const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
@@ -961,6 +981,12 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
                 </Badge>
               </div>
             </div>
+
+            <ErrorBoundary
+              fallback={<div className="mt-4 p-4 border border-muted rounded-lg text-sm text-muted-foreground bg-muted/30">Vulnerability functions are not deployed yet.</div>}
+            >
+              <DeviceCVEDetails deviceId={selectedDevice._id} />
+            </ErrorBoundary>
           </div>
         </SheetContent>
       </Sheet>
