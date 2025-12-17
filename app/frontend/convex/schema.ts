@@ -9,6 +9,7 @@ export default defineSchema({
     address: v.optional(v.string()),           // Physical address (optional)
     contactEmail: v.string(),                  // Primary contact email
     contactPhone: v.optional(v.string()),      // Contact phone number (optional)
+    logoUrl: v.optional(v.string()),           // Organization logo URL for reports
     type: v.string(),                          // E.g., "Hospital", "Clinic", "Lab"
     status: v.union(v.literal("active"), v.literal("inactive")), // Organization status
     subscriptionTier: v.union(v.literal("basic"), v.literal("pro"), v.literal("enterprise")), // Subscription tier
@@ -93,6 +94,11 @@ export default defineSchema({
       dashboardLayout: v.optional(v.string()),  // Dashboard layout preference
       notifications: v.optional(v.boolean()),   // Notification settings
       defaultOrganization: v.optional(v.id("organizations")), // User's preferred default organization
+      emailDigests: v.optional(v.object({
+        weeklySummary: v.boolean(),
+        securityAlerts: v.boolean(),
+        marketingUpdates: v.boolean(),
+      })),
     })),
     // Legacy fields for backward compatibility
     company: v.optional(v.string()),           // Legacy company field
@@ -136,6 +142,7 @@ export default defineSchema({
     updatedAt: v.number(),                     // Timestamp of last update
     importedBy: v.optional(v.id("users")),     // Admin who imported the device
     cveCount: v.optional(v.number()),          // Number of active CVEs
+    tags: v.optional(v.array(v.string())),     // Device tags
   }).index("by_organization", ["organizationId"])
     .index("by_serial_number", ["serialNumber"])
     .index("by_manufacturer_model", ["manufacturer", "model"])
@@ -144,7 +151,31 @@ export default defineSchema({
     .index("by_has_phi", ["hasPHI"])
     .index("by_ip_address", ["ipAddress"])
     .index("by_mac_address", ["macAddress"])
-    .index("by_import_batch", ["importBatch"]),
+    .index("by_import_batch", ["importBatch"])
+    .searchIndex("search_all", {
+      searchField: "name",
+      filterFields: ["organizationId"],
+    }),
+
+  // Device Groups - Smart groups or static lists
+  deviceGroups: defineTable({
+    organizationId: v.id("organizations"),
+    name: v.string(),
+    description: v.optional(v.string()),
+    filters: v.object({
+      tags: v.optional(v.array(v.string())),
+      category: v.optional(v.string()),
+      manufacturer: v.optional(v.string()),
+      classification: v.optional(v.string()),
+      status: v.optional(v.string()),
+      hasPHI: v.optional(v.string()), // "yes" or "no"
+      network: v.optional(v.string()), // "connected" or "offline"
+      search: v.optional(v.string()),
+    }),
+    isSmartGroup: v.boolean(),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+  }).index("by_org", ["organizationId"]),
 
   // Technical Details collection - Technical specifications including network and OS details
   technicalDetails: defineTable({
@@ -193,18 +224,27 @@ export default defineSchema({
     references: v.optional(v.array(v.string())), // Reference links
     cisaExploited: v.optional(v.boolean()),    // Whether it's actively exploited
   }).index("by_cve_id", ["cveId"])
-    .index("by_published", ["published"]),
+    .index("by_published", ["published"])
+    .searchIndex("search_description", {
+      searchField: "description",
+    }),
 
   // Device-CVE Junction table - Links devices to their specific vulnerabilities
   deviceCves: defineTable({
+    organizationId: v.optional(v.id("organizations")), // Added for org-level queries
     deviceId: v.id("medicalDevices"),          // Reference to medical device
     cveId: v.id("cves"),                       // Reference to CVE
     cveCode: v.string(),                       // CVE ID string for easier querying
-    status: v.string(),                        // Status (e.g., "active", "mitigated", "patched")
+    status: v.string(),                        // Status (e.g., "active", "mitigated", "patched", "accepted")
+    notes: v.optional(v.string()),             // User notes for this specific device-cve
     detectedAt: v.number(),                    // When this vulnerability was matched to the device
+    mitigatedAt: v.optional(v.number()),       // When it was marked mitigated/patched
+    mitigatedBy: v.optional(v.id("users")),    // Who mitigated it
   }).index("by_device", ["deviceId"])
     .index("by_cve", ["cveId"])
-    .index("by_device_cve", ["deviceId", "cveId"]),
+    .index("by_device_cve", ["deviceId", "cveId"])
+    .index("by_org", ["organizationId"])
+    .index("by_org_status", ["organizationId", "status"]),
 
   // Risk Assessments collection - Security risk assessments for devices
   riskAssessments: defineTable({
@@ -297,6 +337,22 @@ export default defineSchema({
     .index("by_action", ["action"])
     .index("by_resource", ["resource"])
     .index("by_severity", ["severity"]),
+
+  // Scheduled Reports - Automated email reports
+  reportSchedules: defineTable({
+    organizationId: v.id("organizations"),
+    name: v.string(),
+    frequency: v.union(v.literal("daily"), v.literal("weekly"), v.literal("monthly")),
+    recipients: v.array(v.string()), // Email addresses
+    type: v.union(v.literal("summary"), v.literal("risk_detail"), v.literal("compliance")),
+    dayOfWeek: v.optional(v.number()), // 0-6 for weekly
+    dayOfMonth: v.optional(v.number()), // 1-31 for monthly
+    lastRun: v.optional(v.number()),
+    nextRun: v.number(),
+    createdBy: v.id("users"),
+    isActive: v.boolean(),
+  }).index("by_org", ["organizationId"])
+    .index("by_next_run", ["nextRun"]),
 
   // Equipment collection - General IT equipment (separate from medical devices)
   equipment: defineTable({
@@ -391,4 +447,47 @@ export default defineSchema({
     .index("by_email", ["email"])
     .index("by_code", ["code"])
     .index("by_status", ["status"]),
+  // Device Audit Logs - History of changes
+  deviceLogs: defineTable({
+    deviceId: v.id("medicalDevices"),
+    timestamp: v.number(),
+    type: v.union(
+      v.literal("risk_change"),
+      v.literal("status_change"),
+      v.literal("cve_match"),
+      v.literal("manual_update"),
+      v.literal("network_change")
+    ),
+    previousValue: v.optional(v.any()), 
+    newValue: v.optional(v.any()),
+    userId: v.optional(v.string()), // Clerk ID or User ID
+    details: v.string(), 
+  }).index("by_device", ["deviceId"])
+    .index("by_timestamp", ["timestamp"]),
+
+  // Daily Risk Snapshots - Organization-wide risk trend
+  riskSnapshots: defineTable({
+    organizationId: v.id("organizations"),
+    date: v.string(), // YYYY-MM-DD
+    timestamp: v.number(),
+    totalRiskScore: v.number(),
+    avgRiskScore: v.number(),
+    deviceCount: v.number(),
+    highRiskCount: v.number(),
+    criticalRiskCount: v.number(),
+    devicesWithCVEs: v.number(),
+  }).index("by_org_date", ["organizationId", "date"])
+    .index("by_org_timestamp", ["organizationId", "timestamp"]),
+
+  // Compliance Assessments - Track compliance status against frameworks
+  complianceAssessments: defineTable({
+    organizationId: v.id("organizations"),
+    frameworkId: v.string(), // "hipaa", "nist"
+    controlId: v.string(), // "164.308(a)(1)"
+    status: v.string(), // "compliant", "non_compliant", "in_progress", "not_applicable"
+    evidence: v.optional(v.string()), // User notes/evidence
+    lastUpdated: v.number(),
+    updatedBy: v.optional(v.id("users")), // Made optional for now to ease migration/auto-updates
+  }).index("by_org_framework", ["organizationId", "frameworkId"])
+    .index("by_org_control", ["organizationId", "controlId"]),
 });

@@ -12,4 +12,20 @@ crons.daily(
   { daysBack: 7 }
 );
 
+// Daily risk snapshot
+crons.daily(
+  "daily-risk-snapshot",
+  { hourUTC: 23, minuteUTC: 55 }, // Run at end of day
+  // @ts-ignore
+  internal.audit.captureAllDailyRiskSnapshots
+);
+
+// Hourly report processing
+crons.hourly(
+  "process-scheduled-reports",
+  { minuteUTC: 0 }, // Run every hour
+  // @ts-ignore
+  internal.reports.processScheduledReports
+);
+
 export default crons;

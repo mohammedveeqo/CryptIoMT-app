@@ -318,6 +318,39 @@ export const setDefaultOrganization = mutation({
     return { success: true };
   },
 });
+
+export const updateEmailPreferences = mutation({
+  args: {
+    weeklySummary: v.boolean(),
+    securityAlerts: v.boolean(),
+    marketingUpdates: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .first();
+
+    if (!user) throw new Error("User not found");
+
+    await ctx.db.patch(user._id, {
+      preferences: {
+        ...user.preferences,
+        emailDigests: {
+            weeklySummary: args.weeklySummary,
+            securityAlerts: args.securityAlerts,
+            marketingUpdates: args.marketingUpdates,
+        },
+      },
+      updatedAt: Date.now(),
+    });
+    return { success: true };
+  },
+});
+
 // Get all users (for admin panel)
 export const getAllUsers = query({
   handler: async (ctx) => {

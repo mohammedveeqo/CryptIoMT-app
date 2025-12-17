@@ -26,8 +26,14 @@ interface MedicalDevice {
 const LEGACY_OS_PATTERNS = [
   /windows\s*xp/i,
   /windows\s*7/i,
+  /windows\s*8/i,
   /windows\s*2000/i,
   /windows\s*vista/i,
+  /server\s*2003/i,
+  /server\s*2008/i,
+  /fedora/i,
+  /red\s*hat/i,
+  /centos/i,
   /end.?of.?life/i,
   /unsupported/i,
   /legacy/i

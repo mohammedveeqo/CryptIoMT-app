@@ -16,6 +16,9 @@ import {
   X,
   Home,
   AlertTriangle,
+  Shield,
+  ShieldCheck,
+  FileText,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -24,6 +27,7 @@ import { useOrganization } from '../../contexts/organization-context';
 import { Button } from "@/components/ui/button";
 import { Sun, Moon } from "lucide-react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { GlobalSearch, GlobalSearchDialog } from "./global-search";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -72,9 +76,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { name: "Dashboard", href: "/dashboard", icon: Home, roles: ["super_admin", "admin", "analyst", "customer"] },
     { name: "Equipment", href: "/dashboard/equipment", icon: Server, roles: ["super_admin", "admin", "analyst", "customer"] },
     { name: "Risk Assessment", href: "/dashboard/risk", icon: AlertTriangle, roles: ["super_admin", "admin", "analyst", "customer"] },
+    { name: "Vulnerabilities", href: "/dashboard/vulnerabilities", icon: Shield, roles: ["super_admin", "admin", "analyst", "customer"] },
+    { name: "Compliance", href: "/dashboard/compliance", icon: ShieldCheck, roles: ["super_admin", "admin", "analyst", "customer"] },
     { name: "Customers", href: "/dashboard/customers", icon: Users, roles: ["super_admin", "admin"] },
     { name: "Excel Upload", href: "/dashboard/upload", icon: FileSpreadsheet, roles: ["super_admin", "admin", "analyst"] },
     { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3, roles: ["super_admin", "admin", "analyst"] },
+    { name: "Reports", href: "/dashboard/reports", icon: FileText, roles: ["super_admin", "admin", "analyst", "customer"] },
     { name: "Settings", href: "/dashboard/settings", icon: Settings, roles: ["super_admin", "admin", "analyst", "customer"] },
   ];
 
@@ -140,9 +147,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               </div>
               
               {/* Third row: Organization selector */}
-              <div className="w-full min-w-0">
+              <div className="w-full min-w-0 space-y-3">
                 <div className="max-w-full">
                   <OrganizationSelector />
+                </div>
+                <div className="w-full">
+                    <GlobalSearch />
                 </div>
               </div>
             </div>
@@ -175,6 +185,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               </div>
             </div>
             
+            <div className="flex-1 flex justify-center px-4 max-w-lg">
+                <GlobalSearch />
+            </div>
+
               {/* Right Side - User Profile */}
               <div className="ml-4 flex items-center space-x-6">
               {/* Organization Selector for smaller screens */}
@@ -231,6 +245,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
         </div>
       </main>
+      <GlobalSearch />
     </div>
   </div>
 );

@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Search, Filter, X, ArrowUpDown, ArrowUp, ArrowDown, SlidersHorizontal } from 'lucide-react'
+import { Search, Filter, X, ArrowUpDown, ArrowUp, ArrowDown, SlidersHorizontal, ChevronDown, Save, Trash2, Plus } from 'lucide-react'
 import { 
   DropdownMenu,
   DropdownMenuTrigger,
@@ -36,6 +36,8 @@ import {
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useCachedQuery } from '@/hooks/use-cached-query'
 import { DeviceCVEDetails } from './device-cve-details'
+import { DeviceHistory } from './device-history'
+import { DeviceTags } from './device-tags'
 import { ErrorBoundary } from 'react-error-boundary'
 
 interface DeviceInventoryProps {
@@ -55,6 +57,7 @@ type Device = {
   deviceOnNetwork: boolean
   hasPHI: boolean
   cveCount?: number
+  tags?: string[]
 }
 
 const columnHelper = createColumnHelper<Device>()
@@ -98,7 +101,9 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
     classification: string;
     network: string;
     phi: string;
+    tags?: string[];
   }
+
   type SavedView = {
     name: string;
     filters: DeviceFilters;
@@ -107,13 +112,19 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
     columnOrder: string[];
   }
   const [savedViews, setSavedViews] = useState<SavedView[]>([])
+  
+  const groups = useQuery(api.groups.getGroups, currentOrganization ? { organizationId: currentOrganization._id } : "skip");
+  const createGroup = useMutation(api.groups.createGroup);
+  const deleteGroup = useMutation(api.groups.deleteGroup);
+
   const [filters, setFilters] = useState<DeviceFilters>({
     search: '',
     category: 'all',
     manufacturer: 'all',
     classification: 'all',
     network: 'all',
-    phi: 'all'
+    phi: 'all',
+    tags: []
   })
 
   // Initialize filters from URL query params
@@ -257,6 +268,27 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
         },
         size: 80,
       }),
+      columnHelper.accessor('tags', {
+        header: 'Tags',
+        cell: ({ getValue }) => {
+          const tags = getValue() || [];
+          return (
+            <div className="flex flex-wrap gap-1">
+              {tags.slice(0, 2).map((tag: string) => (
+                <Badge key={tag} variant="outline" className="text-[10px] px-1 h-5">
+                  {tag}
+                </Badge>
+              ))}
+              {tags.length > 2 && (
+                <Badge variant="outline" className="text-[10px] px-1 h-5">
+                  +{tags.length - 2}
+                </Badge>
+              )}
+            </div>
+          );
+        },
+        size: 120,
+      }),
       columnHelper.display({
         id: 'details',
         header: 'Details',
@@ -297,6 +329,11 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
       if (filters.network === 'offline' && device.deviceOnNetwork) return false
       if (filters.phi === 'yes' && !device.hasPHI) return false
       if (filters.phi === 'no' && device.hasPHI) return false
+      if (filters.tags && filters.tags.length > 0) {
+        const deviceTags = device.tags || [];
+        const hasMatchingTag = filters.tags.some(tag => deviceTags.includes(tag));
+        if (!hasMatchingTag) return false;
+      }
       
       return true
     })
@@ -304,7 +341,7 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
 
   // Cascading filter options based on current selections
   const filterOptions = useMemo(() => {
-    if (!allDevices) return { categories: [], manufacturers: [], classifications: [] }
+    if (!allDevices) return { categories: [], manufacturers: [], classifications: [], tags: [] }
     
     // Start with all devices, then progressively filter based on current selections
     let availableDevices = allDevices
@@ -344,17 +381,20 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
     const categorySet = new Set<string>()
     const manufacturerSet = new Set<string>()
     const classificationSet = new Set<string>()
+    const tagSet = new Set<string>()
     
     availableDevices.forEach(device => {
       categorySet.add(device.category)
       manufacturerSet.add(device.manufacturer)
       classificationSet.add(device.classification)
+      if (device.tags) device.tags.forEach(t => tagSet.add(t))
     })
     
     return {
       categories: Array.from(categorySet).sort(),
       manufacturers: Array.from(manufacturerSet).sort(),
-      classifications: Array.from(classificationSet).sort()
+      classifications: Array.from(classificationSet).sort(),
+      tags: Array.from(tagSet).sort()
     }
   }, [allDevices, filters])
 
@@ -386,7 +426,7 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
     setFilters(prev => ({ ...prev, search: value }))
   }, [])
 
-  const handleFilterChange = useCallback((key: string, value: string) => {
+  const handleFilterChange = useCallback((key: string, value: string | string[]) => {
     setFilters(prev => ({ ...prev, [key]: value }))
   }, [])
 
@@ -397,7 +437,8 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
       manufacturer: 'all',
       classification: 'all',
       network: 'all',
-      phi: 'all'
+      phi: 'all',
+      tags: []
     })
   }, [])
 
@@ -453,6 +494,49 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
       setColumnOrder(order)
     }
   }, [table, columnOrder.length])
+
+  const [selectedGroup, setSelectedGroup] = useState<string>("")
+
+  const saveAsGroup = useCallback(async () => {
+    if (!currentOrganization) return;
+    const name = typeof window !== 'undefined' ? window.prompt('Name this group') : undefined
+    if (!name) return
+    
+    await createGroup({
+      organizationId: currentOrganization._id,
+      name,
+      filters: {
+        search: filters.search,
+        category: filters.category,
+        manufacturer: filters.manufacturer,
+        classification: filters.classification,
+        network: filters.network,
+        hasPHI: filters.phi,
+        tags: filters.tags
+      },
+      isSmartGroup: true
+    })
+  }, [createGroup, currentOrganization, filters])
+  
+  const handleGroupChange = useCallback((groupId: string) => {
+    if (groupId === "none") {
+      setSelectedGroup("");
+      return;
+    }
+    const group = groups?.find((g: any) => g._id === groupId);
+    if (group) {
+      setSelectedGroup(groupId);
+      setFilters({
+         search: group.filters.search || "",
+         category: group.filters.category || "all",
+         manufacturer: group.filters.manufacturer || "all",
+         classification: group.filters.classification || "all",
+         network: group.filters.network || "all",
+         phi: group.filters.hasPHI || "all",
+         tags: group.filters.tags || []
+      });
+    }
+  }, [groups])
 
   const saveCurrentView = useCallback(() => {
     const name = typeof window !== 'undefined' ? window.prompt('Name this view') : undefined
@@ -535,7 +619,21 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
           {filteredData.length} of {allDevices.length} devices
           {isPending && <span className="text-blue-600 ml-2">(Filtering...)</span>}
         </CardDescription>
-        <div className="mt-2">
+        <div className="mt-2 flex items-center gap-2">
+          <Select value={selectedGroup} onValueChange={handleGroupChange}>
+             <SelectTrigger className="w-[200px] h-8">
+                <SelectValue placeholder="Select Group" />
+             </SelectTrigger>
+             <SelectContent>
+                <SelectItem value="none">All Devices</SelectItem>
+                {groups?.map((g: any) => (
+                  <SelectItem key={g._id} value={g._id}>{g.name}</SelectItem>
+                ))}
+             </SelectContent>
+          </Select>
+          <Button variant="outline" size="sm" onClick={saveAsGroup}>
+            <Save className="h-4 w-4 mr-2" /> Save Group
+          </Button>
           <Button variant="outline" size="sm" onClick={invalidate}>
             Refresh Data
           </Button>
@@ -647,6 +745,39 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
                 <SelectItem value="no" className="hover:bg-blue-50 cursor-pointer transition-colors duration-150">No PHI</SelectItem>
               </SelectContent>
             </Select>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="w-32 justify-between font-normal">
+                  {filters.tags && filters.tags.length > 0 
+                    ? `${filters.tags.length} selected` 
+                    : "Tags"}
+                  <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56">
+                <DropdownMenuLabel>Filter by Tags</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {filterOptions.tags.length === 0 && (
+                  <div className="p-2 text-sm text-muted-foreground">No tags available</div>
+                )}
+                {filterOptions.tags.map((tag) => (
+                  <DropdownMenuCheckboxItem
+                    key={tag}
+                    checked={filters.tags?.includes(tag)}
+                    onCheckedChange={(checked) => {
+                      const current = filters.tags || [];
+                      const next = checked
+                        ? [...current, tag]
+                        : current.filter((t) => t !== tag);
+                      handleFilterChange("tags", next);
+                    }}
+                  >
+                    {tag}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             <Button
               variant="outline"
@@ -837,6 +968,36 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
             </Button>
           </div>
 
+          {/* Summary Stats for Filtered View */}
+          {(filters.search || filters.category !== 'all' || filters.manufacturer !== 'all' || 
+            filters.classification !== 'all' || filters.network !== 'all' || filters.phi !== 'all' || 
+            (filters.tags && filters.tags.length > 0)) && (
+            <div className="flex gap-4 text-xs text-muted-foreground bg-muted/50 p-2 rounded-md border border-muted items-center">
+              <span className="font-semibold text-foreground">Summary:</span>
+              <div className="flex items-center gap-1">
+                <span className="font-medium text-foreground">{filteredData.length}</span> Devices
+              </div>
+              <div className="w-px h-3 bg-border" />
+              <div className="flex items-center gap-1">
+                <span className="font-medium text-foreground">
+                  {filteredData.filter(d => d.deviceOnNetwork).length}
+                </span> Online
+              </div>
+              <div className="w-px h-3 bg-border" />
+              <div className="flex items-center gap-1">
+                <span className="font-medium text-foreground">
+                  {filteredData.filter(d => d.hasPHI).length}
+                </span> w/ PHI
+              </div>
+              <div className="w-px h-3 bg-border" />
+              <div className="flex items-center gap-1">
+                <span className="font-medium text-foreground">
+                  {filteredData.filter(d => (d.cveCount || 0) > 0).length}
+                </span> Vulnerable
+              </div>
+            </div>
+          )}
+
           {/* Virtualized table */}
 <div className="flex-1 min-h-0">
   {filteredData.length === 0 ? (
@@ -845,12 +1006,14 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
       <h3 className="text-lg font-medium mb-2">No devices found</h3>
       <p className="text-sm text-center max-w-md">
         {filters.search || filters.category !== 'all' || filters.manufacturer !== 'all' || 
-         filters.classification !== 'all' || filters.network !== 'all' || filters.phi !== 'all'
+         filters.classification !== 'all' || filters.network !== 'all' || filters.phi !== 'all' ||
+         (filters.tags && filters.tags.length > 0)
           ? 'Try adjusting your filters or search terms to find more devices.'
           : 'No devices are available in your organization.'}
       </p>
       {(filters.search || filters.category !== 'all' || filters.manufacturer !== 'all' || 
-        filters.classification !== 'all' || filters.network !== 'all' || filters.phi !== 'all') && (
+        filters.classification !== 'all' || filters.network !== 'all' || filters.phi !== 'all' ||
+        (filters.tags && filters.tags.length > 0)) && (
         <Button
           variant="outline"
           size="sm"
@@ -982,10 +1145,16 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
               </div>
             </div>
 
+            <DeviceTags deviceId={selectedDevice._id} tags={selectedDevice.tags} />
+
             <ErrorBoundary
               fallback={<div className="mt-4 p-4 border border-muted rounded-lg text-sm text-muted-foreground bg-muted/30">Vulnerability functions are not deployed yet.</div>}
             >
               <DeviceCVEDetails deviceId={selectedDevice._id} />
+            </ErrorBoundary>
+
+            <ErrorBoundary fallback={<div className="text-sm text-muted-foreground">Error loading history.</div>}>
+              <DeviceHistory deviceId={selectedDevice._id} />
             </ErrorBoundary>
           </div>
         </SheetContent>

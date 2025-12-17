@@ -15,6 +15,7 @@ type UserOrganization = {
   contactEmail: string;
   contactPhone?: string;
   address?: string;
+  logoUrl?: string;
   subscriptionTier: "basic" | "pro" | "enterprise";
   isActive?: boolean;
   createdBy?: string;

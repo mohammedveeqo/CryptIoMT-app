@@ -533,11 +533,12 @@ export const joinOrganizationByCode = mutation({
 export const updateOrganization = mutation({
   args: {
     organizationId: v.id("organizations"),
-    name: v.string(),
-    type: v.union(v.literal("hospital"), v.literal("clinic"), v.literal("research"), v.literal("vendor"), v.literal("other")),
-    contactEmail: v.string(),
+    name: v.optional(v.string()),
+    type: v.optional(v.union(v.literal("hospital"), v.literal("clinic"), v.literal("research"), v.literal("vendor"), v.literal("other"))),
+    contactEmail: v.optional(v.string()),
     contactPhone: v.optional(v.string()),
     address: v.optional(v.string()),
+    logoUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -568,16 +569,20 @@ export const updateOrganization = mutation({
       throw new Error("Access denied");
     }
 
-    // Update the organization
-    await ctx.db.patch(args.organizationId, {
-      name: args.name,
-      type: args.type,
-      contactEmail: args.contactEmail,
-      contactPhone: args.contactPhone,
-      address: args.address,
+    const updates: any = {
       updatedAt: Date.now(),
       lastUpdated: Date.now(),
-    });
+    };
+
+    if (args.name !== undefined) updates.name = args.name;
+    if (args.type !== undefined) updates.type = args.type;
+    if (args.contactEmail !== undefined) updates.contactEmail = args.contactEmail;
+    if (args.contactPhone !== undefined) updates.contactPhone = args.contactPhone;
+    if (args.address !== undefined) updates.address = args.address;
+    if (args.logoUrl !== undefined) updates.logoUrl = args.logoUrl;
+
+    // Update the organization
+    await ctx.db.patch(args.organizationId, updates);
 
     return { success: true };
   },

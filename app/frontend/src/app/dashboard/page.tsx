@@ -14,7 +14,9 @@ import { Shield } from 'lucide-react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { NetworkTopology } from '@/components/dashboard/network-topology'
 import { RiskAssessment } from '@/components/dashboard/risk-assessment';
+import { RiskTrendChart } from '@/components/dashboard/risk-trend-chart';
 import AlertsAndThreats from "@/components/dashboard/alerts-and-threats";
+import { ScheduledReports } from "@/components/dashboard/scheduled-reports";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -47,8 +49,76 @@ export default function Dashboard() {
     currentOrganization ? { organizationId: currentOrganization._id } : 'skip'
   )
 
+  const handleExportPDF = async () => {
+    try {
+      // @ts-ignore
+      const html2canvas = (await import('html2canvas')).default;
+      // @ts-ignore
+      const jsPDF = (await import('jspdf')).default;
+
+      const element = document.getElementById('dashboard-content');
+      if (!element) return;
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        ignoreElements: (element: Element) => element.classList.contains('no-print'),
+      } as any);
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'px',
+        format: [canvas.width, canvas.height + 100] // Add space for header
+      });
+
+      // Add Logo if available
+      // @ts-ignore
+      if (currentOrganization?.logoUrl) {
+        try {
+            const logoUrl = currentOrganization.logoUrl;
+            // Create an image element to load the logo
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.src = logoUrl;
+            await new Promise((resolve) => {
+                img.onload = resolve;
+                img.onerror = resolve; // Continue even if logo fails
+            });
+            
+            const logoWidth = 120;
+            const logoHeight = (img.height / img.width) * logoWidth;
+            pdf.addImage(img, 'PNG', 40, 40, logoWidth, logoHeight);
+            
+            // Add Organization Name
+            pdf.setFontSize(24);
+            pdf.text(currentOrganization.name || "Security Report", 180, 70);
+        } catch (e) {
+            console.warn("Failed to load logo for PDF", e);
+        }
+      } else {
+         pdf.setFontSize(24);
+         pdf.text("Security Dashboard Report", 40, 70);
+      }
+      
+      pdf.setFontSize(12);
+      pdf.text(`Generated on ${new Date().toLocaleDateString()}`, 40, 100);
+
+      // Add the dashboard screenshot below the header
+      pdf.addImage(imgData, 'PNG', 0, 120, canvas.width, canvas.height);
+      
+      pdf.save(`dashboard-${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+      console.error("Export failed:", error);
+      alert("Failed to export PDF. Please try again.");
+    }
+  };
+
   return (
-    <div className="space-y-4 sm:space-y-6 lg:space-y-8">
+    <div className="space-y-4 sm:space-y-6 lg:space-y-8" id="dashboard-content">
+
+
       {/* Main Dashboard Tabs */}
       <div className="animate-in slide-in-from-bottom-4 duration-700">
         <Tabs value={tab} onValueChange={(v) => router.replace(`/dashboard?tab=${v}`)} className="space-y-4 sm:space-y-6 lg:space-y-8">
@@ -111,7 +181,8 @@ export default function Dashboard() {
                 value="reports"
                 className="text-foreground hover:bg-muted hover:text-foreground border border-border data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:border-transparent data-[state=active]:shadow-lg data-[state=active]:ring-2 data-[state=active]:ring-blue-300 transition-all duration-200 rounded-xl px-3 sm:px-5 lg:px-7 py-2.5 font-semibold text-sm"
               >
-                Reports
+                <span className="hidden sm:inline">Reports</span>
+                <span className="sm:hidden">Reports</span>
               </TabsTrigger>
               
             </TabsList>
@@ -119,6 +190,7 @@ export default function Dashboard() {
 
           <TabsContent value="overview" className="animate-in fade-in-50 duration-500 space-y-6">
             <MemoizedDashboardOverview />
+            <RiskTrendChart />
           </TabsContent>
 
           <TabsContent value="devices" className="animate-in fade-in-50 duration-500">
@@ -150,211 +222,8 @@ export default function Dashboard() {
             )}
           </TabsContent>
 
-          <TabsContent value="reports" className="animate-in fade-in-50 duration-500 space-y-6">
-            {currentOrganization?._id ? (
-              devices ? (
-                (() => {
-                  const totalDevices = devices.length
-                  const phiDevices = devices.filter(d => d.hasPHI).length
-                  const connectedDevices = devices.filter(d => d.deviceOnNetwork).length
-                  const offlineDevices = totalDevices - connectedDevices
-                  const byClassification: Record<string, number> = {}
-                  const byCategory: Record<string, number> = {}
-                  const byManufacturer: Record<string, number> = {}
-                  const byOsVersion: Record<string, number> = {}
-                  devices.forEach(d => {
-                    const cls = d.classification || 'Unknown'
-                    const cat = d.category || 'Unknown'
-                    const man = d.manufacturer || 'Unknown'
-                    const osv = (d as any).osVersion || 'Unknown'
-                    byClassification[cls] = (byClassification[cls] || 0) + 1
-                    byCategory[cat] = (byCategory[cat] || 0) + 1
-                    byManufacturer[man] = (byManufacturer[man] || 0) + 1
-                    byOsVersion[osv] = (byOsVersion[osv] || 0) + 1
-                  })
-                  const topManufacturers = Object.entries(byManufacturer).sort((a,b) => b[1]-a[1]).slice(0,5)
-                  const exportSummary = () => {
-                    const rows: { [k: string]: string | number }[] = []
-                    rows.push({ Metric: 'Total Devices', Value: totalDevices })
-                    rows.push({ Metric: 'PHI Devices', Value: phiDevices })
-                    rows.push({ Metric: 'Connected Devices', Value: connectedDevices })
-                    rows.push({ Metric: 'Offline Devices', Value: offlineDevices })
-                    rows.push({ Metric: 'Classifications', Value: '' })
-                    Object.entries(byClassification).forEach(([k,v]) => rows.push({ Metric: `classification:${k}`, Value: v }))
-                    rows.push({ Metric: 'Categories', Value: '' })
-                    Object.entries(byCategory).forEach(([k,v]) => rows.push({ Metric: `category:${k}`, Value: v }))
-                    rows.push({ Metric: 'Manufacturers', Value: '' })
-                    Object.entries(byManufacturer).forEach(([k,v]) => rows.push({ Metric: `manufacturer:${k}`, Value: v }))
-                    rows.push({ Metric: 'OS Versions', Value: '' })
-                    Object.entries(byOsVersion).forEach(([k,v]) => rows.push({ Metric: `os:${k}`, Value: v }))
-                    const header = ['Metric','Value']
-                    const csv = [header.join(','), ...rows.map(r => header.map(h => String(r[h]).replace(/,/g,';')).join(','))].join('\n')
-                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-                    const url = URL.createObjectURL(blob)
-                    const a = document.createElement('a')
-                    a.href = url
-                    a.download = 'reports-summary.csv'
-                    a.click()
-                    URL.revokeObjectURL(url)
-                  }
-                  const exportDevices = () => {
-                    const rows = devices.map(d => ({
-                      name: d.name,
-                      entity: d.entity,
-                      serialNumber: d.serialNumber,
-                      manufacturer: d.manufacturer,
-                      model: d.model,
-                      category: d.category,
-                      classification: d.classification,
-                      ipAddress: (d as any).ipAddress || '',
-                      osVersion: (d as any).osVersion || '',
-                      onNetwork: d.deviceOnNetwork ? 'yes' : 'no',
-                      hasPHI: d.hasPHI ? 'yes' : 'no',
-                    }))
-                    const header = Object.keys(rows[0] || {name:'',entity:'',serialNumber:'',manufacturer:'',model:'',category:'',classification:'',ipAddress:'',osVersion:'',onNetwork:'',hasPHI:''})
-                    const csv = [header.join(','), ...rows.map(r => header.map(h => String((r as any)[h]).replace(/,/g,';')).join(','))].join('\n')
-                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-                    const url = URL.createObjectURL(blob)
-                    const a = document.createElement('a')
-                    a.href = url
-                    a.download = 'devices-all.csv'
-                    a.click()
-                    URL.revokeObjectURL(url)
-                  }
-                  return (
-                    <div className="space-y-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h1 className="text-2xl font-bold text-foreground">Reports</h1>
-                          <p className="text-muted-foreground">Periodic summaries from uploaded CSV data</p>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button variant="outline" onClick={exportSummary} className="rounded-md">
-                            <Download className="h-4 w-4 mr-2" />
-                            Export Summary CSV
-                          </Button>
-                          <Button variant="outline" onClick={exportDevices} className="rounded-md">
-                            <Download className="h-4 w-4 mr-2" />
-                            Export Devices CSV
-                          </Button>
-                          <Button variant="outline" onClick={() => window.print()} className="rounded-md">
-                            <Printer className="h-4 w-4 mr-2" />
-                            Print View
-                          </Button>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                        <Card>
-                          <CardHeader className="pb-2">
-                            <CardTitle className="text-sm">Total Devices</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="text-2xl font-bold">{totalDevices}</div>
-                            <p className="text-xs text-muted-foreground">From latest upload</p>
-                          </CardContent>
-                        </Card>
-                        <Card>
-                          <CardHeader className="pb-2">
-                            <CardTitle className="text-sm">PHI Devices</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="text-2xl font-bold">{phiDevices}</div>
-                            <p className="text-xs text-muted-foreground">Contain patient data</p>
-                          </CardContent>
-                        </Card>
-                        <Card>
-                          <CardHeader className="pb-2">
-                            <CardTitle className="text-sm">Connected</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="text-2xl font-bold">{connectedDevices}</div>
-                            <p className="text-xs text-muted-foreground">On network</p>
-                          </CardContent>
-                        </Card>
-                        <Card>
-                          <CardHeader className="pb-2">
-                            <CardTitle className="text-sm">Offline</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="text-2xl font-bold">{offlineDevices}</div>
-                            <p className="text-xs text-muted-foreground">Not networked</p>
-                          </CardContent>
-                        </Card>
-                      </div>
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm">Top Manufacturers</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-                            {topManufacturers.map(([m,c]) => (
-                              <div key={m} className="flex items-center justify-between p-3 border rounded-lg">
-                                <span className="font-medium">{m}</span>
-                                <Badge variant="secondary">{c}</Badge>
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm">Classification Breakdown</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {Object.entries(byClassification).map(([k,v]) => (
-                              <div key={k} className="flex items-center justify-between p-3 border rounded-lg">
-                                <span className="font-medium">{k}</span>
-                                <Badge variant="outline">{v}</Badge>
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm">Categories</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {Object.entries(byCategory).map(([k,v]) => (
-                              <div key={k} className="flex items-center justify-between p-3 border rounded-lg">
-                                <span className="font-medium">{k}</span>
-                                <Badge variant="outline">{v}</Badge>
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm">OS Versions</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {Object.entries(byOsVersion).map(([k,v]) => (
-                              <div key={k} className="flex items-center justify-between p-3 border rounded-lg">
-                                <span className="font-medium">{k}</span>
-                                <Badge variant="outline">{v}</Badge>
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  )
-                })()
-              ) : (
-                <div className="flex items-center justify-center h-64">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                  <span className="ml-2">Loading reports...</span>
-                </div>
-              )
-            ) : (
-              <div className="flex items-center justify-center h-64">
-                <div className="text-gray-500">Please select an organization to view reports</div>
-              </div>
-            )}
+          <TabsContent value="reports" className="animate-in fade-in-50 duration-500">
+            <ScheduledReports />
           </TabsContent>
           
         </Tabs>

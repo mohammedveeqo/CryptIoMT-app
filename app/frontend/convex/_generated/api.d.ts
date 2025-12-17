@@ -15,12 +15,17 @@ import type {
 } from "convex/server";
 import type * as admin from "../admin.js";
 import type * as alerts from "../alerts.js";
+import type * as audit from "../audit.js";
+import type * as compliance from "../compliance.js";
 import type * as crons from "../crons.js";
 import type * as cves from "../cves.js";
 import type * as equipment from "../equipment.js";
+import type * as groups from "../groups.js";
 import type * as medicalDevices from "../medicalDevices.js";
 import type * as myFunctions from "../myFunctions.js";
 import type * as organizations from "../organizations.js";
+import type * as reports from "../reports.js";
+import type * as search from "../search.js";
 import type * as types from "../types.js";
 import type * as users from "../users.js";
 
@@ -35,12 +40,17 @@ import type * as users from "../users.js";
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   alerts: typeof alerts;
+  audit: typeof audit;
+  compliance: typeof compliance;
   crons: typeof crons;
   cves: typeof cves;
   equipment: typeof equipment;
+  groups: typeof groups;
   medicalDevices: typeof medicalDevices;
   myFunctions: typeof myFunctions;
   organizations: typeof organizations;
+  reports: typeof reports;
+  search: typeof search;
   types: typeof types;
   users: typeof users;
 }>;
