@@ -104,7 +104,7 @@ export function Hero() {
             }`}>
               <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg font-semibold transform hover:scale-105 transition-all duration-300" asChild>
                 <Link href="#contact">
-                  🔒 Get Risk Assessment
+                  Get Risk Assessment
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
