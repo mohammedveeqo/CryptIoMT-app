@@ -211,14 +211,14 @@ export function Services() {
                   <div className="absolute bottom-6 left-6 right-6">
                     <div className="bg-white/95 backdrop-blur-sm rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-lg font-bold text-gray-900">Real-Time Monitoring</h3>
+                        <h3 className="text-lg font-bold text-gray-900">Specialized Risk-Centric Threat Modeling</h3>
                         <div className="flex items-center space-x-2">
                           <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
                           <span className="text-sm font-medium text-green-600">Active Monitoring</span>
                         </div>
                       </div>
                       <p className="text-sm text-gray-600">
-                        24/7 cybersecurity monitoring and threat detection for medical devices
+                        Specialized risk centric threat modeling and asset valuation designed specifically for connected medical assets.
                       </p>
                     </div>
                   </div>
@@ -226,11 +226,11 @@ export function Services() {
               </div>
               
               {/* Floating Security Metrics */}
-              <div className="absolute -top-4 -right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg">
-                <div className="flex items-center space-x-2">
+              <div className="absolute -top-4 -right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-blue-700 transition-colors cursor-pointer">
+                <a href="/dashboard" className="flex items-center space-x-2">
                   <Shield className="h-4 w-4" />
-                  <span className="text-sm font-bold">99.9% Uptime</span>
-                </div>
+                  <span className="text-sm font-bold">View Demo</span>
+                </a>
               </div>
             </div>
           </div>

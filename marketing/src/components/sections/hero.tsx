@@ -75,8 +75,18 @@ export function Hero() {
                 <div className="text-sm text-gray-600">NIST & FDA Aligned</div>
               </div>
               <div className="text-center transform hover:scale-105 transition-transform duration-300">
-                <div className="text-3xl font-bold text-purple-600">24/7</div>
-                <div className="text-sm text-gray-600">Risk Visibility</div>
+                <a 
+                  href="https://www.credly.com/org/isc2/badge/certified-information-systems-security-professional-cissp#:~:text=The%20vendor%2Dneutral%20CISSP%20credential,an%20increasingly%20complex%20cyber%20world." 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center group"
+                >
+                  <div className="text-3xl font-bold text-purple-600 mb-1">
+                    <Shield className="h-8 w-8 inline-block group-hover:text-purple-700 transition-colors" />
+                  </div>
+                  <div className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors">CISSP Certified</div>
+                  <div className="text-sm text-gray-600">Globally Recognized</div>
+                </a>
               </div>
             </div>
             

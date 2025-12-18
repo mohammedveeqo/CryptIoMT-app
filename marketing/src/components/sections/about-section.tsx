@@ -24,9 +24,7 @@ export function AboutSection() {
             About <span className="text-blue-600">CryptIoMT</span>
           </h1>
           <p className="text-xl text-gray-600 leading-relaxed">
-            We are Clinical Engineering Professionals with globally recognized security 
-            certifications, providing expert-led cybersecurity consulting specifically 
-            designed for healthcare organizations and IoMT environments.
+            We are Clinical Engineering Professionals with over 25 years of experience supporting Diagnostic Imaging modalities / Biomedical networks from a Clinical Engineering, Project Management, Information Security, Cybersecurity and CE System Director standpoint. We have globally recognized security certifications, providing expert-led cybersecurity consulting specifically designed for healthcare organizations and Internet of Medical Things (IoMT) environments.
           </p>
         </div>
       </section>
