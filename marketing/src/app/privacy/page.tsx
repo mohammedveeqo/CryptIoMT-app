@@ -2,7 +2,7 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Shield, Lock, Eye, Database, Server, Users, FileText, AlertTriangle, Clock, Share2, CheckCircle } from "lucide-react";
+import { Shield, Lock, Eye, Database, Server, Users, FileText, AlertTriangle, Clock, Share2, CheckCircle, Globe, Cookie, Link as LinkIcon, Baby } from "lucide-react";
 
 export const metadata = {
   title: "Privacy Policy - CryptIoMT Healthcare Cybersecurity",
@@ -354,32 +354,178 @@ export default function PrivacyPage() {
                 </div>
               </div>
 
-              {/* Contact Information */}
+              {/* 8. Your Privacy Rights */}
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">8. Your Privacy Rights</h2>
+                <div className="space-y-6">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">8.1 Access and Portability</h3>
+                      <ul className="list-disc pl-5 space-y-1 text-gray-600 text-sm">
+                        <li>Access your personal information and Customer Data</li>
+                        <li>Export your data in CSV or JSON format</li>
+                        <li>Request a copy of your audit logs</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">8.2 Correction</h3>
+                      <p className="text-gray-600 text-sm">You may update or correct inaccurate information through your account settings or by contacting support.</p>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">8.3 Deletion</h3>
+                      <p className="text-gray-600 text-sm">You may request deletion of your account and data. We will comply within 30 days unless legally required to retain information.</p>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">8.4 Restriction and Objection</h3>
+                      <p className="text-gray-600 text-sm">You may request restrictions on processing or object to certain uses of your information.</p>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold text-blue-900 mb-2">8.5 California Privacy Rights (CCPA)</h3>
+                    <ul className="list-disc pl-5 space-y-1 text-blue-800 text-sm">
+                      <li>Right to know what personal information is collected</li>
+                      <li>Right to delete personal information</li>
+                      <li>Right to opt-out of sale (we do not sell data)</li>
+                      <li>Right to non-discrimination for exercising privacy rights</li>
+                    </ul>
+                  </div>
+
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold text-blue-900 mb-2">8.6 European Privacy Rights (GDPR)</h3>
+                    <p className="text-blue-800 text-sm mb-2">EU/EEA residents have rights under GDPR including data access, portability, erasure, and the right to lodge a complaint with a supervisory authority.</p>
+                    <p className="text-blue-800 text-sm font-medium">To exercise your rights, contact: <a href="mailto:privacy@cryptiomt.com" className="underline">privacy@cryptiomt.com</a></p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 9. Cookies and Tracking Technologies */}
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                  <Cookie className="h-6 w-6 text-orange-500 mr-2" />
+                  9. Cookies and Tracking Technologies
+                </h2>
+                <div className="space-y-6">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <h3 className="font-semibold text-gray-900 mb-2">9.1 Types of Cookies</h3>
+                      <div className="space-y-4">
+                        <div>
+                          <h4 className="text-sm font-bold text-gray-700">Essential Cookies (Required)</h4>
+                          <ul className="list-disc pl-5 space-y-1 text-gray-600 text-sm">
+                            <li>Authentication and session management</li>
+                            <li>Security and fraud prevention</li>
+                            <li>Load balancing</li>
+                          </ul>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-gray-700">Analytics Cookies (Optional)</h4>
+                          <ul className="list-disc pl-5 space-y-1 text-gray-600 text-sm">
+                            <li>Usage statistics and feature adoption</li>
+                            <li>Performance monitoring</li>
+                            <li>Can be disabled in your browser</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <h3 className="font-semibold text-gray-900 mb-2">9.2 Cookie Management</h3>
+                      <p className="text-gray-600 text-sm mb-4">You can control cookies through your browser settings. Disabling essential cookies may limit functionality.</p>
+                      <p className="text-gray-600 text-sm font-medium">Do Not Track: We currently do not respond to "Do Not Track" signals.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 10. Third-Party Services and Links */}
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                  <LinkIcon className="h-6 w-6 text-blue-500 mr-2" />
+                  10. Third-Party Services and Links
+                </h2>
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">10.1 External Data Sources</h3>
+                    <p className="text-gray-600 text-sm mb-2">The Service integrates data from:</p>
+                    <ul className="list-disc pl-5 space-y-1 text-gray-600 text-sm mb-2">
+                      <li>National Vulnerability Database (NVD)</li>
+                      <li>CISA Known Exploited Vulnerabilities (KEV)</li>
+                      <li>FDA Medical Device Safety Communications</li>
+                    </ul>
+                    <p className="text-gray-500 text-sm italic">These sources have their own privacy policies. We are not responsible for their practices.</p>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">10.2 External Links</h3>
+                    <p className="text-gray-600 text-sm">Our Service may contain links to third-party websites. We are not responsible for the privacy practices of external sites.</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 11. Children's Privacy */}
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center">
+                  <Baby className="h-6 w-6 text-pink-500 mr-2" />
+                  11. Children's Privacy
+                </h2>
+                <p className="text-gray-600">CryptIoMT is not intended for individuals under 18. We do not knowingly collect information from children. If we become aware of such collection, we will delete it immediately.</p>
+              </div>
+
+              {/* 12. International Data Transfers */}
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center">
+                  <Globe className="h-6 w-6 text-indigo-500 mr-2" />
+                  12. International Data Transfers
+                </h2>
+                <div className="space-y-4 text-gray-600">
+                  <p>Your information may be transferred to and processed in the United States or other countries where our service providers operate. By using the Service, you consent to such transfers.</p>
+                  <p><strong>For EU/EEA users:</strong> We rely on Standard Contractual Clauses (SCCs) approved by the European Commission for international transfers.</p>
+                </div>
+              </div>
+
+              {/* 13. Changes to This Privacy Policy */}
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">13. Changes to This Privacy Policy</h2>
+                <div className="space-y-4 text-gray-600">
+                  <p>We may update this Privacy Policy from time to time. Changes will be posted on this page with an updated "Last Updated" date.</p>
+                  <p>For material changes, we will notify you via:</p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>Email to account administrators</li>
+                    <li>In-app notification</li>
+                    <li>Prominent website notice</li>
+                  </ul>
+                  <p>Continued use after changes constitutes acceptance of the updated policy.</p>
+                </div>
+              </div>
+
+              {/* 14. Contact Us */}
               <Card className="p-8 bg-green-50 border-green-200">
                 <div className="flex items-start space-x-4">
                   <Lock className="h-6 w-6 text-green-600 mt-1" />
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Contact Us</h2>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-4">14. Contact Us</h2>
                     <p className="text-gray-600 mb-4">
-                      For privacy-related questions, concerns, or to exercise your rights:
+                      For privacy-related questions or to exercise your rights:
                     </p>
-                    <div className="grid sm:grid-cols-2 gap-4 text-gray-600">
+                    <div className="grid md:grid-cols-2 gap-8">
                       <div>
-                        <p className="font-semibold">Privacy Officer</p>
-                        <a href="mailto:privacy@cryptiomt.com" className="text-green-700 hover:underline">privacy@cryptiomt.com</a>
+                        <h3 className="font-semibold text-gray-900 mb-2">CryptIoMT Privacy Team</h3>
+                        <div className="space-y-2 text-gray-600 text-sm">
+                          <p><strong>Email:</strong> <a href="mailto:privacy@cryptiomt.com" className="text-green-700 hover:underline">privacy@cryptiomt.com</a></p>
+                          <p><strong>Phone:</strong> 414-943-9726</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-semibold">General Contact</p>
-                        <a href="mailto:contact@cryptiomt.com" className="text-green-700 hover:underline">contact@cryptiomt.com</a>
-                      </div>
-                      <div>
-                        <p className="font-semibold">Security Team</p>
-                        <a href="mailto:security@cryptiomt.com" className="text-green-700 hover:underline">security@cryptiomt.com</a>
+                      <div className="space-y-2 text-gray-600 text-sm">
+                        <p><strong>For HIPAA/BAA inquiries:</strong> <a href="mailto:compliance@cryptiomt.com" className="text-green-700 hover:underline">compliance@cryptiomt.com</a></p>
+                        <p><strong>For security incidents:</strong> <a href="mailto:security@cryptiomt.com" className="text-green-700 hover:underline">security@cryptiomt.com</a></p>
                       </div>
                     </div>
                   </div>
                 </div>
               </Card>
+
+              <div className="text-center text-sm text-gray-500 pt-8 border-t">
+                <p>© 2025 CryptIoMT. All rights reserved.</p>
+              </div>
 
             </div>
           </div>
