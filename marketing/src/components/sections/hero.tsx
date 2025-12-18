@@ -81,17 +81,16 @@ export function Hero() {
                   rel="noopener noreferrer"
                   className="flex flex-col items-center group"
                 >
-                  <div className="mb-2 transform group-hover:scale-110 transition-transform duration-300">
+                  <div className="mb-1 transform group-hover:scale-110 transition-transform duration-300">
                     <Image
                       src="/images/ISC2_CISSP.webp"
                       alt="ISC2 CISSP Badge"
                       width={64}
                       height={64}
-                      className="w-16 h-16 object-contain"
+                      className="w-12 h-12 object-contain"
                     />
                   </div>
-                  <div className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors">CISSP Certified</div>
-                  <div className="text-sm text-gray-600">Globally Recognized</div>
+                  <div className="text-sm text-gray-600 font-medium group-hover:text-blue-600 transition-colors">CISSP Certified</div>
                 </a>
               </div>
             </div>
