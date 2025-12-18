@@ -688,3 +688,59 @@ export const getOrganizationOwner = query({
     return await ctx.db.get(member.userId);
   },
 });
+
+// Update member role
+export const updateMemberRole = mutation({
+  args: {
+    membershipId: v.id("organizationMembers"),
+    role: v.union(v.literal("admin"), v.literal("member"), v.literal("owner")),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    // Get current user
+    const currentUser = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .first();
+
+    if (!currentUser) {
+      throw new Error("User not found");
+    }
+
+    // Get the membership to update
+    const membership = await ctx.db.get(args.membershipId);
+    if (!membership) {
+      throw new Error("Membership not found");
+    }
+
+    // Check if user has permission to update members
+    const isAdmin = ['super_admin', 'admin'].includes(currentUser.role);
+    const userMembership = await ctx.db
+      .query("organizationMembers")
+      .withIndex("by_user_org", (q) => 
+        q.eq("userId", currentUser._id).eq("organizationId", membership.organizationId)
+      )
+      .first();
+    
+    if (!isAdmin && (!userMembership || !['owner', 'admin'].includes(userMembership.memberRole))) {
+      throw new Error("Access denied");
+    }
+
+    // Prevent changing owner role if not owner
+    if (membership.memberRole === 'owner' && userMembership?.memberRole !== 'owner' && !isAdmin) {
+       throw new Error("Only the owner can transfer ownership");
+    }
+
+    // Update the membership
+    await ctx.db.patch(args.membershipId, {
+      memberRole: args.role,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true };
+  },
+});
