@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowRight, Hospital, User, Wind, AlertTriangle, Activity, Brain, Bed, Heart, Wifi } from "lucide-react";
+import { ArrowRight, Hospital, User, Wind, AlertTriangle, Activity, Brain, Bed, Heart, Wifi, Shield } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useScrollAnimation } from "@/lib/hooks/useScrollAnimation";
