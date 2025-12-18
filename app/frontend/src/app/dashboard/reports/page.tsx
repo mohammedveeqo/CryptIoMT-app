@@ -204,13 +204,7 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6" id="reports-content">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Reports</h1>
-          <p className="text-muted-foreground">
-            Manage scheduled reports and export on-demand summaries
-          </p>
-        </div>
+      <div className="flex justify-end items-center">
         <div className="flex gap-2 no-print" data-html2canvas-ignore="true">
           <Button variant="outline" onClick={exportSummary} disabled={!devices} className="rounded-md">
             <Download className="h-4 w-4 mr-2" />

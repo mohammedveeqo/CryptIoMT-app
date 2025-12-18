@@ -58,7 +58,8 @@ import {
   Trash2,
   Edit,
   Save,
-  X
+  X,
+  ArrowLeft
 } from 'lucide-react';
 import { Id } from '../../../../convex/_generated/dataModel';
 
@@ -172,57 +173,57 @@ export default function ManageOrganizationPage() {
       console.error('Failed to remove member:', error);
     }
   };
+
+  const handleReassign = async () => {
+    if (!reassignFromUser || !reassignToUser) return;
+    
+    try {
+      await reassignAllDevices({
+        organizationId: currentOrganization!._id,
+        fromUserId: reassignFromUser.id as Id<"users">,
+        toUserId: reassignToUser === "unassigned" ? undefined : (reassignToUser as Id<"users">),
+        reason: reassignReason
+      });
+      setReassignDialogOpen(false);
+      setReassignFromUser(null);
+      setReassignToUser("");
+      setReassignReason("");
+    } catch (error) {
+      console.error('Failed to reassign devices:', error);
+    }
+  };
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      {/* Header */}
-      <div className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Building2 className="h-6 w-6 text-blue-600" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Organization Management</h1>
-                <p className="text-sm text-gray-600">{currentOrganization?.name}</p>
-              </div>
-            </div>
-            <Badge 
-              variant="outline" 
-              className="bg-blue-50 text-blue-700 border-blue-200 px-3 py-1"
-            >
-              {currentOrganization?.type}
-            </Badge>
-          </div>
+    <div className="space-y-6">
+      <div className="flex items-center justify-end">
+        <div className="flex items-center gap-2">
+          <Badge 
+            variant="outline" 
+            className="bg-blue-50 text-blue-700 border-blue-200 px-3 py-1"
+          >
+            {currentOrganization?.type}
+          </Badge>
+          <Button variant="outline" onClick={() => router.push('/dashboard')}>
+             Back to Dashboard
+          </Button>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <Tabs defaultValue="settings" className="space-y-6">
-          <TabsList className="sticky top-16 z-20 grid w/full grid-cols-3 bg-white/90 backdrop-blur-sm border border-gray-200 p-1 rounded-lg">
-            <TabsTrigger 
-              value="settings" 
-              className="flex items-center gap-2 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 data-[state=active]:border-blue-200"
-            >
-              <Settings className="h-4 w-4" />
-              Settings
-            </TabsTrigger>
-            <TabsTrigger 
-              value="members" 
-              className="flex items-center gap-2 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 data-[state=active]:border-blue-200"
-            >
-              <Users className="h-4 w-4" />
-              Members
-            </TabsTrigger>
-            <TabsTrigger 
-              value="billing" 
-              className="flex items-center gap-2 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 data-[state=active]:border-blue-200"
-            >
-              <Building2 className="h-4 w-4" />
-              Billing
-            </TabsTrigger>
-          </TabsList>
+      <Tabs defaultValue="settings" className="space-y-6">
+        <TabsList className="h-auto w-fit p-1 bg-muted/50">
+          <TabsTrigger value="settings" className="flex items-center gap-2 px-6 py-2">
+            <Settings className="h-4 w-4" />
+            Settings
+          </TabsTrigger>
+          <TabsTrigger value="members" className="flex items-center gap-2 px-6 py-2">
+            <Users className="h-4 w-4" />
+            Members
+          </TabsTrigger>
+          <TabsTrigger value="billing" className="flex items-center gap-2 px-6 py-2">
+            <Building2 className="h-4 w-4" />
+            Billing
+          </TabsTrigger>
+        </TabsList>
           
           <TabsContent value="settings" className="space-y-6">
             <Card>
@@ -495,6 +496,47 @@ export default function ManageOrganizationPage() {
                 </Table>
               </CardContent>
             </Card>
+
+            <Dialog open={reassignDialogOpen} onOpenChange={setReassignDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Reassign Devices</DialogTitle>
+                        <DialogDescription>
+                            Transfer all devices from {reassignFromUser?.name} to another team member.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <div>
+                            <Label>Transfer to</Label>
+                            <Select value={reassignToUser} onValueChange={setReassignToUser}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select team member" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="unassigned">Unassigned (Remove Ownership)</SelectItem>
+                                    {teamStats?.filter(m => m.userId !== reassignFromUser?.id).map(member => (
+                                        <SelectItem key={member.userId} value={member.userId!}>
+                                            {member.user?.name || member.user?.email}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div>
+                            <Label>Reason for Transfer</Label>
+                            <Textarea 
+                                value={reassignReason}
+                                onChange={(e) => setReassignReason(e.target.value)}
+                                placeholder="e.g., Staff member left, Role change..."
+                            />
+                        </div>
+                        <div className="flex justify-end gap-2">
+                            <Button variant="outline" onClick={() => setReassignDialogOpen(false)}>Cancel</Button>
+                            <Button onClick={handleReassign} disabled={!reassignToUser}>Confirm Reassignment</Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
           </TabsContent>
           
           <TabsContent value="billing" className="space-y-6">
@@ -527,7 +569,6 @@ export default function ManageOrganizationPage() {
             </Card>
           </TabsContent>
         </Tabs>
-      </div>
     </div>
   );
 }

@@ -19,6 +19,8 @@ import {
   Shield,
   ShieldCheck,
   FileText,
+  Share2,
+  Bell,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -29,6 +31,7 @@ import { Sun, Moon } from "lucide-react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { GlobalSearch, GlobalSearchDialog } from "./global-search";
 import { NotificationsPopover } from "./notifications-popover";
+import { cn } from "@/lib/utils";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -77,6 +80,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { name: "Dashboard", href: "/dashboard", icon: Home, roles: ["super_admin", "admin", "analyst", "customer"] },
     { name: "Equipment", href: "/dashboard/equipment", icon: Server, roles: ["super_admin", "admin", "analyst", "customer"] },
     { name: "Risk Assessment", href: "/dashboard/risk", icon: AlertTriangle, roles: ["super_admin", "admin", "analyst", "customer"] },
+    { name: "Network", href: "/dashboard/network", icon: Share2, roles: ["super_admin", "admin", "analyst", "customer"] },
+    { name: "Alerts", href: "/dashboard/alerts", icon: Bell, roles: ["super_admin", "admin", "analyst", "customer"] },
     { name: "Vulnerabilities", href: "/dashboard/vulnerabilities", icon: Shield, roles: ["super_admin", "admin", "analyst", "customer"] },
     { name: "Compliance", href: "/dashboard/compliance", icon: ShieldCheck, roles: ["super_admin", "admin", "analyst", "customer"] },
     { name: "Customers", href: "/dashboard/customers", icon: Users, roles: ["super_admin", "admin"] },
@@ -146,6 +151,25 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   {filteredNavigation.find(item => item.href === pathname)?.name || 'Dashboard'}
                 </h1>
                 <p className="text-sm text-muted-foreground mt-0.5 truncate">Medical Device Security Management</p>
+              </div>
+              
+              {/* Mobile Navigation */}
+              <div className="grid grid-cols-2 gap-2">
+                {filteredNavigation.map((item) => (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={cn(
+                      "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                      pathname === item.href
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    <item.icon className="mr-2 h-4 w-4" />
+                    {item.name}
+                  </Link>
+                ))}
               </div>
               
               {/* Third row: Organization selector */}
@@ -236,6 +260,27 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Desktop Navigation */}
+          <div className="hidden sm:block border-t">
+            <nav className="flex items-center space-x-1 overflow-x-auto py-1 no-scrollbar">
+              {filteredNavigation.map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap",
+                    pathname === item.href
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted"
+                  )}
+                >
+                  <item.icon className="mr-2 h-4 w-4" />
+                  {item.name}
+                </Link>
+              ))}
+            </nav>
           </div>
         </div>
       </div>

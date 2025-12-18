@@ -65,11 +65,7 @@ export default function CustomersPage() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Customers</h1>
-            <p className="text-muted-foreground">Manage your customer accounts and permissions</p>
-          </div>
+        <div className="flex justify-end items-center">
           <div className="flex space-x-3">
             <Button variant="outline" size="sm" className="rounded-md">
               <Upload className="h-4 w-4 mr-2" />

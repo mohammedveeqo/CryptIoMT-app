@@ -96,13 +96,7 @@ export default function CompliancePage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Compliance Mapping</h1>
-                    <p className="text-muted-foreground">
-                        Track compliance with HIPAA Security Rule and other frameworks.
-                    </p>
-                </div>
+            <div className="flex justify-end items-center">
                 <Button variant="outline" onClick={handleExport}>
                     <Download className="mr-2 h-4 w-4" /> Export Report
                 </Button>
