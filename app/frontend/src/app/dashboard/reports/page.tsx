@@ -180,13 +180,25 @@ export default function ReportsPage() {
     const topManufacturers = Object.entries(byManufacturer)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5);
-      
+    const ownerMap: Record<string, { count: number; highRisk: number }> = {};
+    devices.forEach((d) => {
+      const ownerName = (d as any).ownerName || (d.ownerId ? `Owner ${String(d.ownerId).slice(-6)}` : 'Unassigned');
+      const classification = (d.classification || '').toLowerCase();
+      const riskScore = (d as any).riskScore || 0;
+      const highRisk = riskScore >= 70 || classification.includes('critical') || classification.includes('high') || ((d.cveCount || 0) > 0);
+      ownerMap[ownerName] = ownerMap[ownerName] || { count: 0, highRisk: 0 };
+      ownerMap[ownerName].count += 1;
+      if (highRisk) ownerMap[ownerName].highRisk += 1;
+    });
+    const ownerStats = Object.entries(ownerMap).sort((a, b) => b[1].count - a[1].count);
+    
     return {
       totalDevices,
       phiDevices,
       connectedDevices,
       offlineDevices,
-      topManufacturers
+      topManufacturers,
+      ownerStats
     };
   })();
 
@@ -263,21 +275,48 @@ export default function ReportsPage() {
 
       {/* Top Manufacturers */}
       {stats && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Top Manufacturers</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-              {stats.topManufacturers.map(([m, c]) => (
-                <div key={m} className="flex items-center justify-between p-3 border rounded-lg">
-                  <span className="font-medium truncate mr-2" title={m}>{m}</span>
-                  <Badge variant="secondary">{c}</Badge>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+            <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Top Manufacturers</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-3">
+                {stats.topManufacturers.map(([m, c]) => (
+                    <div key={m} className="flex items-center justify-between p-2 border rounded-lg bg-slate-50">
+                    <span className="font-medium truncate mr-2 text-sm" title={m}>{m}</span>
+                    <Badge variant="secondary">{c}</Badge>
+                    </div>
+                ))}
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+            </Card>
+
+            <Card>
+            <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Staff Workload & Risk</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+                {stats.ownerStats.map(([owner, data]) => (
+                    <div key={owner} className="flex items-center justify-between p-2 border rounded-lg">
+                        <div className="flex flex-col overflow-hidden">
+                            <span className="font-medium truncate text-sm" title={owner}>{owner}</span>
+                            <span className="text-xs text-muted-foreground">
+                                {data.highRisk > 0 ? (
+                                    <span className="text-red-600 font-medium">{data.highRisk} High Risk</span>
+                                ) : (
+                                    <span className="text-green-600">Low Risk</span>
+                                )}
+                            </span>
+                        </div>
+                        <Badge variant="outline">{data.count}</Badge>
+                    </div>
+                ))}
+                </div>
+            </CardContent>
+            </Card>
+        </div>
       )}
 
       {/* Scheduled Reports Section */}

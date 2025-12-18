@@ -11,11 +11,96 @@ export const getDevice = query({
 export const getAllMedicalDevices = query({
   args: { organizationId: v.id("organizations") },
   handler: async (ctx, { organizationId }) => {
-    return await ctx.db
+    const devices = await ctx.db
       .query("medicalDevices")
       .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
       .collect();
+
+    // Fetch owner details
+    const ownerIds = [...new Set(devices.map(d => d.ownerId).filter(Boolean))];
+    const owners = await Promise.all(
+        ownerIds.map(id => ctx.db.get(id as any))
+    );
+    const ownerMap = new Map();
+    owners.forEach(user => {
+        if (user) ownerMap.set(user._id, user);
+    });
+
+    return devices.map(device => {
+        const owner = device.ownerId ? ownerMap.get(device.ownerId) : null;
+        let ownerName = "Unknown";
+        if (owner) {
+             // @ts-ignore
+             ownerName = owner.name || owner.email || "Unknown";
+        }
+        
+        return {
+            ...device,
+            ownerName,
+            owner
+        };
+    });
   },
+});
+
+export const assignDeviceOwner = mutation({
+    args: {
+        organizationId: v.id("organizations"),
+        deviceIds: v.array(v.id("medicalDevices")),
+        ownerId: v.optional(v.id("users")), // Optional to allow unassigning
+        reason: v.optional(v.string()), // Optional reason for assignment
+    },
+    handler: async (ctx, { organizationId, deviceIds, ownerId, reason }) => {
+        // Auth check
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) throw new Error("Not authenticated");
+        
+        const user = await ctx.db
+            .query("users")
+            .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+            .unique();
+
+        if (!user) throw new Error("User not found");
+
+        // Allow admins and analysts to assign owners
+        const canEdit = ["admin", "super_admin", "analyst"].includes(user.role);
+        if (!canEdit) throw new Error("Permission denied");
+
+        let newOwnerName = "Unassigned";
+        if (ownerId) {
+            const newOwner = await ctx.db.get(ownerId);
+            if (newOwner) newOwnerName = newOwner.name || newOwner.email;
+        }
+
+        let updated = 0;
+        for (const id of deviceIds) {
+            const dev = await ctx.db.get(id);
+            if (!dev || dev.organizationId !== organizationId) continue;
+            
+            if (dev.ownerId !== ownerId) {
+                let oldOwnerName = "Unassigned";
+                if (dev.ownerId) {
+                    const oldOwner = await ctx.db.get(dev.ownerId);
+                    if (oldOwner) oldOwnerName = oldOwner.name || oldOwner.email;
+                }
+
+                await ctx.db.patch(id, { ownerId, updatedAt: Date.now() });
+                
+                // Log
+                 await ctx.db.insert("deviceLogs", {
+                    deviceId: id,
+                    timestamp: Date.now(),
+                    type: "owner_change",
+                    previousValue: dev.ownerId,
+                    newValue: ownerId,
+                    userId: identity.subject, 
+                    details: `Owner changed: ${oldOwnerName} -> ${newOwnerName}${reason ? ` (reason: ${reason})` : ''}`
+                 });
+                 updated++;
+            }
+        }
+        return { updated };
+    }
 });
 
 export const clearOrganizationDevices = mutation({
@@ -99,6 +184,66 @@ export const bulkUpdateDeviceStatus = mutation({
       }
     }
 
+    return { updated };
+  }
+});
+
+export const reassignAllDevices = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    fromUserId: v.id("users"),
+    toUserId: v.optional(v.id("users")), // If null, unassign
+    reason: v.optional(v.string()),
+  },
+  handler: async (ctx, { organizationId, fromUserId, toUserId, reason }) => {
+    // Auth check
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+    
+    const user = await ctx.db
+        .query("users")
+        .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+        .unique();
+
+    if (!user) throw new Error("User not found");
+
+    // Allow admins and owners to reassign
+    const canEdit = ["admin", "super_admin", "analyst"].includes(user.role);
+    if (!canEdit) throw new Error("Permission denied");
+
+    let newOwnerName = "Unassigned";
+    if (toUserId) {
+        const newOwner = await ctx.db.get(toUserId);
+        if (newOwner) newOwnerName = newOwner.name || newOwner.email;
+    }
+
+    const fromOwner = await ctx.db.get(fromUserId);
+    const fromOwnerName = fromOwner ? (fromOwner.name || fromOwner.email) : "Unknown User";
+
+    const devices = await ctx.db
+      .query("medicalDevices")
+      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+      .collect();
+
+    // Filter in memory for devices owned by fromUserId
+    const targetDevices = devices.filter(d => d.ownerId === fromUserId);
+
+    let updated = 0;
+    for (const dev of targetDevices) {
+        await ctx.db.patch(dev._id, { ownerId: toUserId, updatedAt: Date.now() });
+        
+        // Log
+        await ctx.db.insert("deviceLogs", {
+            deviceId: dev._id,
+            timestamp: Date.now(),
+            type: "owner_change",
+            previousValue: fromUserId,
+            newValue: toUserId,
+            userId: identity.subject, 
+            details: `Bulk Reassign: ${fromOwnerName} -> ${newOwnerName}${reason ? ` (reason: ${reason})` : ''}`
+        });
+        updated++;
+    }
     return { updated };
   }
 });

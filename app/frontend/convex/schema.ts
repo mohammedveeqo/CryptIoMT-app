@@ -68,6 +68,8 @@ export default defineSchema({
     email: v.string(),                         // User email
     firstName: v.optional(v.string()),         // First name
     lastName: v.optional(v.string()),          // Last name
+    department: v.optional(v.string()),        // User department (e.g., Radiology, IT)
+    location: v.optional(v.string()),          // User location (e.g., Building A, 3F)
     name: v.optional(v.string()),              // Full name (for backward compatibility)
     role: v.union(
       v.literal("super_admin"),                // Platform super admin
@@ -143,6 +145,8 @@ export default defineSchema({
     importedBy: v.optional(v.id("users")),     // Admin who imported the device
     cveCount: v.optional(v.number()),          // Number of active CVEs
     tags: v.optional(v.array(v.string())),     // Device tags
+    ownerId: v.optional(v.id("users")),        // Assigned staff/technician
+    lastSeen: v.optional(v.number()),          // Last time device was seen online
   }).index("by_organization", ["organizationId"])
     .index("by_serial_number", ["serialNumber"])
     .index("by_manufacturer_model", ["manufacturer", "model"])
@@ -427,6 +431,18 @@ export default defineSchema({
     .index("by_severity", ["severity"])
     .index("by_cvss_score", ["cvssScore"]),
 
+  // Notifications collection
+  notifications: defineTable({
+    userId: v.id("users"),
+    title: v.string(),
+    message: v.string(),
+    type: v.union(v.literal("cve"), v.literal("risk"), v.literal("offline"), v.literal("info")),
+    link: v.optional(v.string()),
+    read: v.boolean(),
+    createdAt: v.number(),
+  }).index("by_user", ["userId"])
+    .index("by_user_read", ["userId", "read"]),
+
   // Utility table for testing
   numbers: defineTable({
     value: v.number(),
@@ -456,7 +472,8 @@ export default defineSchema({
       v.literal("status_change"),
       v.literal("cve_match"),
       v.literal("manual_update"),
-      v.literal("network_change")
+      v.literal("network_change"),
+      v.literal("owner_change")
     ),
     previousValue: v.optional(v.any()), 
     newValue: v.optional(v.any()),

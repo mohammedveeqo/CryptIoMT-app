@@ -6,6 +6,8 @@ import { useMemo, memo, useEffect, useState } from "react";
 import {
   Server,
   Users,
+  User,
+  UserMinus,
   AlertTriangle,
   Shield,
   TrendingUp,
@@ -91,6 +93,7 @@ export function DashboardOverview() {
         return { minW: 6, minH: 8 };
       case 'tech':
       case 'os':
+      case 'ownership':
         return { minW: 6, minH: 10 };
       case 'criticality':
       case 'distribution':
@@ -132,8 +135,9 @@ export function DashboardOverview() {
         { i: 'network', x: 6, y: 0, w: 6, h: 8, minW: 6, minH: 8 },
         { i: 'tech', x: 0, y: 8, w: 6, h: 10, minW: 6, minH: 10 },
         { i: 'os', x: 6, y: 8, w: 6, h: 10, minW: 6, minH: 10 },
-        { i: 'criticality', x: 0, y: 18, w: 12, h: 12, minW: 12, minH: 12 },
-        { i: 'distribution', x: 0, y: 30, w: 12, h: 12, minW: 12, minH: 12 },
+        { i: 'ownership', x: 0, y: 18, w: 6, h: 10, minW: 6, minH: 10 },
+        { i: 'criticality', x: 0, y: 28, w: 12, h: 12, minW: 12, minH: 12 },
+        { i: 'distribution', x: 0, y: 40, w: 12, h: 12, minW: 12, minH: 12 },
       ],
     } as { [key: string]: Layout[] };
   })();
@@ -390,12 +394,56 @@ export function DashboardOverview() {
     })) ?? [];
   }, [osDistribution]);
 
+  const ownershipStats = useMemo(() => {
+    const stats = new Map<string, { name: string; count: number; highRisk: number; inactive: boolean; id: string }>();
+    let unassigned = 0;
+
+    allDevices?.forEach((d: any) => {
+      if (!d.ownerId) {
+        unassigned++;
+        return;
+      }
+      
+      if (!stats.has(d.ownerId)) {
+        stats.set(d.ownerId, {
+          id: d.ownerId,
+          name: d.ownerName || 'Unknown',
+          count: 0,
+          highRisk: 0,
+          inactive: false 
+        });
+      }
+      
+      const entry = stats.get(d.ownerId)!;
+      entry.count++;
+      
+      const risk = (d.riskScore || 0);
+      const classification = (d.classification || '').toLowerCase();
+      if (risk >= 70 || classification.includes('critical') || classification.includes('high')) {
+        entry.highRisk++;
+      }
+      
+      if (d.owner?.lastLogin) {
+         const threeWeeksAgo = Date.now() - (21 * 24 * 60 * 60 * 1000);
+         if (d.owner.lastLogin < threeWeeksAgo) {
+             entry.inactive = true;
+         }
+      }
+    });
+
+    return {
+      owners: Array.from(stats.values()).sort((a, b) => b.count - a.count),
+      unassigned
+    };
+  }, [allDevices]);
+
   const [visibleStatNames, setVisibleStatNames] = useState<string[]>([]);
   const [visibleSections, setVisibleSections] = useState({
     phiRisk: true,
     network: true,
     tech: true,
     os: true,
+    ownership: true,
     criticality: false,
     distribution: false,
   });
@@ -540,6 +588,12 @@ export function DashboardOverview() {
               OS Distribution
             </DropdownMenuCheckboxItem>
             <DropdownMenuCheckboxItem
+              checked={visibleSections.ownership}
+              onCheckedChange={(c) => setVisibleSections(v => ({ ...v, ownership: !!c }))}
+            >
+              Device Ownership
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
               checked={visibleSections.criticality}
               onCheckedChange={(c) => setVisibleSections(v => ({ ...v, criticality: !!c }))}
             >
@@ -612,6 +666,11 @@ export function DashboardOverview() {
         {visibleSections.os && (
           <div key="os" className="h-full">
             <OSDistributionChart data={osChartData} colors={COLORS} />
+          </div>
+        )}
+        {visibleSections.ownership && (
+          <div key="ownership" className="h-full">
+            <DeviceOwnershipCard data={ownershipStats} />
           </div>
         )}
         {visibleSections.criticality && (
@@ -1042,3 +1101,70 @@ const StatsCard = memo(({ stat, onClick }: { stat: any, onClick?: () => void }) 
   );
 });
 StatsCard.displayName = 'StatsCard';
+
+// Device Ownership Card
+const DeviceOwnershipCard = memo(({ data }: { data: { owners: Array<{ name: string; count: number; highRisk: number; inactive: boolean; id: string }>; unassigned: number } }) => {
+  const router = useRouter();
+  
+  return (
+    <Card className="h-full overflow-hidden">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <User className="h-5 w-5" />
+          Device Ownership
+        </CardTitle>
+        <CardDescription>
+          Staff workload and risk distribution
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="h-full overflow-y-auto pr-2">
+        <div className="space-y-4">
+          {data.owners.slice(0, 5).map((owner) => (
+            <div key={owner.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+              <div className="flex items-center gap-3">
+                <div className="bg-primary/10 p-2 rounded-full">
+                  <User className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <div className="font-medium text-sm">{owner.name}</div>
+                  <div className="text-xs text-muted-foreground flex items-center gap-2">
+                    <span>{owner.count} devices</span>
+                    {owner.highRisk > 0 && (
+                      <span className="text-orange-500 font-medium flex items-center gap-1">
+                        · {owner.highRisk} high-risk
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              {owner.inactive && (
+                 <Badge variant="outline" className="text-xs border-yellow-500 text-yellow-600 bg-yellow-50">
+                    Inactive
+                 </Badge>
+              )}
+            </div>
+          ))}
+          
+          <div 
+             className="flex items-center justify-between p-2 rounded-lg bg-red-50 border border-red-100 cursor-pointer hover:bg-red-100 transition-colors"
+             onClick={() => router.push('/dashboard?tab=devices&owner=unassigned')}
+          >
+            <div className="flex items-center gap-3">
+              <div className="bg-red-100 p-2 rounded-full">
+                <AlertTriangle className="h-4 w-4 text-red-600" />
+              </div>
+              <div>
+                <div className="font-medium text-sm text-red-900">Unassigned Devices</div>
+                <div className="text-xs text-red-700">{data.unassigned} devices require attention</div>
+              </div>
+            </div>
+             <Button size="sm" variant="ghost" className="h-7 text-red-700 hover:text-red-800 hover:bg-red-200">
+                Review
+             </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+});
+DeviceOwnershipCard.displayName = 'DeviceOwnershipCard';

@@ -40,6 +40,7 @@ export function DeviceHistory({ deviceId }: DeviceHistoryProps) {
       case "cve_match": return <ShieldAlert className="w-4 h-4 text-red-500" />;
       case "network_change": return <Wifi className="w-4 h-4 text-blue-500" />;
       case "status_change": return <Power className="w-4 h-4 text-green-500" />;
+      case "owner_change": return <User className="w-4 h-4 text-purple-500" />;
       default: return <Edit className="w-4 h-4 text-gray-500" />;
     }
   };

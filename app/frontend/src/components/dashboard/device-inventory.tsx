@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Search, Filter, X, ArrowUpDown, ArrowUp, ArrowDown, SlidersHorizontal, ChevronDown, Save, Trash2, Plus } from 'lucide-react'
+import { Search, Filter, X, ArrowUpDown, ArrowUp, ArrowDown, SlidersHorizontal, ChevronDown, Save, Trash2, Plus, User, Building2 } from 'lucide-react'
 import { 
   DropdownMenu,
   DropdownMenuTrigger,
@@ -23,7 +23,7 @@ import {
 import { useOrganization } from '@/contexts/organization-context'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { 
   createColumnHelper, 
   getCoreRowModel, 
@@ -58,13 +58,18 @@ type Device = {
   hasPHI: boolean
   cveCount?: number
   tags?: string[]
+  ownerId?: string
+  ownerName?: string
+  owner?: {
+    department?: string
+  }
 }
 
 const columnHelper = createColumnHelper<Device>()
 
 // Memoized virtual row component
 const VirtualRow = memo(({ row, cells, onClick, density }: { row: any; cells: any[]; onClick?: () => void; density: 'comfortable' | 'compact' }) => (
-  <div className="flex w-full border-b hover:bg-muted/70 transition-colors cursor-pointer" onClick={onClick}>
+  <div className={`flex w-full border-b hover:bg-muted/70 transition-colors ${onClick ? 'cursor-pointer' : ''}`} onClick={onClick}>
     {cells.map(cell => (
       <div
         key={cell.id}
@@ -86,7 +91,11 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
   const tableContainerRef = useRef<HTMLDivElement>(null)
   const [selectedDevice, setSelectedDevice] = useState<any | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
+  const [reasonDialogOpen, setReasonDialogOpen] = useState(false)
+  const [assignReason, setAssignReason] = useState('')
+  const [pendingAssign, setPendingAssign] = useState<{ type: 'single' | 'bulk', ownerId: string | undefined, deviceIds: string[] } | null>(null)
   const bulkUpdateStatus = useMutation(api.medicalDevices.bulkUpdateDeviceStatus)
+  const assignDeviceOwner = useMutation(api.medicalDevices.assignDeviceOwner)
   
   // State management
   const [sorting, setSorting] = useState<SortingState>([])
@@ -102,6 +111,8 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
     network: string;
     phi: string;
     tags?: string[];
+    owner?: string;
+    department?: string;
   }
 
   type SavedView = {
@@ -114,6 +125,7 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
   const [savedViews, setSavedViews] = useState<SavedView[]>([])
   
   const groups = useQuery(api.groups.getGroups, currentOrganization ? { organizationId: currentOrganization._id } : "skip");
+  const members = useQuery(api.organizations.getOrganizationMembers, currentOrganization ? { organizationId: currentOrganization._id } : "skip");
   const createGroup = useMutation(api.groups.createGroup);
   const deleteGroup = useMutation(api.groups.deleteGroup);
 
@@ -124,7 +136,9 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
     classification: 'all',
     network: 'all',
     phi: 'all',
-    tags: []
+    tags: [],
+    owner: 'all',
+    department: 'all'
   })
 
   // Initialize filters from URL query params
@@ -164,8 +178,8 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
           <input
             type="checkbox"
             aria-label="Select all"
-            checked={table.getIsAllRowsSelected() || (table.getIsSomeRowsSelected() ? true : false)}
-            onChange={(e) => table.toggleAllRowsSelected(!!e.target.checked)}
+            checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() ? true : false)}
+            onChange={(e) => table.toggleAllPageRowsSelected(!!e.target.checked)}
             className="h-4 w-4"
           />
         ),
@@ -198,6 +212,66 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
           </Button>
         ),
         size: 200,
+      }),
+      columnHelper.accessor('ownerName', {
+        header: 'Owner',
+        cell: ({ row }) => {
+            const val = row.original.ownerName;
+            const ownerId = row.original.ownerId;
+            return val && val !== 'Unknown' ? (
+                <div 
+                    className="flex items-center gap-2 cursor-pointer hover:underline hover:text-blue-600"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setFilters(prev => ({ ...prev, owner: ownerId || 'all' }));
+                    }}
+                >
+                    <User className="h-3 w-3 text-muted-foreground" />
+                    <span className="truncate" title={val}>{val}</span>
+                </div>
+            ) : (
+                <span 
+                    className="text-muted-foreground text-xs italic cursor-pointer hover:underline hover:text-blue-600"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setFilters(prev => ({ ...prev, owner: 'unassigned' }));
+                    }}
+                >
+                    Unassigned
+                </span>
+            );
+        },
+        size: 160,
+      }),
+      columnHelper.accessor(row => row.owner?.department || 'Unassigned', {
+        id: 'department',
+        header: 'Department',
+        cell: ({ getValue }) => {
+             const val = getValue();
+             return val && val !== 'Unassigned' ? (
+                <div 
+                    className="flex items-center gap-2 cursor-pointer hover:underline hover:text-blue-600"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setFilters(prev => ({ ...prev, department: val }));
+                    }}
+                >
+                    <Building2 className="h-3 w-3 text-muted-foreground" />
+                    <span className="truncate" title={val}>{val}</span>
+                </div>
+             ) : (
+                 <span 
+                    className="text-muted-foreground text-xs italic cursor-pointer hover:underline hover:text-blue-600"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setFilters(prev => ({ ...prev, department: 'unassigned' }));
+                    }}
+                 >
+                    Unassigned
+                </span>
+             );
+        },
+        size: 140,
       }),
       columnHelper.accessor('entity', {
         header: 'Entity',
@@ -307,9 +381,9 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
 
   // Optimized filtered data with early returns
   const filteredData = useMemo(() => {
-    if (!allDevices) return []
+    if (!allDevices) return [] as Device[]
     
-    return allDevices.filter(device => {
+    return (allDevices as unknown as Device[]).filter(device => {
       // Early return for search filter
       if (filters.search) {
         const searchLower = filters.search.toLowerCase()
@@ -329,6 +403,26 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
       if (filters.network === 'offline' && device.deviceOnNetwork) return false
       if (filters.phi === 'yes' && !device.hasPHI) return false
       if (filters.phi === 'no' && device.hasPHI) return false
+      
+      // Owner filter
+      if (filters.owner && filters.owner !== 'all') {
+        if (filters.owner === 'unassigned') {
+           if (device.ownerId) return false;
+        } else {
+           if (device.ownerId !== filters.owner) return false;
+        }
+      }
+
+      // Department filter
+      if (filters.department && filters.department !== 'all') {
+         const dept = device.owner?.department || 'Unassigned';
+         if (filters.department === 'unassigned') {
+             if (dept !== 'Unassigned') return false;
+         } else {
+             if (dept !== filters.department) return false;
+         }
+      }
+
       if (filters.tags && filters.tags.length > 0) {
         const deviceTags = device.tags || [];
         const hasMatchingTag = filters.tags.some(tag => deviceTags.includes(tag));
@@ -341,44 +435,82 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
 
   // Cascading filter options based on current selections
   const filterOptions = useMemo(() => {
-    if (!allDevices) return { categories: [], manufacturers: [], classifications: [], tags: [] }
+    if (!allDevices) return { categories: [], manufacturers: [], classifications: [], tags: [], ownerCounts: new Map(), departmentCounts: new Map(), unassignedCount: 0 }
     
-    // Start with all devices, then progressively filter based on current selections
+    const matchesSearch = (device: Device, search: string) => {
+        const searchLower = search.toLowerCase()
+        return device.name.toLowerCase().includes(searchLower) ||
+          device.entity.toLowerCase().includes(searchLower) ||
+          device.manufacturer.toLowerCase().includes(searchLower) ||
+          device.serialNumber.toLowerCase().includes(searchLower)
+    }
+
+    const checkFilter = (device: Device, key: string) => {
+       if (key !== 'search' && filters.search && !matchesSearch(device, filters.search)) return false
+       if (key !== 'category' && filters.category !== 'all' && device.category !== filters.category) return false
+       if (key !== 'manufacturer' && filters.manufacturer !== 'all' && device.manufacturer !== filters.manufacturer) return false
+       if (key !== 'classification' && filters.classification !== 'all' && device.classification !== filters.classification) return false
+       if (key !== 'network') {
+          if (filters.network === 'connected' && !device.deviceOnNetwork) return false
+          if (filters.network === 'offline' && device.deviceOnNetwork) return false
+       }
+       if (key !== 'phi') {
+          if (filters.phi === 'yes' && !device.hasPHI) return false
+          if (filters.phi === 'no' && device.hasPHI) return false
+       }
+       if (key !== 'owner' && filters.owner && filters.owner !== 'all') {
+          if (filters.owner === 'unassigned') {
+             if (device.ownerId) return false;
+          } else {
+             if (device.ownerId !== filters.owner) return false;
+          }
+       }
+       if (key !== 'department' && filters.department && filters.department !== 'all') {
+          const dept = device.owner?.department || 'Unassigned';
+          if (filters.department === 'unassigned') {
+             if (dept !== 'Unassigned') return false;
+          } else {
+             if (dept !== filters.department) return false;
+          }
+       }
+       // Tags logic omitted for brevity/complexity in "except" logic, usually tags are additive
+       return true
+    }
+
+    // Original sequential logic for existing dropdowns (simpler to keep as is or adapt?)
+    // Let's adapt the "availableDevices" concept to be "devices matching current filters"
+    // But for dropdowns we often want "what would be available if I changed THIS filter"
+    
+    // For simplicity and stability, let's keep the sequential logic for the original fields 
+    // but implement the "except self" logic for Owner and Department as they are new and requested with counts.
+    
+    // ... Actually, let's just do a single pass for Owner and Department counts
+    
     let availableDevices = allDevices
-    
-    // Apply search filter first
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase()
-      availableDevices = availableDevices.filter(device => 
-        device.name.toLowerCase().includes(searchLower) ||
-        device.entity.toLowerCase().includes(searchLower) ||
-        device.manufacturer.toLowerCase().includes(searchLower) ||
-        device.serialNumber.toLowerCase().includes(searchLower)
-      )
-    }
-    
-    // Apply other filters to determine available options
-    if (filters.category !== 'all') {
-      availableDevices = availableDevices.filter(device => device.category === filters.category)
-    }
-    if (filters.manufacturer !== 'all') {
-      availableDevices = availableDevices.filter(device => device.manufacturer === filters.manufacturer)
-    }
-    if (filters.classification !== 'all') {
-      availableDevices = availableDevices.filter(device => device.classification === filters.classification)
-    }
-    if (filters.network === 'connected') {
-      availableDevices = availableDevices.filter(device => device.deviceOnNetwork)
-    } else if (filters.network === 'offline') {
-      availableDevices = availableDevices.filter(device => !device.deviceOnNetwork)
-    }
-    if (filters.phi === 'yes') {
-      availableDevices = availableDevices.filter(device => device.hasPHI)
-    } else if (filters.phi === 'no') {
-      availableDevices = availableDevices.filter(device => !device.hasPHI)
-    }
-    
-    const categorySet = new Set<string>()
+    if (filters.search) availableDevices = availableDevices.filter(d => matchesSearch(d, filters.search))
+    if (filters.category !== 'all') availableDevices = availableDevices.filter(d => d.category === filters.category)
+    if (filters.manufacturer !== 'all') availableDevices = availableDevices.filter(d => d.manufacturer === filters.manufacturer)
+    if (filters.classification !== 'all') availableDevices = availableDevices.filter(d => d.classification === filters.classification)
+    if (filters.network === 'connected') availableDevices = availableDevices.filter(d => d.deviceOnNetwork)
+     else if (filters.network === 'offline') availableDevices = availableDevices.filter(d => !d.deviceOnNetwork)
+     if (filters.phi === 'yes') availableDevices = availableDevices.filter(d => d.hasPHI)
+     else if (filters.phi === 'no') availableDevices = availableDevices.filter(d => !d.hasPHI)
+     // Note: I'm NOT filtering by Owner/Dept here for the sets below, to allow seeing options?
+     // The original code filtered by everything.
+     // If I stick to original code style:
+     if (filters.owner && filters.owner !== 'all') {
+         if (filters.owner === 'unassigned') availableDevices = availableDevices.filter(d => !d.ownerId)
+         else availableDevices = availableDevices.filter(d => d.ownerId === filters.owner)
+     }
+     if (filters.department && filters.department !== 'all') {
+          if (filters.department === 'unassigned') {
+             availableDevices = availableDevices.filter(d => !d.owner?.department || d.owner.department === 'Unassigned')
+          } else {
+             availableDevices = availableDevices.filter(d => d.owner?.department === filters.department)
+          }
+     }
+     
+     const categorySet = new Set<string>()
     const manufacturerSet = new Set<string>()
     const classificationSet = new Set<string>()
     const tagSet = new Set<string>()
@@ -390,11 +522,33 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
       if (device.tags) device.tags.forEach(t => tagSet.add(t))
     })
     
+    // Now calculate Owner/Dept counts based on "everything EXCEPT owner/dept"
+    const devicesForOwner = allDevices.filter(d => checkFilter(d, 'owner'));
+    const ownerCounts = new Map<string, number>();
+    let unassignedCount = 0;
+    devicesForOwner.forEach(d => {
+        if (d.ownerId) ownerCounts.set(d.ownerId, (ownerCounts.get(d.ownerId) || 0) + 1);
+        else unassignedCount++;
+    });
+
+    const devicesForDept = allDevices.filter(d => checkFilter(d, 'department'));
+    const departmentCounts = new Map<string, number>();
+    let unassignedDeptCount = 0;
+    devicesForDept.forEach(d => {
+        const dept = d.owner?.department || 'Unassigned';
+        departmentCounts.set(dept, (departmentCounts.get(dept) || 0) + 1);
+        if (dept === 'Unassigned') unassignedDeptCount++;
+    });
+    
     return {
       categories: Array.from(categorySet).sort(),
       manufacturers: Array.from(manufacturerSet).sort(),
       classifications: Array.from(classificationSet).sort(),
-      tags: Array.from(tagSet).sort()
+      tags: Array.from(tagSet).sort(),
+      ownerCounts,
+      departmentCounts,
+      unassignedCount,
+      unassignedDeptCount
     }
   }, [allDevices, filters])
 
@@ -583,6 +737,38 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
     setColumnOrder(next)
   }, [columnOrder])
 
+  const confirmAssign = () => {
+      if (!pendingAssign || !currentOrganization) return
+      
+      assignDeviceOwner({ 
+          organizationId: currentOrganization._id, 
+          deviceIds: pendingAssign.deviceIds as any, 
+          ownerId: pendingAssign.ownerId as any,
+          reason: assignReason 
+      })
+      .then(() => {
+          invalidate();
+          if (pendingAssign.type === 'bulk') {
+             setRowSelection({});
+          } else {
+             setSelectedDevice((prev: any) => prev ? ({ ...prev, ownerId: pendingAssign.ownerId }) : prev);
+          }
+          setReasonDialogOpen(false)
+          setPendingAssign(null)
+      })
+      .catch(() => {})
+  }
+
+  const handleBulkAssign = (ownerId: string | undefined) => {
+      const selectedRows = table.getSelectedRowModel().rows
+      const ids = selectedRows.map(r => (r.original as any)._id)
+      if (!currentOrganization || ids.length === 0) return
+      
+      setPendingAssign({ type: 'bulk', ownerId, deviceIds: ids })
+      setAssignReason('')
+      setReasonDialogOpen(true)
+  }
+
   if (!allDevices) {
     return (
       <Card className="h-full">
@@ -746,6 +932,53 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
               </SelectContent>
             </Select>
 
+            <Select
+              value={filters.owner || 'all'}
+              onValueChange={(value) => handleFilterChange('owner', value)}
+            >
+              <SelectTrigger className="w-40 transition-all duration-200 hover:border-blue-300 hover:bg-blue-50/50">
+                <SelectValue placeholder="Owner" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Owners</SelectItem>
+                <SelectItem value="unassigned" className="text-yellow-600">
+                    Unassigned ({filterOptions.unassignedCount})
+                </SelectItem>
+                {members?.map((m: any) => {
+                    const count = filterOptions.ownerCounts.get(m.user?._id) || 0;
+                    if (count === 0 && filters.owner !== m.user?._id) return null;
+                    return (
+                        <SelectItem key={m._id} value={m.user?._id || ''}>
+                            {m.user?.name || m.user?.email || 'Unknown'} ({count})
+                        </SelectItem>
+                    )
+                })}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={filters.department || 'all'}
+              onValueChange={(value) => handleFilterChange('department', value)}
+            >
+              <SelectTrigger className="w-40 transition-all duration-200 hover:border-blue-300 hover:bg-blue-50/50">
+                <SelectValue placeholder="Department" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Departments</SelectItem>
+                <SelectItem value="unassigned" className="text-yellow-600">
+                    Unassigned ({filterOptions.unassignedDeptCount})
+                </SelectItem>
+                {Array.from(filterOptions.departmentCounts.entries()).map(([dept, count]) => {
+                     if (dept === 'Unassigned') return null;
+                     return (
+                        <SelectItem key={dept} value={dept}>
+                            {dept} ({count})
+                        </SelectItem>
+                     )
+                })}
+              </SelectContent>
+            </Select>
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="w-32 justify-between font-normal">
@@ -854,6 +1087,32 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
             {Object.keys(rowSelection).length > 0 && (
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">Selected {Object.keys(rowSelection).length}</span>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="flex items-center gap-1">
+                      <User className="h-4 w-4 mr-1" /> Assign Owner
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56 max-h-64 overflow-y-auto">
+                    <DropdownMenuLabel>Select Owner</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                        onClick={() => handleBulkAssign(undefined)}
+                        className="text-yellow-600 cursor-pointer"
+                    >
+                        Unassign
+                    </DropdownMenuItem>
+                    {members?.map((m: any) => (
+                        <DropdownMenuItem 
+                            key={m.user?._id} 
+                            onClick={() => handleBulkAssign(m.user?._id)}
+                            className="cursor-pointer"
+                        >
+                            {m.user?.name || m.user?.email}
+                        </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <Button
                   variant="outline"
                   size="sm"
@@ -1079,11 +1338,6 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
                   row={row}
                   cells={row.getVisibleCells()}
                   density={rowDensity}
-                  onClick={() => {
-                    const dev = row.original
-                    setSelectedDevice(dev)
-                    setDetailsOpen(true)
-                  }}
                 />
               </div>
             )
@@ -1097,69 +1351,155 @@ export function DeviceInventory({ isAdmin = false, userRole = 'customer' }: Devi
       </CardContent>
     </Card>
     {selectedDevice && (
-      <Sheet open={detailsOpen} onOpenChange={setDetailsOpen}>
-        <SheetContent side="right">
-          <SheetHeader>
-            <SheetTitle>{selectedDevice.name}</SheetTitle>
-            <SheetDescription>
+      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <DialogContent className="sm:max-w-[95vw] w-full max-h-[95vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{selectedDevice.name}</DialogTitle>
+            <DialogDescription>
               {selectedDevice.entity || 'Unknown'}
-            </SheetDescription>
-          </SheetHeader>
-          <div className="px-4 space-y-3">
-            <div className="grid grid-cols-2 gap-3 text-sm">
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="grid grid-cols-4 gap-4 text-sm bg-muted/30 p-4 rounded-lg">
               <div>
-                <div className="text-muted-foreground">Serial</div>
-                <div className="font-medium">{selectedDevice.serialNumber || 'N/A'}</div>
+                <div className="text-muted-foreground text-xs mb-1">Serial</div>
+                <div className="font-medium truncate" title={selectedDevice.serialNumber}>{selectedDevice.serialNumber || 'N/A'}</div>
               </div>
               <div>
-                <div className="text-muted-foreground">Manufacturer</div>
-                <div className="font-medium">{selectedDevice.manufacturer || 'Unknown'}</div>
+                <div className="text-muted-foreground text-xs mb-1">Manufacturer</div>
+                <div className="font-medium truncate" title={selectedDevice.manufacturer}>{selectedDevice.manufacturer || 'Unknown'}</div>
               </div>
               <div>
-                <div className="text-muted-foreground">Model</div>
-                <div className="font-medium">{selectedDevice.model || 'Unknown'}</div>
+                <div className="text-muted-foreground text-xs mb-1">Model</div>
+                <div className="font-medium truncate" title={selectedDevice.model}>{selectedDevice.model || 'Unknown'}</div>
               </div>
               <div>
-                <div className="text-muted-foreground">Category</div>
-                <div className="font-medium">{selectedDevice.category || 'Unknown'}</div>
+                <div className="text-muted-foreground text-xs mb-1">Category</div>
+                <div className="font-medium truncate" title={selectedDevice.category}>{selectedDevice.category || 'Unknown'}</div>
               </div>
               <div>
-                <div className="text-muted-foreground">IP Address</div>
+                <div className="text-muted-foreground text-xs mb-1">IP Address</div>
                 <div className="font-medium">{selectedDevice.ipAddress || 'N/A'}</div>
               </div>
               <div>
-                <div className="text-muted-foreground">OS Version</div>
+                <div className="text-muted-foreground text-xs mb-1">OS Version</div>
                 <div className="font-medium">{selectedDevice.osVersion || 'Unknown'}</div>
               </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="flex items-center gap-2">
+              <div className="flex items-end">
                 <Badge variant={selectedDevice.deviceOnNetwork ? 'default' : 'destructive'}>
                   {selectedDevice.deviceOnNetwork ? 'Connected' : 'Offline'}
                 </Badge>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-end">
                 <Badge variant={selectedDevice.hasPHI ? 'destructive' : 'secondary'}>
                   {selectedDevice.hasPHI ? 'PHI' : 'No PHI'}
                 </Badge>
               </div>
             </div>
 
-            <DeviceTags deviceId={selectedDevice._id} tags={selectedDevice.tags} />
+            <div className="bg-muted/30 p-4 rounded-lg space-y-3">
+               <h3 className="font-semibold text-sm flex items-center gap-2">
+                  <User className="h-4 w-4" /> Assignment
+               </h3>
+               <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Owner</label>
+                      <Select 
+                        value={selectedDevice.ownerId || "unassigned"} 
+                        onValueChange={(val) => {
+                             const newOwnerId = val === "unassigned" ? undefined : val;
+                             if (!currentOrganization) return;
+                             setPendingAssign({ type: 'single', ownerId: newOwnerId, deviceIds: [selectedDevice._id] })
+                             setAssignReason('')
+                             setReasonDialogOpen(true)
+                        }}
+                      >
+                        <SelectTrigger className="h-8 bg-background">
+                           <SelectValue placeholder="Select Owner" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="unassigned">Unassigned</SelectItem>
+                            {members?.map((m: any) => (
+                                <SelectItem key={m._id} value={m.user?._id}>
+                                    {m.user?.name || m.user?.email}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                  </div>
+                  <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Department</label>
+                      <div className="text-sm font-medium h-8 flex items-center">
+                          {selectedDevice.ownerId && members?.find((m: any) => m.user?._id === selectedDevice.ownerId)?.user?.department || 'Unassigned'}
+                      </div>
+                  </div>
+                  <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Location</label>
+                      <div className="text-sm font-medium h-8 flex items-center">
+                          {selectedDevice.ownerId && members?.find((m: any) => m.user?._id === selectedDevice.ownerId)?.user?.location || 'Unassigned'}
+                      </div>
+                  </div>
+                  <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Contact</label>
+                      <div className="text-sm font-medium h-8 flex items-center truncate">
+                          {selectedDevice.ownerId && members?.find((m: any) => m.user?._id === selectedDevice.ownerId)?.user?.email || '-'}
+                      </div>
+                  </div>
+               </div>
+            </div>
 
-            <ErrorBoundary
-              fallback={<div className="mt-4 p-4 border border-muted rounded-lg text-sm text-muted-foreground bg-muted/30">Vulnerability functions are not deployed yet.</div>}
-            >
-              <DeviceCVEDetails deviceId={selectedDevice._id} />
-            </ErrorBoundary>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-6">
+                 <DeviceTags deviceId={selectedDevice._id} tags={selectedDevice.tags} />
+                 
+                 <ErrorBoundary fallback={<div className="text-sm text-muted-foreground">Error loading history.</div>}>
+                    <DeviceHistory deviceId={selectedDevice._id} />
+                 </ErrorBoundary>
+              </div>
 
-            <ErrorBoundary fallback={<div className="text-sm text-muted-foreground">Error loading history.</div>}>
-              <DeviceHistory deviceId={selectedDevice._id} />
-            </ErrorBoundary>
+              <div>
+                <ErrorBoundary
+                  fallback={<div className="p-4 border border-muted rounded-lg text-sm text-muted-foreground bg-muted/30">Vulnerability functions are not deployed yet.</div>}
+                >
+                  <DeviceCVEDetails deviceId={selectedDevice._id} />
+                </ErrorBoundary>
+              </div>
+            </div>
           </div>
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
     )}
+    <Dialog open={reasonDialogOpen} onOpenChange={setReasonDialogOpen}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Assign Owner</DialogTitle>
+          <DialogDescription>
+            {pendingAssign?.ownerId ? 'Please provide a reason for this assignment change.' : 'Please provide a reason for unassigning this device.'}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <label htmlFor="reason" className="text-sm font-medium">
+              Reason (Optional)
+            </label>
+            <Input
+              id="reason"
+              value={assignReason}
+              onChange={(e) => setAssignReason(e.target.value)}
+              placeholder="e.g. Employee left, New hire, Load balancing"
+            />
+          </div>
+        </div>
+        <div className="flex justify-end gap-3">
+          <Button variant="outline" onClick={() => setReasonDialogOpen(false)}>
+            Cancel
+          </Button>
+          <Button onClick={confirmAssign}>
+            Confirm Assignment
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
     </>
   )
 }

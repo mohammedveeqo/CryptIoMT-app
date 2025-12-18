@@ -62,7 +62,10 @@ import {
 } from 'lucide-react';
 import { Id } from '../../../../convex/_generated/dataModel';
 
+import { useRouter } from 'next/navigation';
+
 export default function ManageOrganizationPage() {
+  const router = useRouter();
   const { user } = useUser();
   const { currentOrganization } = useOrganization();
   const [isEditing, setIsEditing] = useState(false);
@@ -73,9 +76,9 @@ export default function ManageOrganizationPage() {
   // Get current user info
   const currentUser = useQuery(api.users.getCurrentUser);
   
-  // Get organization members
-  const organizationMembers = useQuery(
-    api.organizations.getOrganizationMembers,
+  // Get organization members with stats
+  const teamStats = useQuery(
+    api.organizations.getTeamStats,
     currentOrganization ? { organizationId: currentOrganization._id } : "skip"
   );
   
@@ -83,7 +86,14 @@ export default function ManageOrganizationPage() {
   const inviteUser = useMutation(api.organizations.inviteUserToOrganization);
   const updateOrganization = useMutation(api.organizations.updateOrganization);
   const removeMember = useMutation(api.organizations.removeMember);
+  const assignDeviceOwner = useMutation(api.medicalDevices.assignDeviceOwner);
+  const reassignAllDevices = useMutation(api.medicalDevices.reassignAllDevices);
   
+  const [reassignDialogOpen, setReassignDialogOpen] = useState(false);
+  const [reassignFromUser, setReassignFromUser] = useState<{ id: string, name: string } | null>(null);
+  const [reassignToUser, setReassignToUser] = useState<string>("");
+  const [reassignReason, setReassignReason] = useState("");
+
   const [orgData, setOrgData] = useState({
     name: currentOrganization?.name || '',
     type: currentOrganization?.type || 'hospital',
@@ -93,8 +103,8 @@ export default function ManageOrganizationPage() {
   });
   
   // Check if current user is owner or admin of the organization
-  const userMembership = organizationMembers?.find(
-    member => member.email === user?.emailAddresses[0]?.emailAddress
+  const userMembership = teamStats?.find(
+    member => member.user?.email === user?.emailAddresses[0]?.emailAddress
   );
   const canManage = userMembership?.memberRole === 'owner' || userMembership?.memberRole === 'admin' || currentUser?.role === 'admin' || currentUser?.role === 'super_admin';
   
@@ -333,10 +343,10 @@ export default function ManageOrganizationPage() {
                   <div>
                     <CardTitle className="flex items-center gap-2">
                       <Users className="h-5 w-5" />
-                      Organization Members
+                      Team Management
                     </CardTitle>
                     <CardDescription>
-                      Manage members and their roles within your organization
+                      Manage staff access and device ownership responsibilities
                     </CardDescription>
                   </div>
                   <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
@@ -388,21 +398,27 @@ export default function ManageOrganizationPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
+                      <TableHead>Staff Member</TableHead>
                       <TableHead>Role</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Joined</TableHead>
+                      <TableHead>Devices</TableHead>
+                      <TableHead>High Risk</TableHead>
+                      <TableHead>Last Login</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {organizationMembers?.map((member) => (
+                    {teamStats?.map((member) => (
                       <TableRow key={member._id}>
-                        <TableCell className="font-medium">
-                          {member.firstName} {member.lastName}
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{member.user?.name || 'Unknown'}</span>
+                            <span className="text-xs text-muted-foreground">{member.user?.email}</span>
+                            {member.user?.department && (
+                                <span className="text-xs text-muted-foreground">{member.user.department}</span>
+                            )}
+                          </div>
                         </TableCell>
-                        <TableCell>{member.email}</TableCell>
                         <TableCell>
                           <Badge 
                             variant={member.memberRole === 'owner' ? 'default' : 'secondary'}
@@ -421,19 +437,57 @@ export default function ManageOrganizationPage() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {member.joinedAt ? new Date(member.joinedAt).toLocaleDateString() : 'N/A'}
+                            <div className="font-medium">{member.deviceCount || 0}</div>
                         </TableCell>
                         <TableCell>
-                          {member.memberRole !== 'owner' && (
+                            {(member.highRiskCount || 0) > 0 ? (
+                                <Badge variant="destructive" className="bg-orange-500 hover:bg-orange-600">
+                                    {member.highRiskCount} High Risk
+                                </Badge>
+                            ) : (
+                                <span className="text-muted-foreground text-sm">-</span>
+                            )}
+                        </TableCell>
+                        <TableCell>
+                          {member.lastLogin ? new Date(member.lastLogin).toLocaleDateString() : 'Never'}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
                             <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleRemoveMember(member.membershipId)}
-                              className="text-red-600 hover:text-red-700"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => router.push(`/dashboard?tab=devices&owner=${member.userId}`)}
                             >
-                              <Trash2 className="h-4 w-4" />
+                                View Devices
                             </Button>
-                          )}
+                            {(member.deviceCount || 0) > 0 && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                        setReassignFromUser({ 
+                                            id: member.userId!, 
+                                            name: member.user?.name || member.user?.email || 'Unknown' 
+                                        });
+                                        setReassignDialogOpen(true);
+                                    }}
+                                >
+                                    Reassign All
+                                </Button>
+                            )}
+                            {member.memberRole !== 'owner' && (
+                                <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleRemoveMember(member._id)} // Using _id which is membershipId from convex return
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                                </>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

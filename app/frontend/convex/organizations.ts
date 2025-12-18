@@ -43,6 +43,97 @@ export const getAllOrganizations = query({
   },
 });
 
+export const getOrganizationMembers = query({
+  args: { organizationId: v.id("organizations") },
+  handler: async (ctx, { organizationId }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+
+    const members = await ctx.db
+      .query("organizationMembers")
+      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+      .collect();
+
+    // Fetch user details
+    const memberUsers = await Promise.all(
+        members.map(async (m) => {
+            const user = await ctx.db.get(m.userId);
+            return {
+                ...m,
+                user
+            };
+        })
+    );
+    
+    return memberUsers.filter(m => m.user);
+  }
+});
+
+// Get team statistics (admin only)
+export const getTeamStats = query({
+  args: { organizationId: v.id("organizations") },
+  handler: async (ctx, { organizationId }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+
+    if (!user) return [];
+
+    // Verify admin access (allow organization owners/admins)
+    const membership = await ctx.db
+      .query("organizationMembers")
+      .withIndex("by_user_org", (q) => q.eq("userId", user._id).eq("organizationId", organizationId))
+      .first();
+
+    if (!membership || !["owner", "admin"].includes(membership.memberRole)) {
+       // Also allow platform admins
+       if (!["super_admin", "admin", "analyst"].includes(user.role)) {
+           return [];
+       }
+    }
+
+    // Get all members
+    const members = await ctx.db
+      .query("organizationMembers")
+      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+      .collect();
+
+    // Get all devices to calculate stats
+    const devices = await ctx.db
+      .query("medicalDevices")
+      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+      .collect();
+
+    // Aggregate stats
+    const memberStats = await Promise.all(members.map(async (m) => {
+        const memberUser = await ctx.db.get(m.userId);
+        if (!memberUser) return null;
+
+        const memberDevices = devices.filter(d => d.ownerId === memberUser._id);
+        const deviceCount = memberDevices.length;
+        const highRiskCount = memberDevices.filter(d => {
+            const risk = (d as any).riskScore || 0;
+            const classification = (d.classification || '').toLowerCase();
+            return risk >= 70 || classification.includes('critical') || classification.includes('high');
+        }).length;
+
+        return {
+            ...m,
+            user: memberUser,
+            deviceCount,
+            highRiskCount,
+            lastLogin: memberUser.lastLogin
+        };
+    }));
+
+    return memberStats.filter(m => m !== null);
+  }
+});
+
 // Create new organization
 export const createOrganization = mutation({
   args: {
@@ -290,68 +381,7 @@ export const inviteUserToOrganization = mutation({
 });
 
 // Get organization members
-export const getOrganizationMembers = query({
-  args: { organizationId: v.id("organizations") },
-  handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Not authenticated");
-    }
-
-    // Get current user
-    const currentUser = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-      .first();
-
-    if (!currentUser) {
-      throw new Error("User not found");
-    }
-
-    // Check if user has access to this organization
-    const isAdmin = ['super_admin', 'admin'].includes(currentUser.role);
-    const userMembership = await ctx.db
-      .query("organizationMembers")
-      .withIndex("by_user_org", (q) => 
-        q.eq("userId", currentUser._id).eq("organizationId", args.organizationId)
-      )
-      .first();
-    
-    if (!isAdmin && !userMembership) {
-      throw new Error("Access denied");
-    }
-
-    // Get all memberships for the organization
-    const memberships = await ctx.db
-      .query("organizationMembers")
-      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
-      .collect();
-
-    // Fetch user details for each membership
-    const members = await Promise.all(
-      memberships.map(async (membership) => {
-        const user = await ctx.db.get(membership.userId);
-        if (!user) return null;
-
-        return {
-          _id: user._id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          name: user.name,
-          memberRole: membership.memberRole,
-          memberStatus: membership.memberStatus,
-          status: user.status,
-          joinedAt: membership.joinedAt,
-          lastLogin: user.lastLogin,
-          membershipId: membership._id,
-        };
-      })
-    );
-
-    return members.filter(member => member !== null);
-  },
-});
+// Removed duplicate getOrganizationMembers definition to avoid redeclaration
 
 // Create organization by regular user (for onboarding)
 export const createUserOrganization = mutation({

@@ -76,7 +76,7 @@ export function OrganizationSelector() {
 
   // Check if current user can manage the organization
   const userMembership = organizationMembers?.find(
-    member => member.email === (currentUser && 'email' in currentUser ? currentUser.email : null)
+    (member: any) => (member.user?.email) === (currentUser && 'email' in currentUser ? (currentUser as any).email : null)
   );
   const canManage = userMembership?.memberRole === 'owner' || 
                    userMembership?.memberRole === 'admin' || 

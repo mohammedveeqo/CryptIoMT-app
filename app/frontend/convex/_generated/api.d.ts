@@ -23,6 +23,7 @@ import type * as equipment from "../equipment.js";
 import type * as groups from "../groups.js";
 import type * as medicalDevices from "../medicalDevices.js";
 import type * as myFunctions from "../myFunctions.js";
+import type * as notifications from "../notifications.js";
 import type * as organizations from "../organizations.js";
 import type * as reports from "../reports.js";
 import type * as search from "../search.js";
@@ -48,6 +49,7 @@ declare const fullApi: ApiFromModules<{
   groups: typeof groups;
   medicalDevices: typeof medicalDevices;
   myFunctions: typeof myFunctions;
+  notifications: typeof notifications;
   organizations: typeof organizations;
   reports: typeof reports;
   search: typeof search;

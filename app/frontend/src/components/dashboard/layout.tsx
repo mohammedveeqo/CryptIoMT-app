@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Sun, Moon } from "lucide-react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { GlobalSearch, GlobalSearchDialog } from "./global-search";
+import { NotificationsPopover } from "./notifications-popover";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -109,6 +110,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 </div>
                 
                 <div className="flex items-center space-x-3 flex-shrink-0">
+                  <NotificationsPopover />
                   {userRole === 'super_admin' && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -207,6 +209,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   </div>
                 </div>
                 <div className="relative flex items-center gap-3">
+                  <NotificationsPopover />
                   {userRole === 'super_admin' && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -245,7 +248,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
         </div>
       </main>
-      <GlobalSearch />
+      <GlobalSearchDialog />
     </div>
   </div>
 );
