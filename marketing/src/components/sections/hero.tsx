@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowRight, Hospital, User, Wind, AlertTriangle, Activity, Brain, Bed, Heart, Wifi, Shield } from "lucide-react";
+import { ArrowRight, Hospital, User, Wind, AlertTriangle, Activity, Brain, Bed, Heart, Wifi } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useScrollAnimation } from "@/lib/hooks/useScrollAnimation";
@@ -76,13 +76,19 @@ export function Hero() {
               </div>
               <div className="text-center transform hover:scale-105 transition-transform duration-300">
                 <a 
-                  href="https://www.credly.com/org/isc2/badge/certified-information-systems-security-professional-cissp#:~:text=The%20vendor%2Dneutral%20CISSP%20credential,an%20increasingly%20complex%20cyber%20world." 
+                  href="https://www.credly.com/org/isc2/badge/certified-information-systems-security-professional-cissp#:~:text=The%20vendor%2Dneutral%20CISSP%20credential,an%20increasingly%20complex%20cyber%20world" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="flex flex-col items-center group"
                 >
-                  <div className="text-3xl font-bold text-purple-600 mb-1">
-                    <Shield className="h-8 w-8 inline-block group-hover:text-purple-700 transition-colors" />
+                  <div className="mb-2 transform group-hover:scale-110 transition-transform duration-300">
+                    <Image
+                      src="/images/ISC2_CISSP.webp"
+                      alt="ISC2 CISSP Badge"
+                      width={64}
+                      height={64}
+                      className="w-16 h-16 object-contain"
+                    />
                   </div>
                   <div className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors">CISSP Certified</div>
                   <div className="text-sm text-gray-600">Globally Recognized</div>

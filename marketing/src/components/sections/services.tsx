@@ -15,8 +15,7 @@ import {
   Briefcase,
   GraduationCap,
   FileCheck,
-  UserCheck,
-  Lock
+  UserCheck
 } from "lucide-react";
 import Image from "next/image";
 import { useScrollAnimation } from "@/lib/hooks/useScrollAnimation";
@@ -404,7 +403,7 @@ export function Services() {
                 <span>HIPAA Compliant</span>
               </div>
               <div className="flex items-center space-x-2">
-                <Lock className="h-4 w-4" />
+                <FileCheck className="h-4 w-4" />
                 <span>NIST Cybersecurity Framework</span>
               </div>
               <div className="flex items-center space-x-2">
