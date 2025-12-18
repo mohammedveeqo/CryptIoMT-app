@@ -145,7 +145,7 @@ export default function AboutPage() {
                   <p className="text-lg font-semibold text-gray-900">Certified Information Systems Security Professional</p>
                   <p className="text-sm text-gray-500">Issued by ISC2</p>
                   <Link
-                    href="https://www.credly.com/badges/ffbe391c-d251-4158-86be-b99c86c64a18/public_url"
+                    href="https://www.credly.com/org/isc2/badge/certified-information-systems-security-professional-cissp#:~:text=The%20vendor%2Dneutral%20CISSP%20credential,an%20increasingly%20complex%20cyber%20world"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 hover:text-blue-700 text-sm font-medium"
