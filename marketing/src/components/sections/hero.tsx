@@ -11,8 +11,15 @@ export function Hero() {
   const { ref: heroRef, isVisible: heroVisible } = useScrollAnimation();
   
   return (
-    <section className="bg-gradient-to-br from-blue-50 via-white to-cyan-50 pt-20 pb-16">
-      <div className="container px-4 max-w-6xl mx-auto">
+    <section className="relative pt-20 pb-16 overflow-hidden bg-white">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 z-0 opacity-[0.4]">
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+        <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-blue-400 opacity-20 blur-[100px]"></div>
+        <div className="absolute right-0 top-0 -z-10 h-[310px] w-[310px] rounded-full bg-cyan-400 opacity-20 blur-[100px]"></div>
+      </div>
+
+      <div className="container relative z-10 px-4 max-w-6xl mx-auto">
         <div ref={heroRef} className="grid lg:grid-cols-2 gap-16 items-center">
           {/* Left Column - Content */}
           <div className={`space-y-8 transition-all duration-1000 ease-out ${

@@ -101,7 +101,7 @@ export function AboutSection() {
       </section>
 
       {/* Expertise Section */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-24 bg-gray-50/50">
         <div className="max-w-6xl mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -112,30 +112,36 @@ export function AboutSection() {
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
-            <Card className="p-6 text-center hover:shadow-lg transition-shadow">
-              <Users className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-              <h3 className="text-lg font-bold text-gray-900 mb-2">
+            <Card className="p-8 text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-gray-100">
+              <div className="w-16 h-16 mx-auto mb-6 bg-blue-50 rounded-2xl flex items-center justify-center">
+                <Users className="h-8 w-8 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">
                 Clinical Engineering
               </h3>
-              <p className="text-gray-600">
+              <p className="text-gray-600 leading-relaxed">
                 Deep understanding of medical device operations and healthcare workflows
               </p>
             </Card>
-            <Card className="p-6 text-center hover:shadow-lg transition-shadow">
-              <Shield className="h-12 w-12 text-green-600 mx-auto mb-4" />
-              <h3 className="text-lg font-bold text-gray-900 mb-2">
+            <Card className="p-8 text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-gray-100">
+              <div className="w-16 h-16 mx-auto mb-6 bg-green-50 rounded-2xl flex items-center justify-center">
+                <Shield className="h-8 w-8 text-green-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">
                 Cybersecurity
               </h3>
-              <p className="text-gray-600">
+              <p className="text-gray-600 leading-relaxed">
                 Advanced security certifications and proven track record in threat mitigation
               </p>
             </Card>
-            <Card className="p-6 text-center hover:shadow-lg transition-shadow">
-              <Award className="h-12 w-12 text-purple-600 mx-auto mb-4" />
-              <h3 className="text-lg font-bold text-gray-900 mb-2">
+            <Card className="p-8 text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-gray-100">
+              <div className="w-16 h-16 mx-auto mb-6 bg-purple-50 rounded-2xl flex items-center justify-center">
+                <Award className="h-8 w-8 text-purple-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">
                 Compliance
               </h3>
-              <p className="text-gray-600">
+              <p className="text-gray-600 leading-relaxed">
                 Expert knowledge of HIPAA, FDA, and other healthcare regulatory requirements
               </p>
             </Card>

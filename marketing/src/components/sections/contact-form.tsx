@@ -87,8 +87,14 @@ export function ContactForm() {
   }
 
   return (
-    <section className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
-      <div className="max-w-7xl mx-auto px-4">
+    <section className="relative py-24 bg-white overflow-hidden">
+      {/* Background Elements */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+        <div className="absolute left-1/2 top-0 -z-10 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-blue-50 opacity-50 blur-[100px]"></div>
+      </div>
+
+      <div className="relative z-10 max-w-7xl mx-auto px-4">
         <div 
           ref={formRef}
           className={`transition-all duration-1000 ${
@@ -117,7 +123,7 @@ export function ContactForm() {
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Contact Form */}
             <div className="lg:col-span-2">
-              <Card className="p-8 bg-white shadow-xl rounded-2xl">
+              <Card className="p-8 bg-white/80 backdrop-blur-sm border-gray-200 shadow-lg rounded-xl">
                 <CardHeader className="pb-6">
                   <CardTitle className="text-2xl font-bold text-gray-900">
                     Schedule Your Assessment
@@ -273,7 +279,7 @@ export function ContactForm() {
             {/* Contact Information */}
             <div className="space-y-6">
               {/* Contact Details */}
-              <Card className="p-6 bg-white shadow-xl rounded-2xl">
+              <Card className="p-6 bg-white/80 backdrop-blur-sm border-gray-200 shadow-lg rounded-xl">
                 <CardHeader className="pb-4">
                   <CardTitle className="text-xl font-bold text-gray-900">
                     Contact Information

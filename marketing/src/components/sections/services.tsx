@@ -159,8 +159,13 @@ export function Services() {
   };
 
   return (
-    <section id="services" className="py-20 bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4">
+    <section id="services" className="relative py-24 bg-white overflow-hidden">
+      {/* Background Elements */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-30"></div>
+      </div>
+
+      <div className="relative z-10 max-w-7xl mx-auto px-4">
         {/* Section Header with Dashboard Image */}
         <div className="grid lg:grid-cols-2 gap-12 items-center mb-16">
           {/* Left Column - Text Content */}
@@ -247,13 +252,13 @@ export function Services() {
           {services.map((service, index) => {
             const Icon = service.icon;
             return (
-              <Card 
-                key={service.title}
-                className={`group hover:shadow-xl transition-all duration-300 hover:-translate-y-2 bg-white border border-gray-200 rounded-2xl overflow-hidden ${
-                  gridVisible 
-                    ? `animate-fade-in-up` 
-                    : 'opacity-0'
-                }`}
+                <Card 
+                  key={service.title}
+                  className={`group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 bg-white border border-gray-100 hover:border-blue-100 rounded-xl overflow-hidden ${
+                    gridVisible 
+                      ? `animate-fade-in-up` 
+                      : 'opacity-0'
+                  }`}
                 style={{
                   animationDelay: gridVisible ? `${index * 100}ms` : '0ms'
                 }}
@@ -333,7 +338,7 @@ export function Services() {
               return (
                 <Card 
                   key={service.title}
-                  className={`group hover:shadow-xl transition-all duration-300 hover:-translate-y-2 bg-white border border-gray-200 rounded-2xl overflow-hidden ${
+                  className={`group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 bg-white border border-gray-100 hover:border-purple-100 rounded-xl overflow-hidden ${
                     additionalVisible 
                       ? `animate-fade-in-up` 
                       : 'opacity-0'
