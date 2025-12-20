@@ -2,7 +2,7 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Shield, FileText, AlertTriangle, Scale, UserCheck, Lock, Activity, Ban, Server, Globe } from "lucide-react";
+import { Shield, FileText, AlertTriangle, Scale, UserCheck, Lock, Activity, Ban, Server } from "lucide-react";
 
 export const metadata = {
   title: "Terms of Service - CryptIoMT Healthcare Cybersecurity",
@@ -50,7 +50,7 @@ export default function TermsPage() {
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900 mb-4">1. Agreement to Terms</h2>
                     <p className="text-gray-600 leading-relaxed mb-4">
-                      These Terms of Service ("Terms") govern your access to and use of CryptIoMT's cybersecurity risk management platform ("Service"). By creating an account or using the Service, you agree to these Terms.
+                      These Terms of Service (&quot;Terms&quot;) govern your access to and use of CryptIoMT&apos;s cybersecurity risk management platform (&quot;Service&quot;). By creating an account or using the Service, you agree to these Terms.
                     </p>
                     <p className="text-gray-600 leading-relaxed mb-4">
                       If you are using the Service on behalf of an organization, you represent that you have authority to bind that organization.
@@ -170,7 +170,7 @@ export default function TermsPage() {
                     <p className="text-sm text-red-800 mb-2">You may NOT:</p>
                     <ul className="list-disc pl-5 space-y-2 text-red-800 text-sm">
                       <li>Violate laws or regulations (HIPAA, FDA, etc.)</li>
-                      <li>Access another user's account or data without permission</li>
+                      <li>Access another user&apos;s account or data without permission</li>
                       <li>Interfere with Service operation or security</li>
                       <li>Reverse engineer or copy the platform</li>
                     </ul>
@@ -246,7 +246,7 @@ export default function TermsPage() {
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900 mb-4">10. Disclaimers</h2>
                     <div className="space-y-4 text-gray-600 text-sm uppercase">
-                      <p>THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND.</p>
+                      <p>THE SERVICE IS PROVIDED &quot;AS IS&quot; AND &quot;AS AVAILABLE&quot; WITHOUT WARRANTIES OF ANY KIND.</p>
                       <p>WE DO NOT GUARANTEE THAT THE SERVICE WILL BE UNINTERRUPTED, SECURE, OR ERROR-FREE.</p>
                       <p>WE ARE NOT RESPONSIBLE FOR THE ACCURACY OF THIRD-PARTY VULNERABILITY DATA (NVD, ETC.).</p>
                     </div>

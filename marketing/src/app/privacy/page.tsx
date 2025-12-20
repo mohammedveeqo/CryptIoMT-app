@@ -2,7 +2,7 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Shield, Lock, Eye, Database, Server, Users, FileText, AlertTriangle, Clock, Share2, CheckCircle, Globe, Cookie, Link as LinkIcon, Baby } from "lucide-react";
+import { Shield, Lock, Database, Server, Users, AlertTriangle, Clock, Share2, CheckCircle, Globe, Cookie, Link as LinkIcon, Baby } from "lucide-react";
 
 export const metadata = {
   title: "Privacy Policy - CryptIoMT Healthcare Cybersecurity",
@@ -50,7 +50,7 @@ export default function PrivacyPage() {
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900 mb-4">1. Introduction</h2>
                     <p className="text-gray-600 leading-relaxed mb-4">
-                      CryptIoMT ("we," "us," "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard information when you use our cybersecurity risk management platform for medical devices.
+                      CryptIoMT (&quot;we,&quot; &quot;us,&quot; &quot;our&quot;) is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard information when you use our cybersecurity risk management platform for medical devices.
                     </p>
                     <p className="text-gray-600 leading-relaxed">
                       By using CryptIoMT, you agree to the collection and use of information in accordance with this policy.
@@ -431,7 +431,7 @@ export default function PrivacyPage() {
                     <div className="bg-gray-50 p-4 rounded-lg">
                       <h3 className="font-semibold text-gray-900 mb-2">9.2 Cookie Management</h3>
                       <p className="text-gray-600 text-sm mb-4">You can control cookies through your browser settings. Disabling essential cookies may limit functionality.</p>
-                      <p className="text-gray-600 text-sm font-medium">Do Not Track: We currently do not respond to "Do Not Track" signals.</p>
+                      <p className="text-gray-600 text-sm font-medium">Do Not Track: We currently do not respond to &quot;Do Not Track&quot; signals.</p>
                     </div>
                   </div>
                 </div>
@@ -465,7 +465,7 @@ export default function PrivacyPage() {
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center">
                   <Baby className="h-6 w-6 text-pink-500 mr-2" />
-                  11. Children's Privacy
+                  11. Children&apos;s Privacy
                 </h2>
                 <p className="text-gray-600">CryptIoMT is not intended for individuals under 18. We do not knowingly collect information from children. If we become aware of such collection, we will delete it immediately.</p>
               </div>
@@ -486,7 +486,7 @@ export default function PrivacyPage() {
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-4">13. Changes to This Privacy Policy</h2>
                 <div className="space-y-4 text-gray-600">
-                  <p>We may update this Privacy Policy from time to time. Changes will be posted on this page with an updated "Last Updated" date.</p>
+                  <p>We may update this Privacy Policy from time to time. Changes will be posted on this page with an updated &quot;Last Updated&quot; date.</p>
                   <p>For material changes, we will notify you via:</p>
                   <ul className="list-disc pl-5 space-y-1">
                     <li>Email to account administrators</li>
