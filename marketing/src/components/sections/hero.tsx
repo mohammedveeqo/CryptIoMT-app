@@ -79,18 +79,10 @@ export function Hero() {
                   href="https://www.credly.com/org/isc2/badge/certified-information-systems-security-professional-cissp#:~:text=The%20vendor%2Dneutral%20CISSP%20credential,an%20increasingly%20complex%20cyber%20world" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="flex flex-col items-center group"
+                  className="block group"
                 >
-                  <div className="mb-1 transform group-hover:scale-110 transition-transform duration-300">
-                    <Image
-                      src="/images/ISC2_CISSP.webp"
-                      alt="ISC2 CISSP Badge"
-                      width={64}
-                      height={64}
-                      className="w-12 h-12 object-contain"
-                    />
-                  </div>
-                  <div className="text-sm text-gray-600 font-medium group-hover:text-blue-600 transition-colors">CISSP Certified</div>
+                  <div className="text-3xl font-bold text-blue-600 group-hover:text-blue-700 transition-colors">CISSP</div>
+                  <div className="text-sm text-gray-600 font-medium group-hover:text-blue-600 transition-colors">Certified</div>
                 </a>
               </div>
             </div>
