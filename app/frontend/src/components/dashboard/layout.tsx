@@ -84,7 +84,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { name: "Alerts", href: "/dashboard/alerts", icon: Bell, roles: ["super_admin", "admin", "analyst", "customer"] },
     { name: "Vulnerabilities", href: "/dashboard/vulnerabilities", icon: Shield, roles: ["super_admin", "admin", "analyst", "customer"] },
     { name: "Compliance", href: "/dashboard/compliance", icon: ShieldCheck, roles: ["super_admin", "admin", "analyst", "customer"] },
-    { name: "Customers", href: "/dashboard/customers", icon: Users, roles: ["super_admin", "admin"] },
     { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3, roles: ["super_admin", "admin", "analyst"] },
     { name: "Reports", href: "/dashboard/reports", icon: FileText, roles: ["super_admin", "admin", "analyst", "customer"] },
   ];
