@@ -61,7 +61,7 @@ import {
   X,
   ArrowLeft,
   Shield,
-  Link,
+  Link as LinkIcon,
   FileText,
   Lock,
   Activity,
@@ -97,6 +97,7 @@ export default function ManageOrganizationPage() {
     api.organizations.getTeamStats,
     currentOrganization ? { organizationId: currentOrganization._id } : "skip"
   );
+  const isLoadingData = currentUser === undefined || teamStats === undefined;
   
   // Mutations
   const inviteUser = useMutation(api.organizations.inviteUserToOrganization);
@@ -123,11 +124,10 @@ export default function ManageOrganizationPage() {
     address: currentOrganization?.address || ''
   });
   
-  // Check if current user is owner or admin of the organization
   const userMembership = teamStats?.find(
     member => member.user?.email === user?.emailAddresses[0]?.emailAddress
   );
-  const canManage = userMembership?.memberRole === 'owner' || userMembership?.memberRole === 'admin' || currentUser?.role === 'admin' || currentUser?.role === 'super_admin';
+  const canManage = !!userMembership && (userMembership.memberRole === 'owner' || userMembership.memberRole === 'admin') || (!!currentUser && (currentUser.role === 'admin' || currentUser.role === 'super_admin'));
   
   if (!currentOrganization) {
     return (
@@ -141,6 +141,18 @@ export default function ManageOrganizationPage() {
     );
   }
   
+  if (isLoadingData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <Card className="p-8 text-center">
+          <Building2 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Loading</h1>
+          <p className="text-gray-600">Please wait while we load your organization data.</p>
+        </Card>
+      </div>
+    );
+  }
+
   if (!canManage) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
@@ -259,7 +271,7 @@ export default function ManageOrganizationPage() {
             Security
           </TabsTrigger>
           <TabsTrigger value="integrations" className="flex items-center gap-2 px-6 py-2">
-            <Link className="h-4 w-4" />
+            <LinkIcon className="h-4 w-4" />
             Integrations
           </TabsTrigger>
           <TabsTrigger value="audit" className="flex items-center gap-2 px-6 py-2">
@@ -478,7 +490,7 @@ export default function ManageOrganizationPage() {
                         </div>
                         <div>
                           <Label htmlFor="invite-role">Role</Label>
-                          <Select value={inviteRole} onValueChange={(value: any) => setInviteRole(value)}>
+                          <Select value={inviteRole} onValueChange={(value: 'member' | 'admin') => setInviteRole(value)}>
                             <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
@@ -666,7 +678,7 @@ export default function ManageOrganizationPage() {
                     <div className="space-y-4">
                         <div>
                             <Label>Role</Label>
-                            <Select value={newRole} onValueChange={(value: any) => setNewRole(value)}>
+                            <Select value={newRole} onValueChange={(value: 'admin' | 'member') => setNewRole(value)}>
                                 <SelectTrigger>
                                     <SelectValue />
                                 </SelectTrigger>
