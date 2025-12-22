@@ -85,10 +85,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { name: "Vulnerabilities", href: "/dashboard/vulnerabilities", icon: Shield, roles: ["super_admin", "admin", "analyst", "customer"] },
     { name: "Compliance", href: "/dashboard/compliance", icon: ShieldCheck, roles: ["super_admin", "admin", "analyst", "customer"] },
     { name: "Customers", href: "/dashboard/customers", icon: Users, roles: ["super_admin", "admin"] },
-    { name: "Excel Upload", href: "/dashboard/upload", icon: FileSpreadsheet, roles: ["super_admin", "admin", "analyst"] },
     { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3, roles: ["super_admin", "admin", "analyst"] },
     { name: "Reports", href: "/dashboard/reports", icon: FileText, roles: ["super_admin", "admin", "analyst", "customer"] },
-    { name: "Settings", href: "/dashboard/settings", icon: Settings, roles: ["super_admin", "admin", "analyst", "customer"] },
   ];
 
   const filteredNavigation = navigation.filter(item => 
@@ -116,18 +114,18 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 
                 <div className="flex items-center space-x-3 flex-shrink-0">
                   <NotificationsPopover />
-                  {userRole === 'super_admin' && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm">Admin</Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link href="/dashboard/upload">Go to Upload</Link>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
+                    {userRole === 'super_admin' && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm">Admin</Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem asChild>
+                            <Link href="/admin">Go to Admin</Link>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                   <div className="text-right min-w-0">
                     <p className="text-sm font-medium text-foreground truncate max-w-20">{user?.fullName}</p>
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground capitalize">
@@ -241,7 +239,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
-                          <Link href="/dashboard/upload">Go to Upload</Link>
+                          <Link href="/admin">Go to Admin</Link>
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

@@ -72,6 +72,7 @@ import {
 import { Id } from '../../../../convex/_generated/dataModel';
 
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function ManageOrganizationPage() {
   const router = useRouter();
@@ -412,6 +413,24 @@ export default function ManageOrganizationPage() {
                         defaultChecked
                       />
                       <Label htmlFor="notifications" className="font-normal">Enable Email Notifications</Label>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                    <div className="text-sm text-muted-foreground">
+                      Advanced actions
+                    </div>
+                    <div className="flex gap-2">
+                      <Button asChild variant="outline">
+                        <Link href="/dashboard/settings">Advanced Organization Settings</Link>
+                      </Button>
+                      {(currentUser?.role === 'admin' || currentUser?.role === 'super_admin') && (
+                        <Button asChild>
+                          <Link href="/admin">Bulk Device Import (Admin)</Link>
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>
