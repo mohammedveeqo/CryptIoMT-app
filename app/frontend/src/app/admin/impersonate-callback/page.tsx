@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, Suspense } from 'react';
+import { useEffect, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSignIn, useClerk } from '@clerk/nextjs';
 
@@ -9,8 +9,12 @@ function ImpersonateCallbackContent() {
   const { signOut } = useClerk();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const processingRef = useRef(false);
 
   useEffect(() => {
+    if (processingRef.current) return;
+    processingRef.current = true;
+
     const handleImpersonation = async () => {
       const ticket = searchParams.get('ticket');
       
@@ -28,6 +32,9 @@ function ImpersonateCallbackContent() {
 
       try {
         console.log('Processing impersonation ticket:', ticket);
+
+        // Sign out current user first to avoid "already signed in" error
+        await signOut();
         
         // Use the sign-in token to authenticate as the target user
         const result = await signIn.create({
