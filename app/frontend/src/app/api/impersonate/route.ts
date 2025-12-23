@@ -42,7 +42,15 @@ export async function POST(request: NextRequest) {
       // Use dynamic host detection for better reliability
       const host = request.headers.get('host');
       const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https';
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (host ? `${protocol}://${host}` : 'http://localhost:3002');
+      
+      // In development, prefer the actual host header to handle localhost/IP access correctly
+      // even if NEXT_PUBLIC_APP_URL is set to production
+      let baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+      if (process.env.NODE_ENV === 'development' && host) {
+        baseUrl = `${protocol}://${host}`;
+      }
+      baseUrl = baseUrl || (host ? `${protocol}://${host}` : 'http://localhost:3002');
+
       const impersonationUrl = `${baseUrl.replace(/\/$/, '')}/admin/impersonate-callback?ticket=${signInToken.token}`;
 
       // Set up the response
