@@ -37,6 +37,12 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
   
   // Normal authentication logic
   if (!userId) {
+    // If on a local IP, session cookies might be blocked/missing. 
+    // Avoid infinite loop by checking if we are already coming from login with a redirect_url
+    if (path === '/login' || path === '/sign-in') {
+      return NextResponse.next();
+    }
+    
     const signInUrl = new URL('/login', req.url);
     signInUrl.searchParams.set('redirect_url', path);
     return NextResponse.redirect(signInUrl);
