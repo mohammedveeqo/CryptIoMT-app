@@ -17,6 +17,10 @@ const csp = [
 ].join('; ')
 
 const nextConfig: NextConfig = {
+  // Allow development on local network IP
+  experimental: {
+    allowedDevOrigins: ["localhost:3000", "192.168.4.193:3000"],
+  },
   eslint: {
     // Warning: This allows production builds to successfully complete even if your project has ESLint errors.
     ignoreDuringBuilds: true,
