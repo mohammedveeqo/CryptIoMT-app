@@ -49,6 +49,7 @@ import { useState } from 'react'
 import * as XLSX from "xlsx"
 import { Id, Doc } from '../../../convex/_generated/dataModel'
 import { DeviceImportDialog } from './_components/device-import-dialog'
+import { impersonateUser } from './actions';
 
 export default function AdminPanel() {
   const { user, isLoaded: isClerkLoaded } = useUser()
@@ -123,27 +124,14 @@ const getOrganizationOwner = (organizationId: Id<"organizations">) => {
     try {
       console.log('Starting impersonation for user:', userId);
       
-      const response = await fetch('/api/impersonate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userId }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.details || 'Impersonation request failed');
-      }
-
-      const data = await response.json();
+      const result = await impersonateUser(userId);
       
-      if (data.impersonationUrl) {
-        console.log('Redirecting to impersonation URL:', data.impersonationUrl);
-        // Redirect to the impersonation URL
-        window.location.href = data.impersonationUrl;
-      } else {
-        throw new Error('No impersonation URL received');
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+      
+      if (result.impersonationUrl) {
+        window.location.href = result.impersonationUrl;
       }
     } catch (error) {
       console.error('Impersonation failed:', error);
