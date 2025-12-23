@@ -115,6 +115,11 @@ const getOrganizationOwner = (organizationId: Id<"organizations">) => {
 
   // Update the handleImpersonateUser function
   const handleImpersonateUser = async (userId: string) => {
+    if (!userId) {
+      alert('Cannot impersonate user: No User ID found. The user may not have completed registration.');
+      return;
+    }
+
     try {
       console.log('Starting impersonation for user:', userId);
       

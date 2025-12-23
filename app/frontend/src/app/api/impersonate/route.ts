@@ -39,8 +39,11 @@ export async function POST(request: NextRequest) {
       });
 
       // Construct the impersonation URL - use dedicated callback
-      const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3002').replace(/\/$/, '');
-      const impersonationUrl = `${baseUrl}/admin/impersonate-callback?ticket=${signInToken.token}`;
+      // Use dynamic host detection for better reliability
+      const host = request.headers.get('host');
+      const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https';
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (host ? `${protocol}://${host}` : 'http://localhost:3002');
+      const impersonationUrl = `${baseUrl.replace(/\/$/, '')}/admin/impersonate-callback?ticket=${signInToken.token}`;
 
       // Set up the response
       const response = NextResponse.json({

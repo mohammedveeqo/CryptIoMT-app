@@ -52,14 +52,17 @@ function ImpersonateCallbackContent() {
           }));
           
           // Redirect to dashboard with impersonation flag
-          router.push('/dashboard?impersonate=true');
+          // Use window.location.href to force a full reload and ensure auth state is picked up
+          window.location.href = '/dashboard?impersonate=true';
         } else {
           console.log('Unexpected sign-in status:', result?.status);
           throw new Error(`Sign-in not completed. Status: ${result?.status}`);
         }
       } catch (error) {
         console.error('Impersonation failed:', error);
-        alert('Failed to impersonate user: ' + (error instanceof Error ? error.message : 'Unknown error'));
+        // Show visible error to user
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        alert(`Impersonation failed: ${errorMessage}. Please check console for details.`);
         router.push('/admin');
       }
     };
