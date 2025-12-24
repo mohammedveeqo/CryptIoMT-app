@@ -4,7 +4,6 @@ import { ClerkProvider } from '@clerk/nextjs';
 import { ConvexClientProvider } from './providers/convex-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/sonner';
-import ImpersonationBanner from '../components/impersonation-banner';
 import "./globals.css";
 
 const geistSans = Geist({

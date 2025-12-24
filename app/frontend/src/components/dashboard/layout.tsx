@@ -132,7 +132,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                     </span>
                   </div>
                   <UserButton 
-                    afterSignOutUrl="/" 
+                    afterSignOutUrl="/"
                     appearance={{
                       elements: {
                         avatarBox: "w-8 h-8 ring-2 ring-blue-100 hover:ring-blue-200 transition-all duration-200"
@@ -247,7 +247,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                     {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                   </Button>
                   <UserButton 
-                    afterSignOutUrl="/" 
+                    afterSignOutUrl="/login" 
                     appearance={{
                       elements: {
                         avatarBox: "w-10 h-10 ring-2 ring-blue-100 hover:ring-blue-200 transition-all duration-200"

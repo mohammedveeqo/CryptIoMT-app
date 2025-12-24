@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Shield, Building2, Users, ArrowRight, X } from 'lucide-react';
+import { Building2, Users, X } from 'lucide-react';
 
 export default function OnboardingPage() {
   const { user } = useUser();
@@ -23,7 +23,6 @@ export default function OnboardingPage() {
   const createOrganization = useMutation(api.organizations.createUserOrganization);
   const joinOrganizationByCode = useMutation(api.organizations.joinOrganizationByCode);
   const createOrUpdateUser = useMutation(api.users.createOrUpdateUser);
-  const currentUser = useQuery(api.users.getCurrentUser);
   
   const [orgData, setOrgData] = useState({
     name: '',
@@ -110,24 +109,33 @@ export default function OnboardingPage() {
       router.push('/dashboard?skipped=true'); // Continue anyway
     }
   };
-  
+
+  const Background = () => (
+    <>
+      <div className="absolute inset-0 w-full h-full bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+      <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-blue-400 opacity-20 blur-[100px]"></div>
+    </>
+  );
+
+  const cardClasses = "bg-white border-slate-200 shadow-xl text-slate-900";
+  const inputClasses = "bg-white border-slate-200 text-slate-900 focus:border-blue-500 focus:ring-blue-500/20 placeholder:text-slate-400";
+  const labelClasses = "text-slate-700";
+
   if (step === 'welcome') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-slate-50 relative overflow-hidden p-4">
+        <Background />
+        <Card className={`w-full max-w-md ${cardClasses}`}>
           <CardHeader className="text-center">
-            <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-              <Shield className="h-8 w-8 text-blue-600" />
-            </div>
-            <CardTitle className="text-2xl">Welcome to CryptIoMT!</CardTitle>
-            <CardDescription>
-              Let's get you set up. You can create a new organization, join an existing one, or skip this step for now.
+            <CardTitle className="text-2xl font-bold text-slate-900">Welcome to CryptIoMT</CardTitle>
+            <CardDescription className="text-slate-600">
+              Let's get you set up. Create a new organization or join an existing one.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <Button 
               onClick={() => setStep('create-org')} 
-              className="w-full flex items-center justify-center space-x-2"
+              className="w-full flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white h-12"
             >
               <Building2 className="h-4 w-4" />
               <span>Create New Organization</span>
@@ -136,7 +144,7 @@ export default function OnboardingPage() {
             <Button 
               onClick={() => setStep('join-org')} 
               variant="outline" 
-              className="w-full flex items-center justify-center space-x-2"
+              className="w-full flex items-center justify-center space-x-2 border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 h-12 bg-white"
             >
               <Users className="h-4 w-4" />
               <span>Join Existing Organization</span>
@@ -145,7 +153,7 @@ export default function OnboardingPage() {
             <Button 
               onClick={handleSkip} 
               variant="ghost" 
-              className="w-full text-gray-600"
+              className="w-full text-slate-500 hover:text-slate-700 hover:bg-transparent"
             >
               Skip for now
             </Button>
@@ -157,20 +165,22 @@ export default function OnboardingPage() {
   
   if (step === 'create-org') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-        <Card className="w-full max-w-lg">
+      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-slate-50 relative overflow-hidden p-4">
+        <Background />
+        <Card className={`w-full max-w-lg ${cardClasses}`}>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-xl">Create Organization</CardTitle>
-                <CardDescription>
-                  Set up your organization to start managing medical devices and security.
+                <CardTitle className="text-xl font-bold text-slate-900">Create Organization</CardTitle>
+                <CardDescription className="text-slate-600">
+                  Set up your organization to start managing security.
                 </CardDescription>
               </div>
               <Button 
                 variant="ghost" 
                 size="sm" 
                 onClick={() => setStep('welcome')}
+                className="text-slate-400 hover:text-slate-700 hover:bg-slate-100"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -183,35 +193,36 @@ export default function OnboardingPage() {
               </div>
             )}
             
-            <div>
-              <Label htmlFor="name">Organization Name *</Label>
+            <div className="space-y-2">
+              <Label htmlFor="name" className={labelClasses}>Organization Name *</Label>
               <Input
                 id="name"
                 value={orgData.name}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOrgData({ ...orgData, name: e.target.value })}
                 placeholder="Enter organization name"
                 required
+                className={inputClasses}
               />
             </div>
             
-            <div>
-              <Label htmlFor="type">Organization Type *</Label>
+            <div className="space-y-2">
+              <Label htmlFor="type" className={labelClasses}>Organization Type *</Label>
               <Select value={orgData.type} onValueChange={(value: any) => setOrgData({ ...orgData, type: value })}>
-                <SelectTrigger>
+                <SelectTrigger className={inputClasses}>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="hospital">Hospital</SelectItem>
-                  <SelectItem value="clinic">Clinic</SelectItem>
-                  <SelectItem value="research">Research Institution</SelectItem>
-                  <SelectItem value="vendor">Medical Device Vendor</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
+                <SelectContent className="bg-white border-slate-200 text-slate-900">
+                  <SelectItem value="hospital" className="focus:bg-slate-100 focus:text-slate-900">Hospital</SelectItem>
+                  <SelectItem value="clinic" className="focus:bg-slate-100 focus:text-slate-900">Clinic</SelectItem>
+                  <SelectItem value="research" className="focus:bg-slate-100 focus:text-slate-900">Research Institution</SelectItem>
+                  <SelectItem value="vendor" className="focus:bg-slate-100 focus:text-slate-900">Medical Device Vendor</SelectItem>
+                  <SelectItem value="other" className="focus:bg-slate-100 focus:text-slate-900">Other</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             
-            <div>
-              <Label htmlFor="email">Contact Email *</Label>
+            <div className="space-y-2">
+              <Label htmlFor="email" className={labelClasses}>Contact Email *</Label>
               <Input
                 id="email"
                 type="email"
@@ -219,28 +230,31 @@ export default function OnboardingPage() {
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOrgData({ ...orgData, email: e.target.value })}
                 placeholder="contact@hospital.com"
                 required
+                className={inputClasses}
               />
             </div>
             
-            <div>
-              <Label htmlFor="phone">Phone Number</Label>
+            <div className="space-y-2">
+              <Label htmlFor="phone" className={labelClasses}>Phone Number</Label>
               <Input
                 id="phone"
                 type="tel"
                 value={orgData.phone}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOrgData({ ...orgData, phone: e.target.value })}
                 placeholder="+1 (555) 123-4567"
+                className={inputClasses}
               />
             </div>
             
-            <div>
-              <Label htmlFor="address">Address</Label>
+            <div className="space-y-2">
+              <Label htmlFor="address" className={labelClasses}>Address</Label>
               <Textarea
                 id="address"
                 value={orgData.address}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setOrgData({ ...orgData, address: e.target.value })}
                 placeholder="123 Main St, City, State 12345"
                 rows={3}
+                className={inputClasses}
               />
             </div>
             
@@ -248,7 +262,7 @@ export default function OnboardingPage() {
               <Button 
                 onClick={handleCreateOrganization} 
                 disabled={!orgData.name || !orgData.email || isLoading}
-                className="flex-1"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
               >
                 {isLoading ? 'Creating...' : 'Create Organization'}
               </Button>
@@ -256,6 +270,7 @@ export default function OnboardingPage() {
                 onClick={handleSkip} 
                 variant="outline"
                 disabled={isLoading}
+                className="border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 bg-white"
               >
                 Skip
               </Button>
@@ -268,13 +283,14 @@ export default function OnboardingPage() {
   
   if (step === 'join-org') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-slate-50 relative overflow-hidden p-4">
+        <Background />
+        <Card className={`w-full max-w-md ${cardClasses}`}>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-xl">Join Organization</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-xl font-bold text-slate-900">Join Organization</CardTitle>
+                <CardDescription className="text-slate-600">
                   Enter the organization ID provided by your administrator.
                 </CardDescription>
               </div>
@@ -282,6 +298,7 @@ export default function OnboardingPage() {
                 variant="ghost" 
                 size="sm" 
                 onClick={() => setStep('welcome')}
+                className="text-slate-400 hover:text-slate-700 hover:bg-slate-100"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -294,14 +311,15 @@ export default function OnboardingPage() {
               </div>
             )}
             
-            <div>
-              <Label htmlFor="joinCode">Organization ID *</Label>
+            <div className="space-y-2">
+              <Label htmlFor="joinCode" className={labelClasses}>Organization ID *</Label>
               <Input
                 id="joinCode"
                 value={joinCode}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setJoinCode(e.target.value)}
                 placeholder="Enter invitation code"
                 required
+                className={inputClasses}
               />
             </div>
             
@@ -309,7 +327,7 @@ export default function OnboardingPage() {
               <Button 
                 onClick={handleJoinOrganization} 
                 disabled={!joinCode || isLoading}
-                className="flex-1"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
               >
                 {isLoading ? 'Joining...' : 'Join Organization'}
               </Button>
@@ -317,6 +335,7 @@ export default function OnboardingPage() {
                 onClick={handleSkip} 
                 variant="outline"
                 disabled={isLoading}
+                className="border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 bg-white"
               >
                 Skip
               </Button>

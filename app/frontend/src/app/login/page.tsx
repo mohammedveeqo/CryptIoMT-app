@@ -4,19 +4,6 @@ import { useUser } from "@clerk/nextjs";
 import { SignIn } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
- 
-
-// Enhanced logo with security icon
-function AppLogo() {
-  return (
-    <div className="flex items-center justify-center">
-      <div className="text-3xl font-bold tracking-tight">
-        <span className="text-black font-extrabold">Crypt</span>
-        <span className="text-blue-600 font-bold">IoMT</span>
-      </div>
-    </div>
-  );
-}
 
 export default function LoginPage() {
   const { isSignedIn, isLoaded } = useUser();
@@ -30,89 +17,67 @@ export default function LoginPage() {
 
   if (!isLoaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="flex flex-col items-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p className="text-gray-600 font-medium">Loading...</p>
         </div>
       </div>
     );
   }
 
   if (isSignedIn) {
-    return null; // Will redirect via useEffect
+    return null; 
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-100">
-      <div className="flex min-h-screen items-center justify-center py-12 px-4">
-        <div className="w-full max-w-md">
-          {/* Main card */}
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-            {/* Header section */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-8 text-center">
-              <div className="mb-4"></div>
-              <h1 className="text-2xl font-bold mb-2">
-                <span className="text-black font-extrabold">Crypt</span><span className="text-blue-600 font-bold">IoMT</span>
-              </h1>
-              <p className="text-blue-100 text-sm">
-                Healthcare Cybersecurity Platform
-              </p>
-            </div>
+    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-slate-50 relative overflow-hidden">
+        {/* Background Effects */}
+        <div className="absolute inset-0 w-full h-full bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+        <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-blue-400 opacity-20 blur-[100px]"></div>
 
-            {/* Content section */}
-            <div className="px-8 py-8">
-              <div className="text-center mb-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                  Welcome Back
-                </h2>
-                <p className="text-gray-600 text-sm">
-                  Sign in to access your dashboard
-                </p>
-              </div>
-
-              {/* Login form with forced centering */}
-              <div className="flex justify-center">
-                <SignIn 
-                  appearance={{
-                    elements: {
-                      rootBox: "w-full !mx-auto !flex !justify-center",
-                      card: "bg-transparent shadow-none border-0 p-0 w-full !mx-auto !max-w-none",
-                      headerTitle: "hidden",
-                      headerSubtitle: "hidden",
-                      socialButtonsBlockButton: "w-full bg-gray-50 border border-gray-200 text-gray-700 hover:bg-gray-100 transition-all duration-200 rounded-lg py-3 px-4 font-medium shadow-sm hover:shadow-md !mx-auto",
-                      socialButtonsBlockButtonText: "text-gray-700 font-medium",
-                      socialButtonsBlockButtonArrow: "text-gray-400",
-                      dividerLine: "bg-gray-200",
-                      dividerText: "text-gray-500 text-sm font-medium !text-center",
-                      formFieldInput: "w-full border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 px-4 py-3 transition-all duration-200 bg-gray-50 focus:bg-white",
-                      formFieldLabel: "text-gray-700 font-medium text-sm",
-                      formButtonPrimary: "w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 !mx-auto",
-                      footerActionLink: "text-blue-600 hover:text-blue-700 font-medium transition-colors duration-200",
-                      identityPreviewText: "text-gray-700",
-                      identityPreviewEditButton: "text-blue-600 hover:text-blue-700 transition-colors duration-200",
-                      formFieldInputShowPasswordButton: "text-gray-400 hover:text-gray-600",
-                      formFieldAction: "text-blue-600 hover:text-blue-700 font-medium text-sm",
-                      footer: "!text-center",
-                      footerAction: "!text-center !justify-center"
-                    },
-                    layout: {
-                      socialButtonsPlacement: "top"
-                    }
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Simple, clean footer text */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-500">
-              © 2025 CryptIoMT
+        {/* Logo Section */}
+        <div className="z-10 mb-8 flex flex-col items-center text-center space-y-2">
+            <h1 className="text-4xl font-bold tracking-tighter text-slate-900 md:text-5xl">
+                Crypt<span className="text-blue-600">IoMT</span>
+            </h1>
+            <p className="text-slate-600 text-sm md:text-base max-w-[300px]">
+                Access your security dashboard.
             </p>
-          </div>
         </div>
-      </div>
+
+        {/* Clerk Component Wrapper */}
+        <div className="z-10 w-full max-w-[400px] px-4">
+          <SignIn 
+            forceRedirectUrl="/dashboard"
+            appearance={{
+                layout: {
+                    socialButtonsPlacement: "bottom",
+                    socialButtonsVariant: "iconButton"
+                },
+                elements: {
+                    rootBox: "w-full",
+                    card: "bg-white border border-slate-200 shadow-xl rounded-xl w-full p-6 sm:p-8",
+                    headerTitle: "text-slate-900 font-bold text-xl",
+                    headerSubtitle: "text-slate-500 text-sm",
+                    socialButtonsBlockButton: "bg-white border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors",
+                    dividerLine: "bg-slate-200",
+                    dividerText: "text-slate-500",
+                    formFieldLabel: "text-slate-700 text-xs uppercase tracking-wider font-semibold",
+                    formFieldInput: "bg-white border-slate-200 text-slate-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-all rounded-lg",
+                    formButtonPrimary: "bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-[0_4px_14px_0_rgba(37,99,235,0.39)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.23)] transition-all rounded-lg h-10",
+                    footerActionText: "text-slate-500",
+                    footerActionLink: "text-blue-600 hover:text-blue-700 font-medium hover:underline decoration-blue-500/30 underline-offset-4",
+                    identityPreviewText: "text-slate-700",
+                    identityPreviewEditButton: "text-blue-600 hover:text-blue-700"
+                }
+            }}
+          />
+        </div>
+        
+        {/* Footer */}
+        <div className="mt-12 text-center text-xs text-slate-500 z-10">
+            <p>&copy; {new Date().getFullYear()} CryptIoMT. All rights reserved.</p>
+        </div>
     </div>
   );
 }

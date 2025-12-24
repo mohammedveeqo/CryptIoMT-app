@@ -1,5 +1,7 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
+
 import { useUser } from '@clerk/nextjs'
 import { useQuery, useMutation } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
@@ -52,6 +54,7 @@ import { DeviceImportDialog } from './_components/device-import-dialog'
 import { impersonateUser } from './actions';
 
 export default function AdminPanel() {
+  const router = useRouter()
   const { user, isLoaded: isClerkLoaded } = useUser()
   const [searchTerm, setSearchTerm] = useState('')
   const [showDebug, setShowDebug] = useState(false)
@@ -253,6 +256,13 @@ const getOrganizationOwner = (organizationId: Id<"organizations">) => {
               <p className="text-gray-600">Manage organizations, users, and system settings</p>
             </div>
             <div className="flex items-center space-x-4">
+              <Button 
+                variant="outline" 
+                onClick={() => router.push('/dashboard')}
+                className="border-blue-200 text-blue-700 hover:bg-blue-50"
+              >
+                Back to Dashboard
+              </Button>
               <Badge className="bg-orange-600 text-white">
                 {currentUser?.role?.toUpperCase()}
               </Badge>

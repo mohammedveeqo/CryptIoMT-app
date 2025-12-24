@@ -352,6 +352,118 @@ export const updateEmailPreferences = mutation({
 });
 
 // Get all users (for admin panel)
+// Check admin status for setup page
+export const checkAdminStatus = query({
+  args: { email: v.string() },
+  handler: async (ctx, args) => {
+    // Check if any admin exists
+    const adminExists = await ctx.db
+      .query("users")
+      .filter((q) => 
+        q.or(
+          q.eq(q.field("role"), "admin"),
+          q.eq(q.field("role"), "super_admin")
+        )
+      )
+      .first();
+
+    if (!adminExists) {
+      return {
+        isAdmin: false,
+        canSetup: true,
+        message: "No admins found. You can set up the first admin account."
+      };
+    }
+
+    // Check if current user is admin
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .first();
+
+    if (user && ["admin", "super_admin"].includes(user.role)) {
+      return {
+        isAdmin: true,
+        canSetup: false,
+        message: "You are already an admin."
+      };
+    }
+
+    return {
+      isAdmin: false,
+      canSetup: false,
+      message: "Admin account already exists. Please contact support."
+    };
+  },
+});
+
+// Setup initial admin
+export const setupInitialAdmin = mutation({
+  args: {
+    email: v.string(),
+    name: v.string(),
+    clerkUserId: v.string()
+  },
+  handler: async (ctx, args) => {
+    // Double check if admin exists to prevent race conditions
+    const adminExists = await ctx.db
+      .query("users")
+      .filter((q) => 
+        q.or(
+          q.eq(q.field("role"), "admin"),
+          q.eq(q.field("role"), "super_admin")
+        )
+      )
+      .first();
+
+    if (adminExists) {
+      // If the user trying to setup is already the admin, that's fine
+      if (adminExists.email === args.email) {
+        return {
+          success: true,
+          message: "You are already set up as an admin."
+        };
+      }
+      return {
+        success: false,
+        message: "Admin account already exists. Setup disabled."
+      };
+    }
+
+    // Check if user exists
+    const existingUser = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkUserId))
+      .first();
+
+    if (existingUser) {
+      // Upgrade existing user
+      await ctx.db.patch(existingUser._id, {
+        role: "super_admin",
+        updatedAt: Date.now(),
+      });
+    } else {
+      // Create new super admin
+      await ctx.db.insert("users", {
+        clerkId: args.clerkUserId,
+        name: args.name,
+        email: args.email,
+        role: "super_admin",
+        status: "active",
+        isActive: true,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        lastUpdated: Date.now(),
+      });
+    }
+
+    return {
+      success: true,
+      message: "Admin account created successfully. Redirecting..."
+    };
+  },
+});
+
 export const getAllUsers = query({
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();

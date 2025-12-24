@@ -36,6 +36,7 @@ export function ContactForm() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -45,15 +46,44 @@ export function ContactForm() {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError(null);
     
-    // Simulate form submission
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    setIsSubmitted(true);
-    setIsSubmitting(false);
+    try {
+      const formPayload = new FormData(e.currentTarget);
+      formPayload.append("access_key", "1e8e421c-c762-4f75-a7e7-54e33ac4e422");
+      
+      // Add custom subject
+      formPayload.append("subject", `New Assessment Request from ${formData.name}`);
+      formPayload.append("from_name", "CryptIoMT Marketing Site");
+
+      const response = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        body: formPayload
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setIsSubmitted(true);
+        setFormData({
+            name: '',
+            email: '',
+            organization: '',
+            phone: '',
+            message: '',
+            assessmentType: 'comprehensive'
+        });
+      } else {
+        setError(data.message || "Something went wrong. Please try again.");
+      }
+    } catch (err) {
+      setError("Failed to submit form. Please check your connection and try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isSubmitted) {
@@ -254,6 +284,11 @@ export function ContactForm() {
                     </div>
 
                     {/* Submit Button */}
+                    {error && (
+                      <div className="text-red-600 text-sm text-center bg-red-50 p-3 rounded-lg border border-red-100">
+                        {error}
+                      </div>
+                    )}
                     <Button 
                       type="submit" 
                       disabled={isSubmitting}
