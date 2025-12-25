@@ -64,7 +64,7 @@ export function Footer() {
             <ul className="space-y-3 text-sm text-gray-600">
               <li>
                 <button 
-                  onClick={() => scrollToSection("risk-assessment")}
+                  onClick={() => scrollToSection("contact")}
                   className="hover:text-blue-600 transition-colors"
                 >
                   Risk Assessment
